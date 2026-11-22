@@ -353,9 +353,24 @@ function setzeKopf(titel, zurueck) {
   document.getElementById("titel").textContent = titel;
   const b = document.getElementById("zurueck");
   b.hidden = !zurueck;
-  b.onclick = () => (history.length > 1 ? history.back() : geheZu(zurueck));
+  // Gibt es in der App eine Seite davor, dorthin zurück; sonst (z. B. direkt geöffnet) zur übergeordneten Seite
+  b.onclick = () => (tiefeJetzt() > 0 ? history.back() : ersetzeDurch(zurueck));
 }
-function geheZu(ziel) { location.hash = ziel; }
+// Jede Seite merkt sich ihre "Tiefe" im Verlauf – so kann man gezielt mehrere Schritte zurückspringen.
+const tiefeJetzt = () => (history.state && typeof history.state.tiefe === "number" ? history.state.tiefe : 0);
+function geheZu(ziel) {
+  if (location.hash === "#" + ziel) return route();
+  history.pushState({ tiefe: tiefeJetzt() + 1 }, "", "#" + ziel);
+  route();
+}
+function ersetzeDurch(ziel) { history.replaceState({ tiefe: tiefeJetzt() }, "", "#" + ziel); route(); }
+// Eine schon beendete Übung ist ein "toter" Eintrag im Verlauf (man kommt nur mit Zurück dorthin).
+// Statt nach vorne ins Menü zu springen (dann wirkt Zurück wie kaputt), einfach noch einen Schritt weiter zurückgehen.
+function abgelaufen(eltern) {
+  const hier = location.hash;
+  history.back();
+  setTimeout(() => { if (location.hash === hier) ersetzeDurch(eltern); }, 350); // falls es kein "davor" gibt
+}
 function zeige(html) { $app.innerHTML = html; window.scrollTo(0, 0); }
 const lautBtn = (text, klein) => `<button class="lautsprecher${klein ? " klein" : ""}" data-sprich="${esc(text)}" aria-label="Vorlesen">🔊</button>`;
 const langsamBtn = (text) => `<button class="lautsprecher" data-sprich="${esc(text)}" data-langsam="1" aria-label="Langsam vorlesen">🐢</button>`;
@@ -364,6 +379,11 @@ $app.addEventListener("click", (e) => {
   if (b) { e.stopPropagation(); sprich(b.dataset.sprich, b.dataset.langsam === "1"); }
   const g = e.target.closest("[data-gehe]");
   if (g) geheZu(g.dataset.gehe);
+  if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
+  // Ergebnis-Seiten: "Zurück" geht einen Schritt zurück, "Startseite" springt ganz an den Anfang – ohne neue Seiten anzuhängen
+  const z = e.target.closest("[data-zurueck]");
+  if (z) { if (tiefeJetzt() > 0) history.back(); else ersetzeDurch(z.dataset.zurueck); }
+  if (e.target.closest("[data-heim]")) { const t = tiefeJetzt(); if (t > 0) history.go(-t); else ersetzeDurch("start"); }
 });
 const fortschrittsLeiste = (nr, gesamt) => `<div class="fortschritt"><span>${nr} / ${gesamt}</span><div class="balken"><i style="width:${(100 * (nr - 1)) / gesamt}%"></i></div></div>`;
 function umschalter(id, wert, optionen) {
@@ -473,11 +493,11 @@ function kartenMenue() {
   };
 }
 function karteZeigen() {
-  if (!sitzung) return geheZu("karten");
+  if (!sitzung) return abgelaufen("karten");
   setzeKopf("Karteikarten", sitzung.zurueck || "karten");
   if (sitzung.pos >= sitzung.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Geschafft!</div><p>Du hast ${sitzung.gesamt} Karten geübt.</p></div>
-      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-gehe="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`}`);
+      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
     sitzung = null; return;
   }
   const { k, r } = sitzung.liste[sitzung.pos];
@@ -665,11 +685,11 @@ function artikelStart() {
 function quizStarten(q) {
   quiz = q;
   if (location.hash === "#quiz") quizZeigen();
-  else if (["#artikel", "#cecisono", "#verbsatz"].includes(location.hash)) location.replace("#quiz"); // sonst startet "Zurück" sofort ein neues Quiz
+  else if (["#artikel", "#cecisono", "#verbsatz"].includes(location.hash)) ersetzeDurch("quiz"); // sonst startet "Zurück" sofort ein neues Quiz
   else geheZu("quiz");
 }
 function quizZeigen() {
-  if (!quiz) return geheZu("start");
+  if (!quiz) return abgelaufen("start");
   setzeKopf(quiz.titel, quiz.zurueck);
   if (quiz.pos >= quiz.aufgaben.length) {
     const n = quiz.aufgaben.length, p = quiz.punkte;
@@ -678,7 +698,7 @@ function quizZeigen() {
     zeige(`<div class="karte"><div class="wort">${p === n ? "🏆" : p >= n * 0.7 ? "👍" : "💪"} ${p} von ${n}</div>
       <p>${p === n ? "Perfetto! Alles richtig." : p >= n * 0.7 ? "Bravo! Sehr gut." : "Weiter üben – das wird!"}</p>
       ${p < n ? `<p class="leise">Die Fehler hat sich die App gemerkt – sie kommen bald wieder.</p>` : ""}</div>
-      ${ausHeute ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-gehe="${quiz.zurueck}">Zurück</button></div>`}`);
+      ${ausHeute ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-zurueck="${quiz.zurueck}">Zurück</button></div>`}`);
     const nm = document.getElementById("nochmal");
     if (nm) nm.onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "cecisono" ? ceStart() : z === "verbsatz" ? vsatzStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
     return;
@@ -829,7 +849,7 @@ function sprechenMenue() {
   $app.querySelectorAll("[data-gruppe]").forEach((b) => (b.onclick = () => sprechenStarten(GRUPPE_NACH_ID[b.dataset.gruppe].eintraege)));
 }
 function sprechenZeigen() {
-  if (!sprechen) return geheZu("sprechen");
+  if (!sprechen) return abgelaufen("sprechen");
   setzeKopf("Sprechen", "sprechen");
   const k = sprechen.liste[sprechen.pos];
   const e = sprechen.ergebnis;
@@ -975,11 +995,11 @@ function gespraechMenue() {
 }
 function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "", nichtGewusst: false, alsRichtigGezaehlt: false }); }
 function gespraechZeigen() {
-  if (!gespraech) return geheZu("gespraech");
+  if (!gespraech) return abgelaufen("gespraech");
   setzeKopf("Frage & Antwort", "gespraech");
   if (gespraech.pos >= gespraech.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Bravo!</div><p>Du hast ${gespraech.liste.length} Fragen beantwortet.</p></div>
-      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-gehe="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`}`);
+      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
     gespraech = null; return;
   }
   const q = gespraech.liste[gespraech.pos], g = gespraech, e = g.ergebnis;
@@ -1200,11 +1220,18 @@ function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heu
 }
 function heuteWeiterKnopf() {
   const offen = heuteSchritte().filter((s) => !s.leer && !heuteStand().erledigt.includes(s.id)).length;
-  return `<div class="reihe"><button class="btn voll" data-gehe="heute">${offen ? "▶ Weiter mit „Heute üben“" : "🎉 Zu „Heute üben“ – alles geschafft!"}</button></div>`;
+  return `<div class="reihe"><button class="btn voll" data-heute-weiter="1">${offen ? "▶ Weiter mit „Heute üben“" : "🎉 Zu „Heute üben“ – alles geschafft!"}</button></div>`;
+}
+// Zurück zur Seite "Heute üben" springen (statt sie neu anzuhängen), damit "Zurück" danach sauber zur Startseite führt
+let heuteTiefe = null;
+function zurueckZuHeute() {
+  const schritte = heuteTiefe === null ? 0 : heuteTiefe - tiefeJetzt();
+  if (schritte < 0) history.go(schritte); else geheZu("heute");
 }
 function heuteMenue() {
   setzeKopf("Heute üben", "start");
   heuteAktiv = null;
+  heuteTiefe = tiefeJetzt();
   const st = heuteStand(), schritte = heuteSchritte();
   const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
   const fertig = schritte.length - offen.length;

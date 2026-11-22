@@ -651,21 +651,33 @@ function quizZeigen() {
   zeige(`${fortschrittsLeiste(quiz.pos + 1, quiz.aufgaben.length)}
     <div class="frage">${a.frage}</div>
     <div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
-    <div id="rueck"></div>`);
+    <div id="rueck"></div>
+    ${a.nichtGewusst ? `<div class="reihe"><button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button></div>` : ""}`);
   if (a.beimStart) a.beimStart();
-  let beantwortet = false;
+  let beantwortet = false, richtigGezaehlt = false;
+  const aufloesen = (ok, text, gewaehlt) => {
+    $app.querySelectorAll("[data-o]").forEach((x) => { if (x.dataset.o === a.richtig) x.classList.add("richtig"); });
+    if (gewaehlt && !ok) gewaehlt.classList.add("falsch");
+    if (a.sprechen) sprich(a.sprechen);
+    document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${text} <b>${esc(a.erklaerung)}</b></div>
+      <button class="btn voll" id="weiter">Weiter</button>`;
+    document.getElementById("weiter").onclick = () => { quiz.pos++; quizZeigen(); };
+  };
   $app.querySelectorAll("[data-o]").forEach((b) => (b.onclick = () => {
     if (beantwortet) return; beantwortet = true;
     const ok = b.dataset.o === a.richtig;
-    if (ok) quiz.punkte++;
+    if (ok) { quiz.punkte++; richtigGezaehlt = true; }
     if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
-    $app.querySelectorAll("[data-o]").forEach((x) => { if (x.dataset.o === a.richtig) x.classList.add("richtig"); });
-    if (!ok) b.classList.add("falsch");
-    if (a.sprechen) sprich(a.sprechen);
-    document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${ok ? "✅ Richtig!" : "❌ Leider falsch."} <b>${esc(a.erklaerung)}</b></div>
-      <button class="btn voll" id="weiter">Weiter</button>`;
-    document.getElementById("weiter").onclick = () => { quiz.pos++; quizZeigen(); };
+    aufloesen(ok, ok ? "✅ Richtig!" : "❌ Leider falsch.", b);
   }));
+  const ng = document.getElementById("nichtGewusst");
+  if (ng) ng.onclick = () => {
+    ng.disabled = true; ng.textContent = "✓ Gemerkt – kommt öfter wieder";
+    if (!beantwortet || richtigGezaehlt) a.nichtGewusst(); // falsche Antwort ist schon als Fehler gezählt
+    if (!beantwortet) { beantwortet = true; aufloesen(false, "🙈 Kein Problem – so ist es richtig:"); }
+    else if (richtigGezaehlt) { quiz.punkte--; richtigGezaehlt = false; } // geraten zählt nicht als gewusst
+    toast("Gemerkt – kommt öfter wieder.");
+  };
 }
 
 // Satzbau
@@ -724,7 +736,8 @@ function hoerenStart() {
         <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
       optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
       beimStart: () => setTimeout(() => sprich(k.it), 250),
-      beiAntwort: (ok) => { rueckmeldung(k.id, "it-de", ok); geuebt(); }
+      beiAntwort: (ok) => { rueckmeldung(k.id, "it-de", ok); geuebt(); },
+      nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
     };
   });
   quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "hoeren", titel: "Hören", nochmal: "hoeren-neu" });
@@ -904,7 +917,7 @@ function gespraechMenue() {
   document.getElementById("alle").onclick = () => starten(ALLE_FRAGEN, 10);
   $app.querySelectorAll("[data-gthema]").forEach((b) => (b.onclick = () => { const t = GESPRAECH_THEMEN.find((x) => x.id === b.dataset.gthema); starten(t.fragen, t.fragen.length); }));
 }
-function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "" }); }
+function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "", nichtGewusst: false, alsRichtigGezaehlt: false }); }
 function gespraechZeigen() {
   if (!gespraech) return geheZu("gespraech");
   setzeKopf("Frage & Antwort", "gespraech");
@@ -953,12 +966,17 @@ function gespraechZeigen() {
     <div class="reihe">
       ${e ? `<button class="btn zweit" id="nochmalAntworten">Nochmal antworten</button>` : ""}
       <button class="btn" id="naechste">${e ? "Nächste Frage ›" : "Überspringen ›"}</button>
+    </div>
+    <div class="reihe" style="margin-top:0">
+      ${g.nichtGewusst
+        ? `<button class="btn zweit voll" disabled>✓ Gemerkt – kommt öfter wieder</button>`
+        : `<button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button>`}
     </div>`);
   if (!g.vorgelesen) { g.vorgelesen = true; setTimeout(() => sprich(q.f), 300); }
   const auswerten = (texte) => {
     const r = pruefeAntwort(q, texte);
     g.ergebnis = r;
-    if (!g.gewertet) { g.gewertet = true; gBewerte(q.key, r.stufe === "richtig"); } else geuebt();
+    if (!g.gewertet) { g.gewertet = true; g.alsRichtigGezaehlt = r.stufe === "richtig"; gBewerte(q.key, g.alsRichtigGezaehlt); } else geuebt();
     gespraechZeigen();
     setTimeout(() => sprich(r.stufe === "richtig" ? "Bravo!" : q.b), 400);
   };
@@ -967,11 +985,24 @@ function gespraechZeigen() {
   klick("deZeigen", () => { g.deGezeigt = true; gespraechZeigen(); });
   klick("tipp", () => { g.tippGezeigt = true; gespraechZeigen(); sprich(q.b); });
   klick("naechste", () => { g.pos++; neueFrage(); gespraechZeigen(); });
+  klick("nichtGewusst", () => {
+    g.nichtGewusst = true;
+    if (!g.gewertet) { g.gewertet = true; gBewerte(q.key, false); }
+    else if (g.alsRichtigGezaehlt) { // schon als richtig gezählt → zurücknehmen
+      const st = S.grammatik[q.key];
+      if (st) { st.richtig = Math.max(0, st.richtig - 1); st.falsch++; st.intervall = 0; st.faellig = Date.now(); speichern(); }
+    }
+    g.alsRichtigGezaehlt = false;
+    if (!g.ergebnis) g.tippGezeigt = true; // Beispielantwort zeigen
+    toast("Gemerkt – die Frage kommt öfter wieder.");
+    gespraechZeigen();
+    if (!g.ergebnis) sprich(q.b);
+  });
   klick("nochmalAntworten", () => { g.ergebnis = null; g.status = ""; gespraechZeigen(); });
   klick("warRichtig", () => {
     g.korrigiert = true;
     const st = S.grammatik[q.key]; if (st) { st.falsch = Math.max(0, st.falsch - 1); speichern(); }
-    gBewerte(q.key, true);
+    gBewerte(q.key, true); g.alsRichtigGezaehlt = true;
     g.ergebnis = { ...g.ergebnis, stufe: "richtig" }; gespraechZeigen();
   });
   const feld = document.getElementById("gantwort");

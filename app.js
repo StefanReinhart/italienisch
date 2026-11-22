@@ -798,6 +798,11 @@ function sprechenZeigen() {
     <div class="reihe">
       <button class="btn zweit" id="zurueckK" ${sprechen.pos ? "" : "disabled"}>‹ Vorheriger</button>
       <button class="btn" id="weiterK">Nächster ›</button>
+    </div>
+    <div class="reihe" style="margin-top:0">
+      ${sprechen.nichtGewusst
+        ? `<button class="btn zweit voll" disabled>✓ Gemerkt – kommt öfter wieder</button>`
+        : `<button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button>`}
     </div>`);
   const zeigen = document.getElementById("zeigen");
   if (zeigen) zeigen.onclick = () => {
@@ -830,7 +835,18 @@ function sprechenZeigen() {
       ende: () => mikro.classList.remove("hoert")
     });
   };
-  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechenZeigen(); };
+  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechen.nichtGewusst = false; sprechenZeigen(); };
+  // Von Hand als "nicht gewusst" markieren: zählt als Fehler für "selbst sagen" und für die Auswahl beim Sprechen
+  const ng = document.getElementById("nichtGewusst");
+  if (ng) ng.onclick = () => {
+    sprechen.nichtGewusst = true; sprechen.gewertet = true;
+    if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", false);
+    else bewerte(k.id, "de-it", 0); // noch nie gelernt: als Karteikarte aufnehmen, kommt gleich dran
+    const a = S.aussprache[k.id] || { versuche: 0, bester: 0, letzter: 0 };
+    a.letzter = 0; S.aussprache[k.id] = a; speichern();
+    toast("Gemerkt – der Satz kommt öfter wieder.");
+    sprechenZeigen();
+  };
   document.getElementById("weiterK").onclick = () => wechsel((sprechen.pos + 1) % sprechen.liste.length);
   document.getElementById("zurueckK").onclick = () => wechsel(Math.max(0, sprechen.pos - 1));
 }

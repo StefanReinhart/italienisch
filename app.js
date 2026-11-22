@@ -1094,6 +1094,19 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const hatteSteuerung = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js").catch(() => {});
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (hatteSteuerung) toast("Neue Version geladen – App einmal schließen und neu öffnen.", 5000);
+    if (!hatteSteuerung) return;
+    // Neue Version ist da: auf der Startseite sofort neu laden, sonst nicht mitten in der Übung stören
+    const h = location.hash.replace("#", "");
+    if (!h || h === "start" || h === "einstellungen") location.reload();
+    else toast("Neue Version geladen – sie ist beim nächsten Öffnen der Startseite da.", 5000);
+  });
+  // Beim Zurückkehren zur Startseite eine bereits geladene neue Version aktivieren
+  window.addEventListener("hashchange", () => {
+    if ((location.hash === "#start" || !location.hash) && navigator.serviceWorker.controller && window.__neueVersion) location.reload();
+  });
+  navigator.serviceWorker.addEventListener("controllerchange", () => { window.__neueVersion = true; });
+  // Beim Öffnen der App (auch aus dem Hintergrund) nach einer neuen Version schauen
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => {});
   });
 }

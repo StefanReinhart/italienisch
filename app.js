@@ -47,7 +47,7 @@ const STANDARD = {
   karten: {},          // "id|richtung" → { ease, intervall, wdh, faellig, richtig, falsch, vergessen }
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
-  einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenVerdeckt: false, themen: ["grundwoerter"] },
+  einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
 };
@@ -73,6 +73,7 @@ function umstellen(roh) {
     s.version = 2;
   }
   s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {};
+  if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   return s;
 }
 function speichern() {
@@ -364,7 +365,8 @@ function startseite() {
   setzeKopf("Italienisch lernen", null);
   const verstanden = ALLE_KARTEN.filter((k) => istGelernt(k.id, "it-de")).length;
   const sagen = ALLE_KARTEN.filter((k) => istGelernt(k.id, "de-it")).length;
-  const gram = gFaellig("");
+  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:");
+  const gespr = gFaellig("dialog:");
   zeige(`
     <div class="statistik">
       <div><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></div>
@@ -377,6 +379,7 @@ function startseite() {
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
       <button class="kachel" data-gehe="hoeren"><span class="sym">👂</span><b>Hören</b><small>Hören und verstehen</small></button>
       <button class="kachel" data-gehe="sprechen"><span class="sym">🎤</span><b>Sprechen</b><small>Nachsprechen mit Korrektur</small></button>
+      <button class="kachel breit" data-gehe="gespraech"><span class="sym">🗣️</span><span><b>Frage &amp; Antwort</b><br><small>${gespr ? `<b>${gespr} Fragen zum Wiederholen</b>` : "Auf italienische Fragen italienisch antworten"}</small></span></button>
       <button class="kachel" data-gehe="phrasen"><span class="sym">💬</span><b>Phrasen</b><small>Alltagssätze anhören</small></button>
       <button class="kachel" data-gehe="nachschlagen"><span class="sym">🔎</span><b>Wörterbuch</b><small>Alle Wörter suchen</small></button>
       <button class="kachel" data-gehe="einstellungen"><span class="sym">⚙️</span><b>Einstellungen</b><small>Stimme, Tempo, Sicherung</small></button>
@@ -725,15 +728,17 @@ function sprechenMenue() {
     <div class="meldung info">ℹ️ Gut zu wissen: Die Spracherkennung schreibt auf, was sie verstanden hat, und vergleicht es mit dem Zielsatz. Das ist <b>keine echte Bewertung deiner Aussprache</b>, aber ein guter Hinweis: Wenn das Handy dich versteht, verstehen dich meist auch Menschen. Auf Android braucht die Erkennung meist <b>Internet</b>.</div>
     ${SR ? "" : `<div class="meldung schlecht">Dieser Browser hat keine Spracherkennung. Bitte die App in Chrome öffnen.</div>`}
     <h2>Wie möchtest du üben?</h2>
-    ${umschalter("verdeckt", S.einstellungen.sprechenVerdeckt ? "ja" : "nein", [["nein", "Nachsprechen"], ["ja", "Aus dem Gedächtnis"]])}
-    <p class="leise">${S.einstellungen.sprechenVerdeckt
-      ? "Du siehst nur den deutschen Satz und sagst ihn auf Italienisch. Das Ergebnis zählt für den Lernstand „selbst sagen“."
-      : "Du siehst und hörst den italienischen Satz und sprichst ihn nach – gut für die Aussprache."} Was dir schwerfällt, kommt bevorzugt dran.</p>
+    ${umschalter("smodus", S.einstellungen.sprechenModus, [["zeigen", "Lesen + hören"], ["hoeren", "Nur hören"], ["gedaechtnis", "Gedächtnis"]])}
+    <p class="leise">${{
+      zeigen: "Du siehst und hörst den italienischen Satz und sprichst ihn nach – gut für die Aussprache.",
+      hoeren: "Du siehst nur den deutschen Satz und hörst den italienischen vorgelesen. Den italienischen Text zeigt die App erst, wenn du auf „Text zeigen“ tippst oder gesprochen hast.",
+      gedaechtnis: "Du siehst nur den deutschen Satz und sagst ihn ohne Hilfe auf Italienisch. Das Ergebnis zählt für den Lernstand „selbst sagen“."
+    }[S.einstellungen.sprechenModus]} Was dir schwerfällt, kommt bevorzugt dran.</p>
     <h2>Was möchtest du sprechen?</h2>
     <div class="liste">
       ${PHRASEN_GRUPPEN.concat(THEMEN).map((g) => `<button class="zeile" data-gruppe="${g.id}"><span class="sym">${g.icon}</span><span class="mitte">${esc(g.name)}<small>${g.eintraege.length} ${g.id.startsWith("p_") ? "Sätze" : "Wörter"}</small></span><span class="pfeil">›</span></button>`).join("")}
     </div>`);
-  $app.querySelectorAll("#verdeckt button").forEach((b) => (b.onclick = () => { S.einstellungen.sprechenVerdeckt = b.dataset.w === "ja"; speichern(); sprechenMenue(); }));
+  $app.querySelectorAll("#smodus button").forEach((b) => (b.onclick = () => { S.einstellungen.sprechenModus = b.dataset.w; speichern(); sprechenMenue(); }));
   $app.querySelectorAll("[data-gruppe]").forEach((b) => (b.onclick = () => sprechenStarten(GRUPPE_NACH_ID[b.dataset.gruppe].eintraege)));
 }
 function sprechenZeigen() {
@@ -741,8 +746,10 @@ function sprechenZeigen() {
   setzeKopf("Sprechen", "sprechen");
   const k = sprechen.liste[sprechen.pos];
   const e = sprechen.ergebnis;
-  const verdeckt = S.einstellungen.sprechenVerdeckt;
-  const zeigeItalienisch = !verdeckt || sprechen.gezeigt || !!e;
+  const modus = S.einstellungen.sprechenModus;
+  const verdeckt = modus === "gedaechtnis";
+  const zeigeItalienisch = modus === "zeigen" || sprechen.gezeigt || !!e;
+  const zeigeLautsprecher = !verdeckt || zeigeItalienisch;
   let ergebnisHtml = "";
   if (e) {
     const urteil = e.prozent >= 90 ? "🌟 Super!" : e.prozent >= 70 ? "👍 Gut, fast richtig!" : e.prozent >= 40 ? "🙂 Teilweise richtig" : "🔁 Nochmal versuchen";
@@ -761,10 +768,9 @@ function sprechenZeigen() {
       <div class="leise">Sag auf Italienisch:</div>
       <div style="font-size:20px">${esc(k.de)}</div>
       <div class="trenner"></div>
-      ${zeigeItalienisch
-        ? `<div class="wort" style="font-size:28px">${esc(k.it)}</div>
-           <div class="reihe" style="justify-content:center;margin:4px 0">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`
-        : `<button class="btn zweit" id="zeigen">Lösung zeigen</button>`}
+      ${zeigeItalienisch ? `<div class="wort" style="font-size:28px">${esc(k.it)}</div>` : ""}
+      ${zeigeLautsprecher ? `<div class="reihe" style="justify-content:center;margin:4px 0">${lautBtn(k.it)}${langsamBtn(k.it)}</div>` : ""}
+      ${zeigeItalienisch ? "" : `<button class="btn zweit" id="zeigen">${verdeckt ? "Lösung zeigen" : "Text zeigen"}</button>`}
     </div>
     <div class="mitte-zentriert">
       <button class="mikro" id="mikro" aria-label="Sprechen">🎤</button>
@@ -778,9 +784,11 @@ function sprechenZeigen() {
   const zeigen = document.getElementById("zeigen");
   if (zeigen) zeigen.onclick = () => {
     sprechen.gezeigt = true;
-    if (!sprechen.gewertet) { sprechen.gewertet = true; rueckmeldung(k.id, "de-it", false); } // nachgeschaut = nicht gewusst
-    sprechenZeigen(); sprich(k.it);
+    if (verdeckt && !sprechen.gewertet) { sprechen.gewertet = true; rueckmeldung(k.id, "de-it", false); } // nachgeschaut = nicht gewusst
+    sprechenZeigen(); if (verdeckt) sprich(k.it);
   };
+  // "Nur hören": Satz beim Erscheinen automatisch vorlesen
+  if (modus === "hoeren" && !e && !sprechen.vorgelesen) { sprechen.vorgelesen = true; setTimeout(() => sprich(k.it), 300); }
   const mikro = document.getElementById("mikro"), status = document.getElementById("status");
   mikro.onclick = () => {
     if (TTS) speechSynthesis.cancel();
@@ -804,9 +812,150 @@ function sprechenZeigen() {
       ende: () => mikro.classList.remove("hoert")
     });
   };
-  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechenZeigen(); };
+  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechenZeigen(); };
   document.getElementById("weiterK").onclick = () => wechsel((sprechen.pos + 1) % sprechen.liste.length);
   document.getElementById("zurueckK").onclick = () => wechsel(Math.max(0, sprechen.pos - 1));
+}
+
+// ---------- Frage-Antwort-Übung (Gespräch) ----------
+// Antwortmuster in Bausteine zerlegen (Schreibweise siehe data/gespraech.js)
+function musterBauen(text) {
+  return (text.match(/\[[^\]]+\]|\{\w+\}|\S+/g) || []).map((tok) => {
+    const frei = tok.match(/^\{(\w+)\}$/);
+    if (frei) return { frei: true, min: frei[1] === "rest" ? 0 : 1, max: frei[1] === "zahl" || frei[1] === "name" ? 3 : frei[1] === "rest" ? 5 : 4 };
+    const opt = /^\[.*\]$/.test(tok), inner = opt ? tok.slice(1, -1) : tok;
+    const seq = inner.includes("|") ? [inner.split("|").map(normWort).filter(Boolean)] : woerterVon(inner).map((t) => [t.n]);
+    return { opt, seq };
+  }).filter((m) => m.frei || m.seq.length);
+}
+function musterPasst(M, T, i = 0, j = 0) {
+  if (i === M.length) return j === T.length;
+  const m = M[i];
+  if (m.frei) {
+    for (let n = m.min; n <= m.max && j + n <= T.length; n++) if (musterPasst(M, T, i + 1, j + n)) return true;
+    return false;
+  }
+  if (m.opt && musterPasst(M, T, i + 1, j)) return true;
+  const ok = m.seq.every((alts, k) => j + k < T.length && alts.includes(T[j + k]));
+  return ok && musterPasst(M, T, i + 1, j + m.seq.length);
+}
+const GESPRAECH_THEMEN = GESPRAECH.map((t, ti) => ({ ...t, id: "g" + ti, fragen: t.fragen.map((q) => ({ ...q, key: "dialog:" + q.f, muster: q.m.map(musterBauen) })) }));
+const ALLE_FRAGEN = GESPRAECH_THEMEN.flatMap((t) => t.fragen);
+function pruefeAntwort(q, texte) {
+  for (const t of texte) {
+    const T = woerterVon(t).map((x) => x.n);
+    if (T.length && q.muster.some((M) => musterPasst(M, T))) return { stufe: "richtig", text: t };
+  }
+  const beste = texte.map((t) => ({ t, v: vergleiche(q.b, t) })).sort((a, b) => b.v.prozent - a.v.prozent)[0];
+  return { stufe: beste.v.prozent >= 70 ? "fast" : "falsch", text: beste.t, vergleich: beste.v };
+}
+
+let gespraech = null;
+function gespraechMenue() {
+  setzeKopf("Frage & Antwort", "start");
+  const f = (fragen) => fragen.filter((q) => { const g = S.grammatik[q.key]; return g && g.faellig <= Date.now(); }).length;
+  const z = (n) => (n ? ` · <b>${n} zum Wiederholen</b>` : "");
+  zeige(`
+    <p>Die App stellt eine Frage auf Italienisch – du antwortest auf Italienisch, gesprochen 🎤 oder getippt.</p>
+    <div class="meldung info">ℹ️ Die App kennt für jede Frage typische Antworten (z. B. „Mi chiamo …“ mit beliebigem Namen). Eine ungewöhnliche, aber richtige Antwort erkennt sie vielleicht nicht – dann tippst du auf „Meine Antwort war richtig“.</div>
+    ${umschalter("gtext", S.einstellungen.gespraechText ? "ja" : "nein", [["ja", "Frage lesen + hören"], ["nein", "Frage nur hören"]])}
+    <button class="btn voll" id="alle">🎲 10 Fragen aus allen Themen</button>
+    <h2>Themen</h2>
+    <div class="liste">${GESPRAECH_THEMEN.map((t) => `<button class="zeile" data-gthema="${t.id}"><span class="sym">💬</span><span class="mitte">${esc(t.thema)}<small>${t.fragen.length} Fragen${z(f(t.fragen))}</small></span><span class="pfeil">›</span></button>`).join("")}</div>`);
+  $app.querySelectorAll("#gtext button").forEach((b) => (b.onclick = () => { S.einstellungen.gespraechText = b.dataset.w === "ja"; speichern(); gespraechMenue(); }));
+  const starten = (fragen, n) => {
+    gespraech = { liste: gewichtetZiehen(fragen, (q) => gGewicht(q.key), n), pos: 0 };
+    neueFrage(); geheZu("gespraech-ueben");
+  };
+  document.getElementById("alle").onclick = () => starten(ALLE_FRAGEN, 10);
+  $app.querySelectorAll("[data-gthema]").forEach((b) => (b.onclick = () => { const t = GESPRAECH_THEMEN.find((x) => x.id === b.dataset.gthema); starten(t.fragen, t.fragen.length); }));
+}
+function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "" }); }
+function gespraechZeigen() {
+  if (!gespraech) return geheZu("gespraech");
+  setzeKopf("Frage & Antwort", "gespraech");
+  if (gespraech.pos >= gespraech.liste.length) {
+    zeige(`<div class="karte"><div class="wort">🎉 Bravo!</div><p>Du hast ${gespraech.liste.length} Fragen beantwortet.</p></div>
+      <div class="reihe"><button class="btn" data-gehe="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`);
+    gespraech = null; return;
+  }
+  const q = gespraech.liste[gespraech.pos], g = gespraech, e = g.ergebnis;
+  const frageSichtbar = S.einstellungen.gespraechText || g.textGezeigt || !!e;
+  let ergebnisHtml = "";
+  if (e) {
+    const kopf = e.stufe === "richtig" ? "✅ Richtig – gute Antwort!" : e.stufe === "fast" ? "🟠 Fast – vergleiche mit der Beispielantwort." : "❌ Das passt noch nicht.";
+    ergebnisHtml = `<div class="frage">
+      <div class="meldung ${e.stufe === "richtig" ? "gut" : e.stufe === "fast" ? "info" : "schlecht"}" style="margin-top:0"><b>${kopf}</b></div>
+      <p class="leise">Deine Antwort: „${esc(e.text)}“</p>
+      ${e.stufe === "fast" && e.vergleich ? `<div class="woerter">${e.vergleich.woerter.map((w) => `<span class="w-${w.art}">${esc(w.wort)}${(w.art === "fast" || w.art === "falsch") ? `<small>du: ${esc(w.gehoert)}</small>` : ""}</span>`).join("")}</div>` : ""}
+      <p style="margin-bottom:2px">${e.stufe === "richtig" ? "Eine weitere mögliche Antwort:" : "Beispielantwort:"}</p>
+      <div style="font-size:21px;font-weight:650;color:var(--gruen)">${esc(q.b)}</div>
+      <div class="leise">${esc(q.bde)}</div>
+      <div class="reihe" style="justify-content:center">${lautBtn(q.b)}${langsamBtn(q.b)}</div>
+      ${e.stufe !== "richtig" && !g.korrigiert ? `<button class="btn zweit voll" id="warRichtig">Meine Antwort war richtig</button>` : ""}
+    </div>`;
+  }
+  zeige(`
+    ${fortschrittsLeiste(g.pos + 1, g.liste.length)}
+    <div class="karte" style="min-height:auto">
+      <div class="leise">🗣️ Die Frage:</div>
+      ${frageSichtbar ? `<div class="wort" style="font-size:28px">${esc(q.f)}</div>` : `<div class="leise">(nur hören)</div>`}
+      <div class="reihe" style="justify-content:center;margin:4px 0">${lautBtn(q.f)}${langsamBtn(q.f)}</div>
+      <div class="reihe" style="justify-content:center;margin:0">
+        ${frageSichtbar ? "" : `<button class="btn zweit" id="textZeigen">Text zeigen</button>`}
+        ${g.deGezeigt ? `<div class="leise" style="align-self:center">🇩🇪 ${esc(q.de)}</div>` : `<button class="btn zweit" id="deZeigen">🇩🇪 Übersetzung</button>`}
+      </div>
+    </div>
+    ${e ? ergebnisHtml : `
+      <div class="mitte-zentriert">
+        <button class="mikro" id="mikro" aria-label="Antwort sprechen">🎤</button>
+        <div id="status" class="leise">${esc(g.status || "Tippe aufs Mikrofon und antworte auf Italienisch – oder schreib die Antwort.")}</div>
+      </div>
+      <div class="reihe" style="flex-wrap:nowrap">
+        <input type="text" id="gantwort" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1">
+        <button class="btn" id="gpruefen" style="flex:none">Prüfen</button>
+      </div>
+      ${g.tippGezeigt ? `<div class="meldung info">💡 Zum Beispiel: <b>${esc(q.b)}</b><br><span class="leise">${esc(q.bde)}</span></div>` : `<button class="btn zweit voll" id="tipp">💡 Beispielantwort zeigen</button>`}`}
+    <div class="reihe">
+      ${e ? `<button class="btn zweit" id="nochmalAntworten">Nochmal antworten</button>` : ""}
+      <button class="btn" id="naechste">${e ? "Nächste Frage ›" : "Überspringen ›"}</button>
+    </div>`);
+  if (!g.vorgelesen) { g.vorgelesen = true; setTimeout(() => sprich(q.f), 300); }
+  const auswerten = (texte) => {
+    const r = pruefeAntwort(q, texte);
+    g.ergebnis = r;
+    if (!g.gewertet) { g.gewertet = true; gBewerte(q.key, r.stufe === "richtig"); } else geuebt();
+    gespraechZeigen();
+    setTimeout(() => sprich(r.stufe === "richtig" ? "Bravo!" : q.b), 400);
+  };
+  const klick = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  klick("textZeigen", () => { g.textGezeigt = true; gespraechZeigen(); });
+  klick("deZeigen", () => { g.deGezeigt = true; gespraechZeigen(); });
+  klick("tipp", () => { g.tippGezeigt = true; gespraechZeigen(); sprich(q.b); });
+  klick("naechste", () => { g.pos++; neueFrage(); gespraechZeigen(); });
+  klick("nochmalAntworten", () => { g.ergebnis = null; g.status = ""; gespraechZeigen(); });
+  klick("warRichtig", () => {
+    g.korrigiert = true;
+    const st = S.grammatik[q.key]; if (st) { st.falsch = Math.max(0, st.falsch - 1); speichern(); }
+    gBewerte(q.key, true);
+    g.ergebnis = { ...g.ergebnis, stufe: "richtig" }; gespraechZeigen();
+  });
+  const feld = document.getElementById("gantwort");
+  if (feld) {
+    const pruefen = () => { if (feld.value.trim()) auswerten([feld.value]); };
+    feld.onkeydown = (ev) => { if (ev.key === "Enter") pruefen(); };
+    klick("gpruefen", pruefen);
+  }
+  const mikro = document.getElementById("mikro"), status = document.getElementById("status");
+  if (mikro) mikro.onclick = () => {
+    if (TTS) speechSynthesis.cancel();
+    zuhoeren({
+      start: () => { mikro.classList.add("hoert"); status.textContent = "Ich höre zu … jetzt antworten!"; },
+      ergebnis: (alternativen) => auswerten(alternativen),
+      fehler: (text) => { mikro.classList.remove("hoert"); status.textContent = text; },
+      ende: () => mikro && mikro.classList.remove("hoert")
+    });
+  };
 }
 
 // ---------- Phrasen ansehen ----------
@@ -868,7 +1017,7 @@ function einstellungen() {
     <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
-    <p class="leise" style="margin-top:20px">Version 2 · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
+    <p class="leise" style="margin-top:20px">Version 3 · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
   const sel = document.getElementById("stimme");
   if (sel) sel.onchange = () => { E.stimme = sel.value; speichern(); sprich("Ciao, come stai?"); };
   document.getElementById("test").onclick = () => sprich("Ciao! Benvenuto. Impariamo l'italiano insieme.");
@@ -909,6 +1058,7 @@ function route() {
     start: startseite, karten: kartenMenue, karte: karteZeigen, grammatik: grammatikMenue, verben: verbenMenue,
     tabellen: verbTabellen, artikel: artikelStart, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
+    gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen
   };
   (seiten[teil] || startseite)();

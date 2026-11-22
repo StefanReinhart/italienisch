@@ -32,6 +32,16 @@ Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und
 - **Phrasen verdecken:** In den Phrasen lässt sich das Italienische ausblenden und per Antippen aufdecken.
 - Ein Lernstand aus Version 1 wird automatisch übernommen.
 
+### Neu in Version 3
+
+- **Frage & Antwort:** Die App stellt rund 55 Alltagsfragen auf Italienisch (über dich, Vorlieben, Alltag, unterwegs,
+  Wissen). Du antwortest gesprochen oder getippt. Die App prüft gegen typische Antwortmuster
+  (z. B. „Mi chiamo …“ mit beliebigem Namen) und zeigt eine Beispielantwort. Erkennt sie eine richtige Antwort nicht,
+  tippst du auf „Meine Antwort war richtig“. Falsch beantwortete Fragen kommen bald wieder.
+  Neue Fragen ergänzt man in `data/gespraech.js` (Schreibweise steht oben in der Datei).
+- **Sprechen – drei Arten:** „Lesen + hören“ (alles sichtbar), „Nur hören“ (nur Deutsch sichtbar, der italienische
+  Satz wird vorgelesen, Text per Knopf), „Gedächtnis“ (ohne Hilfe, zählt für den Lernstand).
+
 **Ehrlich gesagt:** Die Spracherkennung ist **keine echte Aussprache-Bewertung**. Sie prüft nur, ob das Handy
 die Wörter verstanden hat. Das ist trotzdem ein guter Hinweis: Was das Handy versteht, verstehen meist auch Menschen.
 Auf Android braucht die Spracherkennung **meistens Internet**. Alles andere (Karteikarten, Grammatik, Hören, Vorlesen) geht auch offline.

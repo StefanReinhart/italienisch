@@ -18,6 +18,20 @@ Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und
   grün (richtig), orange (fast), rot (falsch) oder durchgestrichen (fehlt). Danach spielt sie die richtige Aussprache vor.
 - **Wörterbuch** zum Suchen und **Phrasen** zum Anhören.
 
+### So lernt die App (seit Version 2)
+
+- **Zwei Karten je Wort:** „verstehen“ (Italienisch → Deutsch) und „selbst sagen“ (Deutsch → Italienisch), getrennt geplant.
+  Bei „Beide“ kommt ein neues Wort zuerst als Italienisch → Deutsch, andersherum erst, wenn du es einmal gekonnt hast.
+- **Abstände nach dem SM-2-Prinzip** (wie bei Anki): Jede Karte merkt sich, wie leicht sie dir fällt. Daraus wird der
+  nächste Abstand berechnet (z. B. 1 → 2 → 5 → 12 Tage …). Wer eine Karte vergisst, fängt bei ihr wieder klein an.
+- **Eintippen bei Deutsch → Italienisch:** Die App prüft die Antwort tolerant (Akzente, fehlender Artikel, kleine Tippfehler)
+  und schlägt eine Bewertung vor. Abschaltbar in den Einstellungen.
+- **Alles hängt zusammen:** Fehler beim Hören machen ein Wort sofort wieder fällig. Beim Sprechen „aus dem Gedächtnis“
+  zählt das Ergebnis für „selbst sagen“. Hören und Sprechen nehmen bevorzugt Wörter, die fällig sind oder dir schwerfallen.
+- **Grammatik merkt sich Fehler:** Verbformen, Artikel und Sätze, die du falsch hattest, kommen bald wieder; was sitzt, seltener.
+- **Phrasen verdecken:** In den Phrasen lässt sich das Italienische ausblenden und per Antippen aufdecken.
+- Ein Lernstand aus Version 1 wird automatisch übernommen.
+
 **Ehrlich gesagt:** Die Spracherkennung ist **keine echte Aussprache-Bewertung**. Sie prüft nur, ob das Handy
 die Wörter verstanden hat. Das ist trotzdem ein guter Hinweis: Was das Handy versteht, verstehen meist auch Menschen.
 Auf Android braucht die Spracherkennung **meistens Internet**. Alles andere (Karteikarten, Grammatik, Hören, Vorlesen) geht auch offline.

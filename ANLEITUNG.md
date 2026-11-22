@@ -9,6 +9,12 @@ Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und
 
 ## Was die App kann
 
+- **▶ Heute üben** (oben auf der Startseite): eine gemischte Runde von etwa 15 Minuten – fällige Karteikarten,
+  Fehler, Grammatik, ein Hör-Dialog und Frage & Antwort. Am besten täglich; danach ist man „für heute fertig“.
+- **🎧 Hör-Dialoge**: 8 kurze Alltagsgespräche (Bar, Bahnhof, Hotel, Restaurant, Markt, Weg, Kennenlernen, Apotheke).
+  Erst nur hören, dann Zeile für Zeile oder ganz aufdecken (mit Übersetzung), zum Schluss drei Verständnisfragen.
+- **🎯 Fehler wiederholen**: nur das, was oft falsch war oder als „nicht gewusst“ markiert wurde.
+- **Grammatik → Verben im Satz**: die Verbform selbst eintippen, z. B. *Noi ___ (andare) al mare.*
 - **Karteikarten**: rund 450 Grundwörter in 20 Themen und rund 85 Alltagssätze. Die App merkt sich, was du schon kannst,
   und zeigt Wörter in immer größeren Abständen wieder (1 Tag, 2 Tage, 4 Tage …), wie ein Karteikasten mit Fächern.
 - **Grammatik**: Verben konjugieren (essere, avere, regelmäßige und unregelmäßige Verben), Artikel üben, Sätze bauen,

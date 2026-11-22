@@ -1,6 +1,6 @@
 // Offline-Speicher der App ("Service Worker").
 // Bei jeder Änderung an der App die Versionsnummer erhöhen, damit das Handy die neuen Dateien lädt.
-const VERSION = "italienisch-v14";
+const VERSION = "italienisch-v15";
 const DATEIEN = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const DATEIEN = [
   "./data/phrasen.js",
   "./data/grammatik.js",
   "./data/gespraech.js",
+  "./data/dialoge.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

@@ -113,3 +113,44 @@ window.CE_CI_SONO = [
   { s: "Ci scusi, ___ un tavolo per due?", de: "Entschuldigen Sie, gibt es einen Tisch für zwei?", a: "c'è" },
   { s: "Qui non ___ parcheggi.", de: "Hier gibt es keine Parkplätze.", a: "ci sono" }
 ];
+
+// Übung "Verben im Satz": die richtige Verbform eintippen.
+// inf = Grundform, p = Person (0 io, 1 tu, 2 lui/lei, 3 noi, 4 voi, 5 loro)
+window.VERB_SAETZE = [
+  { s: "Io ___ tedesco.", inf: "essere", p: 0, de: "Ich bin Deutscher." },
+  { s: "Tu ___ molto stanco?", inf: "essere", p: 1, de: "Bist du sehr müde?" },
+  { s: "Marco ___ italiano.", inf: "essere", p: 2, de: "Marco ist Italiener." },
+  { s: "Noi ___ in vacanza.", inf: "essere", p: 3, de: "Wir sind im Urlaub." },
+  { s: "Voi ___ di Roma?", inf: "essere", p: 4, de: "Seid ihr aus Rom?" },
+  { s: "Loro ___ a casa.", inf: "essere", p: 5, de: "Sie sind zu Hause." },
+  { s: "Io ___ due figli.", inf: "avere", p: 0, de: "Ich habe zwei Kinder." },
+  { s: "Tu quanti anni ___?", inf: "avere", p: 1, de: "Wie alt bist du?" },
+  { s: "Lei ___ una macchina rossa.", inf: "avere", p: 2, de: "Sie hat ein rotes Auto." },
+  { s: "Noi ___ fame.", inf: "avere", p: 3, de: "Wir haben Hunger." },
+  { s: "Voi ___ una prenotazione?", inf: "avere", p: 4, de: "Habt ihr eine Reservierung?" },
+  { s: "Loro ___ un cane.", inf: "avere", p: 5, de: "Sie haben einen Hund." },
+  { s: "Io ___ un po' di italiano.", inf: "parlare", p: 0, de: "Ich spreche ein bisschen Italienisch." },
+  { s: "Tu ___ a Monaco?", inf: "abitare", p: 1, de: "Wohnst du in München?" },
+  { s: "Lui ___ in un ufficio.", inf: "lavorare", p: 2, de: "Er arbeitet in einem Büro." },
+  { s: "Noi ___ la pizza stasera.", inf: "mangiare", p: 3, de: "Wir essen heute Abend Pizza." },
+  { s: "Voi ___ la televisione?", inf: "guardare", p: 4, de: "Schaut ihr fern?" },
+  { s: "Loro ___ il treno.", inf: "prendere", p: 5, de: "Sie nehmen den Zug." },
+  { s: "Io ___ un libro.", inf: "leggere", p: 0, de: "Ich lese ein Buch." },
+  { s: "Tu ___ bene?", inf: "dormire", p: 1, de: "Schläfst du gut?" },
+  { s: "Lei ___ la porta.", inf: "aprire", p: 2, de: "Sie öffnet die Tür." },
+  { s: "Noi non ___ la domanda.", inf: "capire", p: 3, de: "Wir verstehen die Frage nicht." },
+  { s: "Loro ___ alle otto.", inf: "finire", p: 5, de: "Sie hören um acht auf." },
+  { s: "Io ___ al mare.", inf: "andare", p: 0, de: "Ich fahre ans Meer." },
+  { s: "Tu ___ la spesa?", inf: "fare", p: 1, de: "Machst du den Einkauf?" },
+  { s: "Come ___ Lei?", inf: "stare", p: 2, de: "Wie geht es Ihnen?" },
+  { s: "Noi ___ domani alla festa.", inf: "venire", p: 3, de: "Wir kommen morgen zum Fest." },
+  { s: "Io ___ un caffè.", inf: "volere", p: 0, de: "Ich will einen Kaffee." },
+  { s: "Tu ___ aprire la finestra?", inf: "potere", p: 1, de: "Kannst du das Fenster öffnen?" },
+  { s: "Noi ___ partire presto.", inf: "dovere", p: 3, de: "Wir müssen früh losfahren." },
+  { s: "Io non lo ___.", inf: "sapere", p: 0, de: "Ich weiß es nicht." },
+  { s: "Loro ___ sempre la verità.", inf: "dire", p: 5, de: "Sie sagen immer die Wahrheit." },
+  { s: "Voi ___ stasera?", inf: "uscire", p: 4, de: "Geht ihr heute Abend aus?" },
+  { s: "Io ___ un bicchiere d'acqua.", inf: "bere", p: 0, de: "Ich trinke ein Glas Wasser." },
+  { s: "Lui ___ in Italia ogni anno.", inf: "andare", p: 2, de: "Er fährt jedes Jahr nach Italien." },
+  { s: "Voi che cosa ___ domenica?", inf: "fare", p: 4, de: "Was macht ihr am Sonntag?" }
+];

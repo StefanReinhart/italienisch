@@ -252,18 +252,26 @@ function zuhoeren({ start, ergebnis, fehler, ende }) {
 }
 
 // ---------- Vergleich: Gesagtes ↔ Zielsatz ----------
-const ZAHLWOERTER = { 0: "zero", 1: "uno", 2: "due", 3: "tre", 4: "quattro", 5: "cinque", 6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci",
-  11: "undici", 12: "dodici", 13: "tredici", 14: "quattordici", 15: "quindici", 16: "sedici", 17: "diciassette", 18: "diciotto", 19: "diciannove",
-  20: "venti", 21: "ventuno", 30: "trenta", 40: "quaranta", 50: "cinquanta", 60: "sessanta", 70: "settanta", 80: "ottanta", 90: "novanta", 100: "cento", 1000: "mille" };
+// Ziffern → italienisches Zahlwort (die Spracherkennung schreibt Zahlen oft als Ziffern, z. B. "54")
+const EINER = ["zero", "uno", "due", "tre", "quattro", "cinque", "sei", "sette", "otto", "nove", "dieci", "undici", "dodici", "tredici",
+  "quattordici", "quindici", "sedici", "diciassette", "diciotto", "diciannove"];
+const ZEHNER = ["", "", "venti", "trenta", "quaranta", "cinquanta", "sessanta", "settanta", "ottanta", "novanta"];
+function zahlwort(n) {
+  if (n < 20) return EINER[n];
+  if (n < 100) { const z = ZEHNER[Math.floor(n / 10)], e = n % 10; if (!e) return z; return (e === 1 || e === 8 ? z.slice(0, -1) : z) + EINER[e]; } // ventuno, ventotto
+  if (n < 1000) { const h = Math.floor(n / 100), r = n % 100, vorn = h === 1 ? "cento" : EINER[h] + "cento"; if (!r) return vorn; return (r >= 80 && r < 90 ? vorn.slice(0, -1) : vorn) + zahlwort(r); } // centottanta
+  if (n < 10000) { const t = Math.floor(n / 1000), r = n % 1000, vorn = t === 1 ? "mille" : EINER[t] + "mila"; return r ? vorn + zahlwort(r) : vorn; }
+  return String(n);
+}
 function normWort(w) {
   let s = w.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
-  if (/^\d+$/.test(s) && ZAHLWOERTER[+s]) s = ZAHLWOERTER[+s];
+  if (/^\d+$/.test(s)) s = zahlwort(+s);
   return s;
 }
 // Zerlegt einen Satz in Wörter; "l'acqua" → "l'" + "acqua"
 function woerterVon(text) {
   const teile = [];
-  text.replace(/[’`´]/g, "'").split(/\s+/).forEach((w) => {
+  text.replace(/[’`´]/g, "'").replace(/(\d)[:.,](\d)/g, "$1 $2").split(/\s+/).forEach((w) => {
     const m = w.match(/^([^']+')(.+)$/);
     (m ? [m[1], m[2]] : [w]).forEach((x) => { const n = normWort(x); if (n) teile.push({ zeigen: x.replace(/^[¿¡«"(]+|[.,!?;:»")]+$/g, ""), n }); });
   });
@@ -365,9 +373,12 @@ function umschalter(id, wert, optionen) {
 // ---------- Startseite ----------
 function startseite() {
   setzeKopf("Italienisch lernen", null);
+  heuteAktiv = null;
+  const hs = heuteSchritte(), hst = heuteStand();
+  const hOffen = hs.filter((s) => !s.leer && !hst.erledigt.includes(s.id)).length;
   const verstanden = ALLE_KARTEN.filter((k) => istGelernt(k.id, "it-de")).length;
   const sagen = ALLE_KARTEN.filter((k) => istGelernt(k.id, "de-it")).length;
-  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:");
+  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:");
   const gespr = gFaellig("dialog:");
   const fehlerZahl = anzahlFehler();
   zeige(`
@@ -378,9 +389,11 @@ function startseite() {
       <div><b>${sagen}</b><span>kann ich selbst sagen</span></div>
     </div>
     <div class="kacheln">
+      <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
-      <button class="kachel" data-gehe="hoeren"><span class="sym">👂</span><b>Hören</b><small>Hören und verstehen</small></button>
+      <button class="kachel" data-gehe="dialoge"><span class="sym">🎧</span><b>Hör-Dialoge</b><small>Kurze Gespräche verstehen</small></button>
+      <button class="kachel" data-gehe="hoeren"><span class="sym">👂</span><b>Hören</b><small>Wörter hören und verstehen</small></button>
       <button class="kachel" data-gehe="sprechen"><span class="sym">🎤</span><b>Sprechen</b><small>Nachsprechen mit Korrektur</small></button>
       <button class="kachel breit" data-gehe="gespraech"><span class="sym">🗣️</span><span><b>Frage &amp; Antwort</b><br><small>${gespr ? `<b>${gespr} Fragen zum Wiederholen</b>` : "Auf italienische Fragen italienisch antworten"}</small></span></button>
       <button class="kachel breit" data-gehe="fehler"><span class="sym">🎯</span><span><b>Fehler wiederholen</b><br><small>${fehlerZahl ? `<b>${fehlerZahl} Dinge, die oft falsch waren</b>` : "Nur das üben, was oft falsch war"}</small></span></button>
@@ -464,7 +477,7 @@ function karteZeigen() {
   setzeKopf("Karteikarten", sitzung.zurueck || "karten");
   if (sitzung.pos >= sitzung.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Geschafft!</div><p>Du hast ${sitzung.gesamt} Karten geübt.</p></div>
-      <div class="reihe"><button class="btn" data-gehe="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`);
+      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-gehe="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`}`);
     sitzung = null; return;
   }
   const { k, r } = sitzung.liste[sitzung.pos];
@@ -531,6 +544,7 @@ function grammatikMenue() {
   zeige(`
     <div class="liste">
       <button class="zeile" data-gehe="verben"><span class="sym">🔤</span><span class="mitte">Verben konjugieren<small>essere, avere, -are/-ere/-ire, unregelmäßige${hinweis(fv)}</small></span><span class="pfeil">›</span></button>
+      <button class="zeile" data-gehe="verbsatz"><span class="sym">✍️</span><span class="mitte">Verben im Satz (eintippen)<small>Die Verbform selbst schreiben – wirkt am stärksten${hinweis(gFaellig("vsatz:"))}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="tabellen"><span class="sym">📋</span><span class="mitte">Verbtabellen nachschlagen<small>Alle Formen zum Anhören</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="artikel"><span class="sym">🏷️</span><span class="mitte">Artikel üben<small>il, lo, la, l', i, gli, le${hinweis(fa)}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="satzbau"><span class="sym">🧩</span><span class="mitte">Satzbau<small>Wörter in die richtige Reihenfolge bringen${hinweis(fs)}</small></span><span class="pfeil">›</span></button>
@@ -554,6 +568,20 @@ function ceAufgabe(x) {
     optionen, richtig: x.a, zwei: true, sprechen: ganz, erklaerung: ganz,
     beiAntwort: (ok) => gBewerte("ce:" + x.s, ok)
   };
+}
+// Übung "Verben im Satz": Verbform selbst eintippen
+function vsatzAufgabe(x) {
+  const v = ALLE_VERBEN.find((y) => y.inf === x.inf), richtig = konjugiere(v)[x.p], key = "vsatz:" + x.s;
+  const ganz = x.s.replace("___", richtig);
+  return {
+    frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div><div class="leise">Verb: <b>${esc(x.inf)}</b> (${esc(v.de)})</div>`,
+    tippen: true, richtig, sprechen: ganz, erklaerung: ganz,
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+  };
+}
+function vsatzStart() {
+  const aufgaben = gewichtetZiehen(VERB_SAETZE, (x) => gGewicht("vsatz:" + x.s), 10).map(vsatzAufgabe);
+  quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "grammatik", titel: "Verben im Satz", nochmal: "verbsatz" });
 }
 function ceStart() {
   const aufgaben = gewichtetZiehen(CE_CI_SONO, (x) => gGewicht("ce:" + x.s), 10).map(ceAufgabe);
@@ -637,7 +665,7 @@ function artikelStart() {
 function quizStarten(q) {
   quiz = q;
   if (location.hash === "#quiz") quizZeigen();
-  else if (location.hash === "#artikel" || location.hash === "#cecisono") location.replace("#quiz"); // sonst startet "Zurück" sofort ein neues Quiz
+  else if (["#artikel", "#cecisono", "#verbsatz"].includes(location.hash)) location.replace("#quiz"); // sonst startet "Zurück" sofort ein neues Quiz
   else geheZu("quiz");
 }
 function quizZeigen() {
@@ -645,17 +673,23 @@ function quizZeigen() {
   setzeKopf(quiz.titel, quiz.zurueck);
   if (quiz.pos >= quiz.aufgaben.length) {
     const n = quiz.aufgaben.length, p = quiz.punkte;
+    if (quiz.beimEnde && !quiz.endeErledigt) { quiz.endeErledigt = true; quiz.beimEnde(p, n); }
+    const ausHeute = schrittFertig();
     zeige(`<div class="karte"><div class="wort">${p === n ? "🏆" : p >= n * 0.7 ? "👍" : "💪"} ${p} von ${n}</div>
       <p>${p === n ? "Perfetto! Alles richtig." : p >= n * 0.7 ? "Bravo! Sehr gut." : "Weiter üben – das wird!"}</p>
       ${p < n ? `<p class="leise">Die Fehler hat sich die App gemerkt – sie kommen bald wieder.</p>` : ""}</div>
-      <div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-gehe="${quiz.zurueck}">Zurück</button></div>`);
-    document.getElementById("nochmal").onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "cecisono" ? ceStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
+      ${ausHeute ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-gehe="${quiz.zurueck}">Zurück</button></div>`}`);
+    const nm = document.getElementById("nochmal");
+    if (nm) nm.onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "cecisono" ? ceStart() : z === "verbsatz" ? vsatzStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
     return;
   }
   const a = quiz.aufgaben[quiz.pos];
+  const antwortHtml = a.tippen
+    ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1"><button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div>`
+    : `<div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
   zeige(`${fortschrittsLeiste(quiz.pos + 1, quiz.aufgaben.length)}
     <div class="frage">${a.frage}</div>
-    <div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+    ${antwortHtml}
     <div id="rueck"></div>
     ${a.nichtGewusst ? `<div class="reihe"><button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button></div>` : ""}`);
   if (a.beimStart) a.beimStart();
@@ -675,6 +709,22 @@ function quizZeigen() {
     if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
     aufloesen(ok, ok ? "✅ Richtig!" : "❌ Leider falsch.", b);
   }));
+  // Eintippen: tolerant bei Groß-/Kleinschreibung; fehlender Akzent zählt als richtig, mit Hinweis
+  const feld = document.getElementById("qtipp");
+  if (feld) {
+    feld.focus();
+    const pruefen = () => {
+      if (beantwortet || !feld.value.trim()) return;
+      beantwortet = true; feld.disabled = true;
+      const e = saeubern(feld.value), z = saeubern(a.richtig);
+      const ok = e === z || ohneAkzente(e) === ohneAkzente(z);
+      if (ok) { quiz.punkte++; richtigGezaehlt = true; }
+      if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
+      aufloesen(ok, ok ? (e === z ? "✅ Richtig!" : "✅ Richtig – achte noch auf den Akzent:") : `❌ Leider falsch (du: „${esc(feld.value.trim())}“). Richtig:`);
+    };
+    feld.onkeydown = (ev) => { if (ev.key === "Enter") pruefen(); };
+    document.getElementById("qpruefen").onclick = pruefen;
+  }
   const ng = document.getElementById("nichtGewusst");
   if (ng) ng.onclick = () => {
     ng.disabled = true; ng.textContent = "✓ Gemerkt – kommt öfter wieder";
@@ -929,7 +979,7 @@ function gespraechZeigen() {
   setzeKopf("Frage & Antwort", "gespraech");
   if (gespraech.pos >= gespraech.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Bravo!</div><p>Du hast ${gespraech.liste.length} Fragen beantwortet.</p></div>
-      <div class="reihe"><button class="btn" data-gehe="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`);
+      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-gehe="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`}`);
     gespraech = null; return;
   }
   const q = gespraech.liste[gespraech.pos], g = gespraech, e = g.ergebnis;
@@ -1029,6 +1079,178 @@ function gespraechZeigen() {
   };
 }
 
+// ---------- Hör-Dialoge ----------
+const DIALOG_LISTE = DIALOGE.map((d) => {
+  const zeilen = String(d.text).split("\n").map((z) => z.trim()).filter((z) => z.includes("|"))
+    .map((z) => { const [wer, it, de] = z.split("|").map((s) => s.trim()); return { wer, it, de }; });
+  const sprecher = [...new Set(zeilen.map((z) => z.wer))];
+  return { ...d, zeilen, sprecher, key: "dlg:" + d.id };
+});
+const dialogGemacht = (d) => !!S.grammatik[d.key];
+function naechsterDialog() {
+  return DIALOG_LISTE.find((d) => !dialogGemacht(d)) || gewichtetZiehen(DIALOG_LISTE, (d) => gGewicht(d.key), 1)[0];
+}
+let dialogAnsicht = { text: false, de: false, offen: new Set(), langsam: false, laeuft: false };
+function dialogeMenue() {
+  setzeKopf("Hör-Dialoge", "start");
+  zeige(`
+    <p>Kurze Alltagsgespräche zum Anhören. Erst <b>nur hören</b> und verstehen versuchen, dann den Text aufdecken, zum Schluss drei Fragen beantworten.</p>
+    <div class="liste">${DIALOG_LISTE.map((d) => {
+      const g = S.grammatik[d.key];
+      const stand = !g ? "neu" : g.faellig <= Date.now() ? "<b>zum Wiederholen</b>" : "✓ gemacht";
+      return `<button class="zeile" data-gehe="dialog/${d.id}"><span class="sym">${d.icon}</span><span class="mitte">${esc(d.titel)}<small>${esc(d.situation)} · ${stand}</small></span><span class="pfeil">›</span></button>`;
+    }).join("")}</div>`);
+}
+function dialogStimme(d, wer) {
+  const i = d.sprecher.indexOf(wer);
+  const it = stimmen.filter((v) => v.lang === "it-IT");
+  const auswahl = it.length >= 2 ? it : stimmen;
+  return { voice: auswahl.length ? auswahl[i % auswahl.length] : null, pitch: auswahl.length >= 2 ? 1 : (i % 2 ? 0.8 : 1.15) };
+}
+function dialogAbspielen(d, ab, nurEine) {
+  if (!TTS) return toast("Dieses Gerät kann nicht vorlesen.");
+  const meinLauf = (dialogAnsicht.lauf = (dialogAnsicht.lauf || 0) + 1); // ältere Abläufe stoppen sich dann selbst
+  speechSynthesis.cancel();
+  dialogAnsicht.laeuft = true;
+  let i = ab;
+  const markieren = (n) => document.querySelectorAll("[data-zeile]").forEach((el) => el.classList.toggle("aktiv", +el.dataset.zeile === n));
+  const naechste = () => {
+    if (dialogAnsicht.lauf !== meinLauf) return;
+    if (!dialogAnsicht.laeuft || i >= d.zeilen.length || (nurEine && i > ab)) { dialogAnsicht.laeuft = false; markieren(-1); knopfAktualisieren(); return; }
+    const z = d.zeilen[i], st = dialogStimme(d, z.wer);
+    const u = new SpeechSynthesisUtterance(z.it);
+    u.lang = "it-IT"; if (st.voice) u.voice = st.voice; u.pitch = st.pitch;
+    u.rate = dialogAnsicht.langsam ? 0.65 : S.einstellungen.tempo;
+    markieren(i);
+    u.onend = u.onerror = () => { i++; setTimeout(naechste, nurEine ? 0 : 450); };
+    speechSynthesis.speak(u);
+  };
+  const knopfAktualisieren = () => { const k = document.getElementById("abspielen"); if (k) k.textContent = dialogAnsicht.laeuft ? "⏹ Stopp" : "▶ Ganzen Dialog abspielen"; };
+  knopfAktualisieren();
+  naechste();
+}
+function dialogZeigen(id) {
+  const d = DIALOG_LISTE.find((x) => x.id === id);
+  if (!d) return geheZu("dialoge");
+  if (dialogAnsicht.id !== id) dialogAnsicht = { id, text: false, de: false, offen: new Set(), langsam: false, laeuft: false };
+  const A = dialogAnsicht;
+  setzeKopf(d.titel, "dialoge");
+  zeige(`
+    <div class="frage" style="text-align:left"><div class="leise">${d.icon} Situation</div><div>${esc(d.situation)}</div></div>
+    <div class="reihe">
+      <button class="btn" id="abspielen">${A.laeuft ? "⏹ Stopp" : "▶ Ganzen Dialog abspielen"}</button>
+    </div>
+    ${umschalter("tempo", A.langsam ? "langsam" : "normal", [["normal", "Normal"], ["langsam", "🐢 Langsam"]])}
+    ${umschalter("anzeige", A.de ? "de" : A.text ? "it" : "nichts", [["nichts", "Nur hören"], ["it", "Italienisch"], ["de", "+ Deutsch"]])}
+    <p class="leise">Tipp: Erst ein- oder zweimal nur hören. Eine Zeile antippen spielt sie einzeln ab${A.text ? "" : " und deckt sie auf"}.</p>
+    <div class="liste">${d.zeilen.map((z, i) => {
+      const zeigeIt = A.text || A.offen.has(i);
+      return `<div class="eintrag dialogzeile" data-zeile="${i}" style="cursor:pointer;align-items:flex-start">
+        <div class="mitte"><div class="leise" style="font-size:13px">${esc(z.wer)}</div>
+        <div class="it">${zeigeIt ? esc(z.it) : `<span class="leise">• • • (antippen)</span>`}</div>
+        ${A.de && zeigeIt ? `<div class="de">${esc(z.de)}</div>` : ""}</div></div>`;
+    }).join("")}</div>
+    <button class="btn voll" id="fragen" style="margin-top:14px">❓ Fragen zum Dialog beantworten</button>`);
+  document.getElementById("abspielen").onclick = () => {
+    if (A.laeuft) { A.laeuft = false; speechSynthesis.cancel(); dialogZeigen(id); } else dialogAbspielen(d, 0);
+  };
+  $app.querySelectorAll("#tempo button").forEach((b) => (b.onclick = () => { A.langsam = b.dataset.w === "langsam"; dialogZeigen(id); }));
+  $app.querySelectorAll("#anzeige button").forEach((b) => (b.onclick = () => { A.text = b.dataset.w !== "nichts"; A.de = b.dataset.w === "de"; dialogZeigen(id); }));
+  $app.querySelectorAll("[data-zeile]").forEach((el) => (el.onclick = () => {
+    const i = +el.dataset.zeile;
+    if (!A.offen.has(i)) { A.offen.add(i); dialogZeigen(id); }
+    A.laeuft = false; dialogAbspielen(d, i, true);
+  }));
+  document.getElementById("fragen").onclick = () => {
+    A.laeuft = false; if (TTS) speechSynthesis.cancel();
+    const aufgaben = d.fragen.map((f) => ({
+      frage: `<div class="leise">${d.icon} ${esc(d.titel)}</div><div style="font-size:21px;font-weight:600">${esc(f.f)}</div>`,
+      optionen: mischen(f.o), richtig: f.o[f.r], erklaerung: f.o[f.r]
+    }));
+    quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: heuteAktiv === "dialog" ? "heute" : "dialoge", titel: d.titel, nochmal: "dialog/" + d.id,
+      beimEnde: (p, n) => gBewerte(d.key, p === n) });
+  };
+}
+
+// ---------- Heute üben: ein Tagesablauf von ca. 15 Minuten ----------
+let heuteAktiv = null; // Schritt, der gerade aus "Heute üben" heraus läuft
+function heuteStand() {
+  if (!S.heute || S.heute.datum !== heute()) S.heute = { datum: heute(), erledigt: [] };
+  return S.heute;
+}
+function heuteSchritte() {
+  const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
+  const nKarten = Math.min(20, plan.faellige.length + Math.min(5, plan.neue.length, neueHeuteUebrig()));
+  const nFehler = Math.min(8, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
+  const dlg = naechsterDialog();
+  return [
+    { id: "karten", sym: "🗂️", name: "Karteikarten", text: nKarten ? `${nKarten} Karten (fällige zuerst)` : "heute nichts fällig", leer: !nKarten },
+    { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
+    { id: "grammatik", sym: "📘", name: "Grammatik", text: "6 Aufgaben, davon 2 zum Eintippen" },
+    { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: `${dlg.icon} ${dlg.titel}` },
+    { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
+  ];
+}
+function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heute üben"
+  if (!heuteAktiv) return false;
+  const st = heuteStand();
+  if (!st.erledigt.includes(heuteAktiv)) st.erledigt.push(heuteAktiv);
+  heuteAktiv = null; speichern();
+  return true;
+}
+function heuteWeiterKnopf() {
+  const offen = heuteSchritte().filter((s) => !s.leer && !heuteStand().erledigt.includes(s.id)).length;
+  return `<div class="reihe"><button class="btn voll" data-gehe="heute">${offen ? "▶ Weiter mit „Heute üben“" : "🎉 Zu „Heute üben“ – alles geschafft!"}</button></div>`;
+}
+function heuteMenue() {
+  setzeKopf("Heute üben", "start");
+  heuteAktiv = null;
+  const st = heuteStand(), schritte = heuteSchritte();
+  const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
+  const fertig = schritte.length - offen.length;
+  zeige(`
+    <p>Eine Runde von etwa <b>15 Minuten</b>, gut gemischt. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
+    <div class="fortschritt"><span>${fertig} / ${schritte.length}</span><div class="balken"><i style="width:${(100 * fertig) / schritte.length}%"></i></div></div>
+    <div class="liste">${schritte.map((s, i) => {
+      const erledigt = st.erledigt.includes(s.id) || s.leer;
+      return `<div class="zeile${erledigt ? " aktiv" : ""}" style="cursor:default"><span class="sym">${s.sym}</span><span class="mitte">${i + 1}. ${s.name}<small>${esc(s.text)}</small></span><span class="haken">${erledigt ? "✓" : ""}</span></div>`;
+    }).join("")}</div>
+    ${offen.length
+      ? `<button class="btn voll" id="heuteLos" style="margin-top:14px;min-height:64px;font-size:20px">▶ ${fertig ? "Weiter" : "Los geht's"}: ${offen[0].name}</button>`
+      : `<div class="meldung gut" style="margin-top:14px">🎉 <b>Bravissimo!</b> Für heute ist alles geschafft. Du kannst natürlich trotzdem weiter üben.</div>`}`);
+  const los = document.getElementById("heuteLos");
+  if (los) los.onclick = () => heuteStarten(offen[0].id);
+}
+function heuteStarten(id) {
+  heuteAktiv = id;
+  if (id === "karten") {
+    const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
+    const neue = plan.neue.slice(0, Math.min(5, neueHeuteUebrig())), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
+    let d = 0, n = 0;
+    while (d < fa.length || n < neue.length) { if (n < neue.length && (d >= fa.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(fa[d++]); }
+    sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
+    return geheZu("karte");
+  }
+  if (id === "fehler") {
+    const liste = schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).slice(0, 8);
+    sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
+    return geheZu("karte");
+  }
+  if (id === "grammatik") {
+    const getippt = gewichtetZiehen(VERB_SAETZE, (x) => gGewicht("vsatz:" + x.s), 2).map(vsatzAufgabe);
+    const pool = ALLE_VERBEN.flatMap((v) => [0, 1, 2, 3, 4, 5].map((p) => ({ key: `verb:${v.inf}:${p}`, bau: () => verbAufgabe(v, p) })))
+      .concat(ARTIKEL_NOMEN.map((a) => ({ key: "art:" + a.ganz, bau: () => artikelAufgabe(a) })))
+      .concat(CE_CI_SONO.map((x) => ({ key: "ce:" + x.s, bau: () => ceAufgabe(x) })));
+    const rest = gewichtetZiehen(pool, (x) => gGewicht(x.key) * (x.key.startsWith("art:") ? 0.5 : 1), 4).map((x) => x.bau());
+    return quizStarten({ aufgaben: mischen(getippt.concat(rest)), pos: 0, punkte: 0, zurueck: "heute", titel: "Grammatik", nochmal: "heute" });
+  }
+  if (id === "dialog") return geheZu("dialog/" + naechsterDialog().id);
+  if (id === "gespraech") {
+    gespraech = { liste: gewichtetZiehen(ALLE_FRAGEN, (q) => gGewicht(q.key), 3), pos: 0 };
+    neueFrage(); return geheZu("gespraech-ueben");
+  }
+}
+
 // ---------- Fehler wiederholen: nur was oft falsch war ----------
 // "schwach" = mindestens einmal falsch und (Fehler ≥ halb so viele wie Treffer oder Karte fällt schwer).
 // Sobald man es oft genug richtig hat, verschwindet es von selbst aus dieser Liste.
@@ -1047,6 +1269,7 @@ function schwacheGrammatik() {
     if (art === "verb") { const [inf, p] = [rest.slice(0, -1).join(":"), +rest[rest.length - 1]]; const v = ALLE_VERBEN.find((x) => x.inf === inf); if (v) aufgaben.push(verbAufgabe(v, p)); }
     if (art === "art") { const a = ARTIKEL_NOMEN.find((x) => x.ganz === wert); if (a) aufgaben.push(artikelAufgabe(a)); }
     if (art === "ce") { const x = CE_CI_SONO.find((c) => c.s === wert); if (x) aufgaben.push(ceAufgabe(x)); }
+    if (art === "vsatz") { const x = VERB_SAETZE.find((c) => c.s === wert); if (x) aufgaben.push(vsatzAufgabe(x)); }
   });
   return aufgaben;
 }
@@ -1181,12 +1404,14 @@ function einstellungen() {
 // ---------- Navigation ----------
 function route() {
   if (TTS) speechSynthesis.cancel();
+  dialogAnsicht.laeuft = false;
   if (erkennung) { try { erkennung.abort(); } catch (e) {} }
   const h = location.hash.replace(/^#/, "") || "start";
   const [teil, arg] = h.split("/");
   const seiten = {
     start: startseite, karten: kartenMenue, karte: karteZeigen, grammatik: grammatikMenue, verben: verbenMenue,
-    tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
+    tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, verbsatz: vsatzStart,
+    heute: heuteMenue, dialoge: dialogeMenue, dialog: () => dialogZeigen(arg), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },

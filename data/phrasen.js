@@ -100,6 +100,22 @@ Mi fa male la testa. | Mir tut der Kopf weh. | p_alltag:Mi fa male la testa.
 Non c'è problema. | Kein Problem. | p_alltag:Non c'è problema.
 Va bene, grazie. | In Ordnung, danke. | p_alltag:Va bene, grazie.
 Mi piace molto. | Das gefällt mir sehr. | p_alltag:Mi piace molto.
+` },
+{ id: "p_esgibt", name: "Es gibt … (c'è / ci sono)", icon: "📍", liste: `
+C'è una farmacia qui vicino? | Gibt es hier in der Nähe eine Apotheke? | p_esgibt:farmacia
+C'è un bagno qui? | Gibt es hier eine Toilette? | p_esgibt:bagno
+Ci sono posti liberi? | Gibt es freie Plätze? | p_esgibt:posti
+C'è un tavolo per due? | Gibt es einen Tisch für zwei? | p_esgibt:tavolo
+C'è un treno per Milano? | Gibt es einen Zug nach Mailand? | p_esgibt:treno
+Non ci sono più biglietti. | Es gibt keine Fahrkarten mehr. | p_esgibt:biglietti
+Ci sono molti turisti oggi. | Heute sind viele Touristen da. | p_esgibt:turisti
+Oggi c'è il sole. | Heute scheint die Sonne. | p_esgibt:sole
+C'è il Wi-Fi? | Gibt es WLAN? | p_esgibt:wifi
+Che cosa c'è da vedere qui? | Was gibt es hier zu sehen? | p_esgibt:vedere
+Che c'è? | Was ist los? | p_esgibt:checce
+Non c'è nessuno. | Es ist niemand da. | p_esgibt:nessuno
+Non è male. | Das ist nicht schlecht. | p_esgibt:nonemale
+Non male! | Nicht übel! | p_esgibt:nonmale
 ` }
 ];
 

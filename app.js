@@ -367,7 +367,7 @@ function startseite() {
   setzeKopf("Italienisch lernen", null);
   const verstanden = ALLE_KARTEN.filter((k) => istGelernt(k.id, "it-de")).length;
   const sagen = ALLE_KARTEN.filter((k) => istGelernt(k.id, "de-it")).length;
-  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:");
+  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:");
   const gespr = gFaellig("dialog:");
   zeige(`
     <div class="statistik">
@@ -532,13 +532,29 @@ function grammatikMenue() {
       <button class="zeile" data-gehe="tabellen"><span class="sym">📋</span><span class="mitte">Verbtabellen nachschlagen<small>Alle Formen zum Anhören</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="artikel"><span class="sym">🏷️</span><span class="mitte">Artikel üben<small>il, lo, la, l', i, gli, le${hinweis(fa)}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="satzbau"><span class="sym">🧩</span><span class="mitte">Satzbau<small>Wörter in die richtige Reihenfolge bringen${hinweis(fs)}</small></span><span class="pfeil">›</span></button>
+      <button class="zeile" data-gehe="cecisono"><span class="sym">📍</span><span class="mitte">c'è / ci sono<small>„es gibt“ – Einzahl oder Mehrzahl?${hinweis(gFaellig("ce:"))}</small></span><span class="pfeil">›</span></button>
     </div>
     <p class="leise">Die App merkt sich deine Fehler: Was du falsch hattest, kommt bald wieder, was sitzt, kommt seltener.</p>
     <h2>Kurz erklärt</h2>
     <details class="hilfe"><summary>Verben im Präsens</summary>${GRAMMATIK_HILFE.verben}</details>
     <details class="hilfe" style="margin-top:8px"><summary>Artikel</summary>${GRAMMATIK_HILFE.artikel}</details>
     <details class="hilfe" style="margin-top:8px"><summary>Satzbau und Verneinung</summary>${GRAMMATIK_HILFE.satz}</details>
+    <details class="hilfe" style="margin-top:8px"><summary>c'è / ci sono – „es gibt“</summary>${GRAMMATIK_HILFE.ce}</details>
   `);
+}
+// Übung c'è / ci sono
+function ceStart() {
+  const aufgaben = gewichtetZiehen(CE_CI_SONO, (x) => gGewicht("ce:" + x.s), 10).map((x) => {
+    const gross = /^[A-Z]/.test(x.a);
+    const optionen = gross ? ["C'è", "Ci sono"] : ["c'è", "ci sono"];
+    const ganz = x.s.replace("___", x.a);
+    return {
+      frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
+      optionen, richtig: x.a, zwei: true, sprechen: ganz, erklaerung: ganz,
+      beiAntwort: (ok) => gBewerte("ce:" + x.s, ok)
+    };
+  });
+  quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "grammatik", titel: "c'è / ci sono", nochmal: "cecisono" });
 }
 function konjugiere(v) {
   if (VERBEN_UNREGELMAESSIG[v.inf]) return VERBEN_UNREGELMAESSIG[v.inf].formen;
@@ -616,7 +632,7 @@ function artikelStart() {
 function quizStarten(q) {
   quiz = q;
   if (location.hash === "#quiz") quizZeigen();
-  else if (location.hash === "#artikel") location.replace("#quiz"); // sonst startet "Zurück" sofort ein neues Quiz
+  else if (location.hash === "#artikel" || location.hash === "#cecisono") location.replace("#quiz"); // sonst startet "Zurück" sofort ein neues Quiz
   else geheZu("quiz");
 }
 function quizZeigen() {
@@ -628,7 +644,7 @@ function quizZeigen() {
       <p>${p === n ? "Perfetto! Alles richtig." : p >= n * 0.7 ? "Bravo! Sehr gut." : "Weiter üben – das wird!"}</p>
       ${p < n ? `<p class="leise">Die Fehler hat sich die App gemerkt – sie kommen bald wieder.</p>` : ""}</div>
       <div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-gehe="${quiz.zurueck}">Zurück</button></div>`);
-    document.getElementById("nochmal").onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
+    document.getElementById("nochmal").onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "cecisono" ? ceStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
     return;
   }
   const a = quiz.aufgaben[quiz.pos];
@@ -1062,7 +1078,7 @@ function route() {
   const [teil, arg] = h.split("/");
   const seiten = {
     start: startseite, karten: kartenMenue, karte: karteZeigen, grammatik: grammatikMenue, verben: verbenMenue,
-    tabellen: verbTabellen, artikel: artikelStart, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
+    tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen

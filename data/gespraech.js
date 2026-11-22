@@ -125,5 +125,23 @@ window.GESPRAECH = [
     m: ["[la] [capitale] [d'] [italia] [è] roma"] },
   { f: "In che mese siamo?", de: "In welchem Monat sind wir?", b: "Siamo a novembre.", bde: "Wir haben November.",
     m: ["[siamo] [a|in] gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre"] }
+]},
+{ thema: "Es gibt … (c'è / ci sono)", fragen: [
+  { f: "C'è un supermercato vicino a casa tua?", de: "Gibt es einen Supermarkt in der Nähe deiner Wohnung?", b: "Sì, c'è un supermercato vicino a casa mia.", bde: "Ja, es gibt einen Supermarkt in der Nähe meiner Wohnung.",
+    m: ["sì [c'è] [un] [supermercato] {rest}", "no [non] [c'è] {rest}", "sì", "no"] },
+  { f: "Quante persone ci sono nella tua famiglia?", de: "Wie viele Personen gibt es in deiner Familie?", b: "Nella mia famiglia ci sono quattro persone.", bde: "In meiner Familie gibt es vier Personen.",
+    m: ["[nella mia famiglia] ci sono {zahl} [persone] {rest}", "[nella mia famiglia] siamo {zahl} [persone]", "{zahl} [persone]"] },
+  { f: "Che cosa c'è nel tuo frigorifero?", de: "Was ist in deinem Kühlschrank?", b: "Ci sono latte, formaggio e uova.", bde: "Da sind Milch, Käse und Eier.",
+    m: ["[nel mio frigorifero] c'è {x} {rest}", "[nel mio frigorifero] ci sono {x} {rest}", "[nel mio frigorifero] non c'è niente {rest}", "niente"] },
+  { f: "Ci sono molti turisti nella tua città?", de: "Gibt es viele Touristen in deiner Stadt?", b: "Sì, d'estate ci sono molti turisti.", bde: "Ja, im Sommer gibt es viele Touristen.",
+    m: ["sì [d'estate] [ci sono] [molti|tanti|moltissimi] [turisti] {rest}", "no [non] [ci sono] [molti|tanti] [turisti] {rest}", "[ci sono] pochi [turisti] {rest}", "sì", "no"] },
+  { f: "Che cosa c'è da vedere nella tua città?", de: "Was gibt es in deiner Stadt zu sehen?", b: "C'è un castello e ci sono molti musei.", bde: "Es gibt eine Burg und viele Museen.",
+    m: ["[nella mia città] c'è {x} {rest}", "[nella mia città] ci sono {x} {rest}", "[nella mia città] non c'è niente {rest}", "niente [di speciale]"] },
+  { f: "C'è un problema?", de: "Gibt es ein Problem?", b: "No, non c'è nessun problema.", bde: "Nein, es gibt kein Problem.",
+    m: ["no [non] [c'è] [nessun] [problema] [grazie]", "sì c'è un problema {rest}", "nessun problema", "tutto bene [grazie]"] },
+  { f: "Scusi, c'è un bagno qui?", de: "Entschuldigung, gibt es hier eine Toilette? (Antworte als Kellner)", b: "Sì, è in fondo a destra.", bde: "Ja, sie ist hinten rechts.",
+    m: ["sì {rest}", "no [mi] [dispiace] [non] [c'è] {rest}", "[è] in fondo {rest}", "[è] a destra|sinistra {rest}", "[è] di sopra|sotto {rest}"] },
+  { f: "Quanti giorni ci sono in una settimana?", de: "Wie viele Tage gibt es in einer Woche?", b: "In una settimana ci sono sette giorni.", bde: "In einer Woche gibt es sieben Tage.",
+    m: ["[in una settimana] [ci sono] sette [giorni] {rest}"] }
 ]}
 ];

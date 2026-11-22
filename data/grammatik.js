@@ -75,5 +75,41 @@ window.GRAMMATIK_HILFE = {
 <p><i>Marco mangia la pizza.</i> = Marco isst die Pizza.</p>
 <p><b>Verneinung:</b> einfach <b>non</b> vor das Verb: <i>Non capisco.</i> = Ich verstehe nicht.</p>
 <p><b>Fragen</b> haben oft dieselbe Wortstellung, nur die Stimme geht am Ende hoch: <i>Parli italiano?</i></p>
-<p><b>Eigenschaftswörter</b> stehen meist <b>hinter</b> dem Hauptwort: <i>il vino rosso</i> = der Rotwein.</p>`
+<p><b>Eigenschaftswörter</b> stehen meist <b>hinter</b> dem Hauptwort: <i>il vino rosso</i> = der Rotwein.</p>`,
+  ce: `<p><b>c'è / ci sono</b> = „es gibt“ bzw. „da ist / da sind“</p>
+<table class="tab"><tr><th></th><th>Italienisch</th><th>Deutsch</th></tr>
+<tr><td>eine Sache (Einzahl)</td><td><b>c'è</b> un bar</td><td>es gibt eine Bar</td></tr>
+<tr><td>mehrere (Mehrzahl)</td><td><b>ci sono</b> due bar</td><td>es gibt zwei Bars</td></tr>
+<tr><td>verneint</td><td><b>non c'è</b> / <b>non ci sono</b></td><td>es gibt kein … / keine …</td></tr>
+<tr><td>Frage</td><td><b>C'è</b> un bagno? <b>Ci sono</b> posti liberi?</td><td>Gibt es …?</td></tr></table>
+<p><b>c'è</b> ist die Kurzform von <i>ci è</i> („da ist“) – immer mit Apostroph und Akzent.</p>
+<p>Merkhilfe: Schau auf das Wort <b>danach</b>. Eins → <b>c'è</b>, mehrere → <b>ci sono</b>.<br>
+<i>C'è una farmacia.</i> – <i>Ci sono due farmacie.</i></p>
+<p>Feste Wendungen: <i>Non c'è male.</i> = Nicht schlecht. · <i>Non c'è problema.</i> = Kein Problem. · <i>Che c'è?</i> = Was ist los?</p>`
 };
+
+// Übung "c'è / ci sono": ___ wird durch die richtige Form ersetzt
+window.CE_CI_SONO = [
+  { s: "___ una farmacia qui vicino?", de: "Gibt es hier in der Nähe eine Apotheke?", a: "C'è" },
+  { s: "___ due bar in piazza.", de: "Es gibt zwei Bars auf dem Platz.", a: "Ci sono" },
+  { s: "Non ___ problema.", de: "Kein Problem.", a: "c'è" },
+  { s: "___ molti turisti a Roma.", de: "Es gibt viele Touristen in Rom.", a: "Ci sono" },
+  { s: "___ un bagno qui?", de: "Gibt es hier eine Toilette?", a: "C'è" },
+  { s: "Nel frigorifero ___ il latte.", de: "Im Kühlschrank ist Milch.", a: "c'è" },
+  { s: "Nel frigorifero ___ tre uova.", de: "Im Kühlschrank sind drei Eier.", a: "ci sono" },
+  { s: "Oggi ___ il sole.", de: "Heute scheint die Sonne. (wörtl.: Heute ist die Sonne da.)", a: "c'è" },
+  { s: "___ posti liberi?", de: "Gibt es freie Plätze?", a: "Ci sono" },
+  { s: "Non ___ più biglietti.", de: "Es gibt keine Fahrkarten mehr.", a: "ci sono" },
+  { s: "In questa città ___ un museo famoso.", de: "In dieser Stadt gibt es ein berühmtes Museum.", a: "c'è" },
+  { s: "In questa via ___ molti negozi.", de: "In dieser Straße gibt es viele Geschäfte.", a: "ci sono" },
+  { s: "Scusi, ___ un supermercato qui vicino?", de: "Entschuldigung, gibt es hier in der Nähe einen Supermarkt?", a: "c'è" },
+  { s: "Nella mia famiglia ___ quattro persone.", de: "In meiner Familie gibt es vier Personen.", a: "ci sono" },
+  { s: "Che ___ da mangiare?", de: "Was gibt es zu essen?", a: "c'è" },
+  { s: "Sul tavolo ___ due bicchieri.", de: "Auf dem Tisch stehen zwei Gläser.", a: "ci sono" },
+  { s: "Non ___ nessuno a casa.", de: "Es ist niemand zu Hause.", a: "c'è" },
+  { s: "Al mercato ___ tante cose buone.", de: "Auf dem Markt gibt es viele gute Sachen.", a: "ci sono" },
+  { s: "Quanti giorni ___ in una settimana?", de: "Wie viele Tage hat eine Woche? (wörtl.: … gibt es in einer Woche?)", a: "ci sono" },
+  { s: "___ un treno per Milano alle otto?", de: "Gibt es einen Zug nach Mailand um acht?", a: "C'è" },
+  { s: "Ci scusi, ___ un tavolo per due?", de: "Entschuldigen Sie, gibt es einen Tisch für zwei?", a: "c'è" },
+  { s: "Qui non ___ parcheggi.", de: "Hier gibt es keine Parkplätze.", a: "ci sono" }
+];

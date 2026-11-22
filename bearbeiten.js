@@ -34,7 +34,10 @@ let basis = {};          // Datei → Stand (sha) auf GitHub, auf dem die Bearbe
 let original = {};       // Datei → erzeugter Text des GitHub-Stands (zum Erkennen von Änderungen)
 let ansicht = { bereich: "w", thema: 0, suche: "" };
 let schluessel = "";
-try { schluessel = localStorage.getItem(K_SCHLUESSEL) || ""; } catch (e) {}
+// Unsichtbare Zeichen, Leerzeichen und Zeilenumbrüche entfernen, die beim Kopieren mitkommen können
+const schluesselSaeubern = (s) => String(s || "").replace(/[^\x21-\x7E]/g, "");
+const schluesselGueltig = (s) => /^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(s);
+try { schluessel = schluesselSaeubern(localStorage.getItem(K_SCHLUESSEL)); } catch (e) {}
 
 // ---------- Dateien lesen und schreiben ----------
 function zeilenLesen(text, vorne) {
@@ -77,10 +80,15 @@ function erzeugen(d) {
 
 // ---------- GitHub ----------
 async function gh(pfad, opt = {}) {
-  const r = await fetch("https://api.github.com/repos/" + REPO + pfad, {
-    ...opt, cache: "no-store",
-    headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + schluessel, ...(opt.body ? { "Content-Type": "application/json" } : {}) }
-  });
+  let r;
+  try {
+    r = await fetch("https://api.github.com/repos/" + REPO + pfad, {
+      ...opt, cache: "no-store",
+      headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + schluessel, ...(opt.body ? { "Content-Type": "application/json" } : {}) }
+    });
+  } catch (e) {
+    throw new Error("Keine Verbindung zu GitHub (Internet prüfen). Technische Meldung: " + e.message);
+  }
   if (r.status === 401) throw new Error("Der Zugangsschlüssel wird von GitHub nicht angenommen (abgelaufen oder falsch).");
   if (r.status === 403 || r.status === 404) throw new Error("GitHub verweigert den Zugriff. Hat der Schlüssel das Recht „Contents: Read and write“ für das Projekt „italienisch“?");
   if (!r.ok) throw new Error("GitHub meldet Fehler " + r.status + ".");
@@ -113,7 +121,7 @@ function geaendert() {
 
 // ---------- Start ----------
 async function start() {
-  if (!TEST && !schluessel) return einrichten();
+  if (!TEST && !schluesselGueltig(schluessel)) return einrichten();
   $ed.innerHTML = `<p class="leise">Lade die Inhalte${TEST ? " (Testmodus)" : " von GitHub"} …</p>`;
   try {
     const { texte, shas } = await allesLaden();
@@ -159,8 +167,9 @@ function einrichten() {
     <p class="leise">Der Schlüssel wird nur in diesem Browser auf diesem PC gespeichert, nicht im Projekt. Am zweiten PC fügst du ihn dort einmal ein (oder legst einen zweiten an). Er erlaubt nur Änderungen am Projekt „italienisch“ – an „Bericht und Gutachten“ kommt er nicht heran.</p>
   </div>`;
   document.getElementById("speichern").onclick = () => {
-    const s = document.getElementById("schluessel").value.trim();
+    const s = schluesselSaeubern(document.getElementById("schluessel").value);
     if (!s) return toast("Bitte den Schlüssel einfügen.");
+    if (!schluesselGueltig(s)) return toast("Das sieht nicht wie ein GitHub-Schlüssel aus – er beginnt mit github_pat_ und ist sehr lang. Bitte nochmal kopieren.", 6000);
     schluessel = s;
     try { localStorage.setItem(K_SCHLUESSEL, s); } catch (e) {}
     start();

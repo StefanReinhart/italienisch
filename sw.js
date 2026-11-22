@@ -1,6 +1,6 @@
 // Offline-Speicher der App ("Service Worker").
 // Bei jeder Änderung an der App die Versionsnummer erhöhen, damit das Handy die neuen Dateien lädt.
-const VERSION = "italienisch-v6";
+const VERSION = "italienisch-v7";
 const DATEIEN = [
   "./",
   "./index.html",

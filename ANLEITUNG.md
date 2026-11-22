@@ -1,5 +1,8 @@
 # Italienisch lernen – Anleitung
 
+**Adresse der App:** https://stefanreinhart.github.io/italienisch/
+(Projekt auf GitHub: https://github.com/StefanReinhart/italienisch – öffentlich, Konto StefanReinhart)
+
 Diese App ist eine **Web-App**: eine Internetseite, die sich wie eine richtige App aufs Handy legen lässt,
 mit eigenem Symbol auf dem Startbildschirm, im Vollbild und auch ohne Internet.
 Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und danach immer dabei ist.

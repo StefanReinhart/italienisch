@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f7a52">
+<title>Inhalte bearbeiten</title>
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+  main { max-width: 1200px; }
+  .leiste { position: sticky; top: 64px; z-index: 4; background: var(--hinter); padding: 10px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--rand); margin-bottom: 14px; }
+  .leiste .status { flex: 1; min-width: 220px; font-size: 16px; }
+  .leiste .btn { min-height: 46px; }
+  .raster { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 760px) { .raster { grid-template-columns: 1fr; } .leiste { top: 0; } }
+  .nav { position: sticky; top: 140px; display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 160px); overflow: auto; }
+  .nav button { text-align: left; border: 1px solid var(--rand); background: var(--karte); color: var(--text); border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 16px; cursor: pointer; }
+  .nav button.an { border-color: var(--gruen); background: var(--gruen-hell); font-weight: 600; }
+  .nav .bereiche { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .nav .bereiche button { text-align: center; font-size: 15px; }
+  .nav small { color: var(--grau); }
+  table.ed { width: 100%; border-collapse: collapse; background: var(--karte); border-radius: 12px; overflow: hidden; }
+  table.ed th { text-align: left; background: var(--gruen-hell); padding: 8px; font-size: 15px; }
+  table.ed td { border-top: 1px solid var(--rand); padding: 4px 6px; vertical-align: top; }
+  table.ed input, .frage-ed input, .frage-ed textarea, .kopf-ed input {
+    width: 100%; font: inherit; font-size: 17px; padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); margin: 0;
+  }
+  table.ed input:hover, .frage-ed input:hover, .frage-ed textarea:hover { border-color: var(--rand); }
+  table.ed input:focus, .frage-ed input:focus, .frage-ed textarea:focus, .kopf-ed input:focus { border-color: var(--gruen); outline: none; background: var(--hinter); }
+  td.it input { font-weight: 600; }
+  .mini { border: 0; background: none; font-size: 20px; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--text); }
+  .mini:hover { background: var(--rand); }
+  .kopf-ed { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .kopf-ed input { border-color: var(--rand); background: var(--karte); font-size: 20px; font-weight: 650; }
+  .kopf-ed input.icon { width: 70px; text-align: center; flex: none; }
+  .frage-ed { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 10px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 4px 10px; }
+  .frage-ed label { font-size: 13px; color: var(--grau); display: block; margin: 4px 0 0 4px; }
+  .frage-ed textarea { min-height: 80px; resize: vertical; font-size: 15px; font-family: ui-monospace, Consolas, monospace; }
+  .geaendert { color: var(--orange); font-weight: 600; }
+  .einrichten { max-width: 760px; }
+  .einrichten ol li { margin-bottom: 6px; }
+  .einrichten code { background: var(--rand); padding: 1px 5px; border-radius: 4px; }
+  .treffer-kopf { margin: 14px 0 4px; font-weight: 600; color: var(--grau); }
+</style>
+</head>
+<body>
+<header class="kopf">
+  <a class="kopf-btn" href="./" aria-label="Zurück zur App" style="text-decoration:none;display:grid;place-items:center">‹</a>
+  <h1>Inhalte bearbeiten</h1>
+  <span class="flagge" aria-hidden="true"><i></i><i></i><i></i></span>
+</header>
+<main id="ed"></main>
+<div id="toast" role="status" hidden></div>
+<script src="bearbeiten.js"></script>
+</body>
+</html>

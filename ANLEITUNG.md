@@ -95,6 +95,26 @@ Zahnrad → *Sprachdaten installieren* → **Italienisch** herunterladen. Dann g
 
 ## 4. Inhalte bearbeiten und veröffentlichen
 
+### Am einfachsten: in der App (am PC)
+
+In der App **Einstellungen → „Wörter, Phrasen und Fragen bearbeiten“** antippen
+(oder direkt https://stefanreinhart.github.io/italienisch/bearbeiten.html öffnen, am besten in Chrome oder Edge).
+
+- Links wählst du den Bereich (Wortschatz, Phrasen, Satzbau, Frage & Antwort) und das Thema, rechts steht die Liste:
+  **links Deutsch, rechts Italienisch**. Einfach hineinklicken und tippen.
+- Jede Änderung wird **sofort automatisch gespeichert** (als Entwurf in diesem Browser).
+- **🚀 Veröffentlichen** schickt alles zu GitHub, erhöht die Versionsnummer und wartet, bis es online ist.
+- Die Seite lädt beim Öffnen immer den aktuellen Stand von GitHub – egal an welchem PC.
+- Jeder Eintrag hat eine feste Kennung: Korrekturen am italienischen Text setzen den Lernstand **nicht** zurück.
+
+**Einmalig einrichten:** Beim ersten Öffnen fragt die Seite nach einem GitHub-Zugangsschlüssel und erklärt Schritt für
+Schritt, wie man ihn anlegt (nur für das Projekt „italienisch“, Recht „Contents: Read and write“). Der Schlüssel bleibt
+nur im Browser des jeweiligen PCs gespeichert.
+
+Nicht in der App bearbeitbar sind die Verben und Grammatik-Erklärungen (`data/grammatik.js`) – die ändert man von Hand.
+
+### Von Hand (für Fortgeschrittene)
+
 **Bearbeiten** (am PC, z. B. mit dem Editor oder Visual Studio Code):
 
 | Was | Datei |
@@ -104,8 +124,8 @@ Zahnrad → *Sprachdaten installieren* → **Italienisch** herunterladen. Dann g
 | Verben, Grammatik-Erklärungen | `data/grammatik.js` |
 | Frage & Antwort | `data/gespraech.js` |
 
-Jede Zeile: `italienisch | deutsch`. Achtung: Wer den **italienischen** Text eines Eintrags ändert, setzt dessen
-Lernstand zurück (die App erkennt Karten am italienischen Text). Den deutschen Text kann man frei ändern.
+Jede Zeile: `italienisch | deutsch | kennung`. Die Kennung (dritte Spalte) nicht ändern – sie verbindet den Eintrag mit dem Lernstand. Fehlt sie (bei neu von Hand eingetippten Zeilen), setzt eine spätere Korrektur am italienischen
+Text den Lernstand zurück – in der App vergibt die Bearbeiten-Seite die Kennung automatisch. Den deutschen Text kann man frei ändern.
 
 **Testen** (optional): Rechtsklick auf `lokal-starten.ps1` → „Mit PowerShell ausführen“.
 

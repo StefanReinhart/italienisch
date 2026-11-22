@@ -44,9 +44,10 @@ try {
     $inhalt = [IO.File]::ReadAllText($datei.FullName, $utf8)
     $backticks = ([regex]::Matches($inhalt, '`')).Count
     if ($backticks % 2 -ne 0) { Fehler ("In $($datei.Name) fehlt ein Backtick " + '(`)' + " - ein Themenblock ist nicht richtig geschlossen.") }
+    $ohneTexte = ($inhalt -replace '`[^`]*`', '') -replace '"(?:[^"\\]|\\.)*"', '' -replace '(?m)//.*$', ''
     foreach ($paar in @(@('{', '}'), @('[', ']'), @('(', ')'))) {
-      $auf = ([regex]::Matches(($inhalt -replace '`[^`]*`', ''), [regex]::Escape($paar[0]))).Count
-      $zu  = ([regex]::Matches(($inhalt -replace '`[^`]*`', ''), [regex]::Escape($paar[1]))).Count
+      $auf = ([regex]::Matches($ohneTexte, [regex]::Escape($paar[0]))).Count
+      $zu  = ([regex]::Matches($ohneTexte, [regex]::Escape($paar[1]))).Count
       if ($auf -ne $zu) { Fehler "In $($datei.Name) passen die Klammern $($paar[0]) $($paar[1]) nicht zusammen ($auf öffnende, $zu schließende)." }
     }
   }

@@ -27,12 +27,14 @@ function gewichtetZiehen(liste, gewichtFn, n) {
 }
 
 // ---------- Daten aufbereiten ----------
+// Zeile: "italienisch | deutsch | kennung" – die Kennung bleibt fest, auch wenn sich der Text ändert
 function zeilen(text) {
   return text.split("\n").map((z) => z.trim()).filter((z) => z && z.includes("|"))
-    .map((z) => { const [it, de] = z.split("|").map((s) => s.trim()); return { it, de }; });
+    .map((z) => { const [it, de, id] = z.split("|").map((s) => s.trim()); return { it, de, kennung: id || "" }; });
 }
-const THEMEN = WORTSCHATZ.map((t) => ({ ...t, eintraege: zeilen(t.liste).map((e) => ({ ...e, id: t.id + ":" + e.it, thema: t.id })) }));
-const PHRASEN_GRUPPEN = PHRASEN.map((t) => ({ ...t, eintraege: zeilen(t.liste).map((e) => ({ ...e, id: t.id + ":" + e.it, thema: t.id })) }));
+const mitKennung = (t) => (e) => ({ it: e.it, de: e.de, id: e.kennung || t.id + ":" + e.it, thema: t.id });
+const THEMEN = WORTSCHATZ.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) }));
+const PHRASEN_GRUPPEN = PHRASEN.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) }));
 const ALLE_WOERTER = THEMEN.flatMap((t) => t.eintraege);
 const ALLE_PHRASEN = PHRASEN_GRUPPEN.flatMap((t) => t.eintraege);
 const ALLE_KARTEN = ALLE_WOERTER.concat(ALLE_PHRASEN);
@@ -839,7 +841,7 @@ function musterPasst(M, T, i = 0, j = 0) {
   const ok = m.seq.every((alts, k) => j + k < T.length && alts.includes(T[j + k]));
   return ok && musterPasst(M, T, i + 1, j + m.seq.length);
 }
-const GESPRAECH_THEMEN = GESPRAECH.map((t, ti) => ({ ...t, id: "g" + ti, fragen: t.fragen.map((q) => ({ ...q, key: "dialog:" + q.f, muster: q.m.map(musterBauen) })) }));
+const GESPRAECH_THEMEN = GESPRAECH.map((t, ti) => ({ ...t, id: "g" + ti, fragen: t.fragen.map((q) => ({ ...q, key: "dialog:" + (q.id || q.f), muster: q.m.map(musterBauen) })) }));
 const ALLE_FRAGEN = GESPRAECH_THEMEN.flatMap((t) => t.fragen);
 function pruefeAntwort(q, texte) {
   for (const t of texte) {
@@ -1017,7 +1019,11 @@ function einstellungen() {
     <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
-    <p class="leise" style="margin-top:20px">Version 4 · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
+    <h2>Inhalte</h2>
+    <a class="btn zweit voll" href="bearbeiten.html" style="text-decoration:none">✏️ Wörter, Phrasen und Fragen bearbeiten (am PC)</a>
+    <p class="leise" style="margin-top:20px"><span id="versionText">Version ?</span> · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
+  // Versionsnummer aus dem Offline-Speicher lesen (wird beim Veröffentlichen automatisch erhöht)
+  if (window.caches) caches.keys().then((k) => { const v = k.map((x) => (x.match(/italienisch-v(\d+)/) || [])[1]).filter(Boolean).sort((a, b) => b - a)[0]; const el = document.getElementById("versionText"); if (v && el) el.textContent = "Version " + v; }).catch(() => {});
   const sel = document.getElementById("stimme");
   if (sel) sel.onchange = () => { E.stimme = sel.value; speichern(); sprich("Ciao, come stai?"); };
   document.getElementById("test").onclick = () => sprich("Ciao! Benvenuto. Impariamo l'italiano insieme.");

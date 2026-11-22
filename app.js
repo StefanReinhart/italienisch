@@ -418,6 +418,7 @@ function startseite() {
       <button class="kachel breit" data-gehe="gespraech"><span class="sym">🗣️</span><span><b>Frage &amp; Antwort</b><br><small>${gespr ? `<b>${gespr} Fragen zum Wiederholen</b>` : "Auf italienische Fragen italienisch antworten"}</small></span></button>
       <button class="kachel breit" data-gehe="fehler"><span class="sym">🎯</span><span><b>Fehler wiederholen</b><br><small>${fehlerZahl ? `<b>${fehlerZahl} Dinge, die oft falsch waren</b>` : "Nur das üben, was oft falsch war"}</small></span></button>
       <button class="kachel" data-gehe="phrasen"><span class="sym">💬</span><b>Phrasen</b><small>Alltagssätze anhören</small></button>
+      <button class="kachel breit" data-gehe="claude"><span class="sym">🤖</span><span><b>Mit Claude üben</b><br><small>Rollenspiele, Korrektur, Fragen – über dein Claude-Abo</small></span></button>
       <button class="kachel" data-gehe="nachschlagen"><span class="sym">🔎</span><b>Wörterbuch</b><small>Alle Wörter suchen</small></button>
       <button class="kachel" data-gehe="einstellungen"><span class="sym">⚙️</span><b>Einstellungen</b><small>Stimme, Tempo, Sicherung</small></button>
     </div>
@@ -1278,6 +1279,94 @@ function heuteStarten(id) {
   }
 }
 
+// ---------- Mit Claude üben: fertige Anweisungen für die Claude-App (über das eigene Abo, ohne Zusatzkosten) ----------
+const SZENEN = [
+  { id: "bar", name: "☕ Im Café / an der Bar", du: "einen freundlichen Barista in einer Bar in Rom", ich: "einen Gast, der etwas bestellt und bezahlt" },
+  { id: "ristorante", name: "🍝 Im Restaurant", du: "einen Kellner in einer Trattoria", ich: "einen Gast, der einen Tisch möchte, bestellt und am Ende die Rechnung verlangt" },
+  { id: "hotel", name: "🏨 Im Hotel", du: "die Person an der Hotelrezeption", ich: "einen Gast, der einchecken möchte und Fragen zum Zimmer und Frühstück hat" },
+  { id: "bahnhof", name: "🚆 Am Bahnhof", du: "die Person am Fahrkartenschalter", ich: "einen Reisenden, der eine Fahrkarte kauft und nach Abfahrt und Gleis fragt" },
+  { id: "markt", name: "🍅 Auf dem Markt", du: "einen Obst- und Gemüsehändler auf dem Markt", ich: "einen Kunden, der einkauft und nach Preisen fragt" },
+  { id: "weg", name: "🧭 Nach dem Weg fragen", du: "eine hilfsbereite Passantin in einer italienischen Stadt", ich: "einen Touristen, der den Weg zu einem Museum, Bahnhof oder einer Apotheke sucht" },
+  { id: "arzt", name: "💊 In der Apotheke", du: "eine Apothekerin", ich: "einen Kunden mit leichten Beschwerden (z. B. Kopfschmerzen, Erkältung)" },
+  { id: "kennenlernen", name: "🤝 Kennenlernen", du: "eine Italienerin namens Giulia, die ich im Urlaub kennenlerne", ich: "einen deutschen Urlauber, der sich vorstellt und Smalltalk macht" },
+  { id: "nachbar", name: "🏡 Smalltalk mit dem Nachbarn", du: "einen netten italienischen Nachbarn namens Paolo", ich: "einen neuen Nachbarn, der über Wetter, Familie, Arbeit und Freizeit plaudert" }
+];
+const REGELN = `Regeln:
+- Ich bin Anfänger (Niveau A1). Sprich nur einfaches Italienisch: kurze Sätze, Präsens, Grundwortschatz.
+- Sag immer nur eine Sache und warte dann auf meine Antwort.
+- Wenn ich einen Fehler mache: Schreib zuerst kurz die richtige Fassung, dann eine Erklärung in einem Satz auf Deutsch in Klammern. Danach geht das Gespräch normal weiter.
+- Wenn ich auf Deutsch schreibe oder "aiuto" sage, hilf mir mit einem passenden Beispielsatz.
+- Nach etwa 10 Wechseln: Fasse auf Deutsch kurz zusammen, was gut lief und welche Fehler ich am häufigsten gemacht habe.`;
+function woerterListe(liste) { return liste.map((k) => `${k.it} = ${k.de}`).join("; "); }
+function fehlerWoerter() {
+  const gesehen = new Set();
+  return schwacheKarten().map((x) => x.k).filter((k) => !gesehen.has(k.id) && gesehen.add(k.id)).slice(0, 15);
+}
+function gelernteWoerter() {
+  return Object.entries(S.karten).filter(([key, k]) => k.richtig > 0 && KARTE_NACH_ID[key.split("|")[0]])
+    .sort((a, b) => (b[1].zuletzt || 0) - (a[1].zuletzt || 0)).map(([key]) => KARTE_NACH_ID[key.split("|")[0]])
+    .filter((k, i, arr) => arr.findIndex((x) => x.id === k.id) === i).slice(0, 30);
+}
+function claudeAnweisungen(werte) {
+  const sz = SZENEN.find((s) => s.id === werte.szene) || SZENEN[0];
+  const fehler = fehlerWoerter(), gelernt = gelernteWoerter();
+  const uebungsWoerter = fehler.length ? fehler : gelernt.length ? gelernt : kartenDerThemen(S.einstellungen.themen).slice(0, 20);
+  return [
+    { id: "rolle", sym: "🎭", titel: "Rollenspiel", text: "Claude spielt eine Person in einer Alltagssituation, du antwortest auf Italienisch – mit Korrektur.",
+      feld: `<select id="szene">${SZENEN.map((s) => `<option value="${s.id}" ${s.id === sz.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`,
+      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nFang du an – auf Italienisch.` },
+    { id: "frei", sym: "💬", titel: "Freies Gespräch über mich", text: "Claude stellt dir einfache Fragen über dich (Familie, Arbeit, Hobbys, Urlaub) und plaudert mit dir.",
+      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nFang mit einer Begrüßung und der ersten Frage an.` },
+    { id: "korrektur", sym: "✏️", titel: "Meine Sätze korrigieren", text: "Du schreibst oder sprichst eigene italienische Sätze, Claude korrigiert und erklärt.",
+      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Ich schreibe dir gleich eigene italienische Sätze.\nFür jeden Satz:\n1. Ist er richtig? Wenn nicht, schreib die korrigierte Fassung.\n2. Erkläre jeden Fehler kurz und einfach auf Deutsch.\n3. Gib mir eine natürlichere Variante, wie ein Italiener es sagen würde.\nHalte die Antworten kurz. Antworte jetzt nur mit "Pronto! Scrivi una frase." und warte auf meinen ersten Satz.` },
+    { id: "grammatik", sym: "📘", titel: "Grammatikfrage stellen", text: "Claude erklärt eine Grammatikfrage einfach, mit Beispielen und einer Mini-Übung.",
+      feld: `<input type="text" id="gfrage" placeholder="z. B. Wann sage ich c'è und wann ci sono?" value="${esc(werte.frage || "")}">`,
+      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1) und bin kein Sprachexperte. Erkläre mir bitte ganz einfach auf Deutsch, ohne Fachbegriffe (oder mit Erklärung der Fachbegriffe):\n\n${werte.frage || "[hier deine Frage]"}\n\nGib 3 kurze Beispielsätze mit deutscher Übersetzung und am Ende 3 kleine Übungsaufgaben. Die Lösungen zeigst du erst, wenn ich geantwortet habe.` },
+    { id: "geschichte", sym: "📖", titel: fehler.length ? "Geschichte mit meinen Fehler-Wörtern" : "Geschichte mit meinen Wörtern", text: fehler.length ? `Eine kurze Geschichte mit ${fehler.length} Wörtern, die du oft falsch hattest.` : "Eine kurze Geschichte mit Wörtern, die du schon gelernt hast.",
+      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Schreib mir eine kurze, einfache Geschichte auf Italienisch (8–10 Sätze, Präsens), in der möglichst viele dieser Wörter vorkommen:\n${woerterListe(uebungsWoerter)}\n\nDanach:\n1. Die Geschichte noch einmal Satz für Satz mit deutscher Übersetzung.\n2. 4 Verständnisfragen auf Italienisch. Ich antworte auf Italienisch, du korrigierst meine Antworten.` },
+    { id: "uebersetzen", sym: "🔁", titel: "Übersetzungs-Training", text: "Claude gibt dir deutsche Sätze, du übersetzt ins Italienische – mit deinen Wörtern.",
+      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Gib mir nacheinander 10 kurze, alltägliche deutsche Sätze zum Übersetzen ins Italienische. Verwende dabei möglichst diese Wörter:\n${woerterListe(uebungsWoerter)}\n\nImmer nur ein Satz, dann wartest du auf meine Übersetzung. Danach: richtig/falsch, die korrekte Fassung und eine kurze Erklärung auf Deutsch. Zum Schluss eine kurze Auswertung.` }
+  ];
+}
+let claudeWerte = { szene: "bar", frage: "" };
+function claudeMenue() {
+  setzeKopf("Mit Claude üben", "start");
+  const liste = claudeAnweisungen(claudeWerte);
+  zeige(`
+    <div class="meldung info">💡 Das läuft über <b>dein Claude-Abo</b> in der Claude-App – ohne Zusatzkosten.
+      Tippe auf eine Übung: Die Anweisung wird <b>kopiert</b> und Claude geöffnet. Dort lange ins Eingabefeld drücken → <b>Einfügen</b> → senden.
+      <br>🎤 Zum <b>Sprechen</b>: In der Claude-App den Sprachmodus wählen (Symbol neben dem Eingabefeld) und Italienisch sprechen.</div>
+    ${liste.map((a) => `<div class="einstellung">
+      <label>${a.sym} ${esc(a.titel)}</label>
+      <p class="leise" style="margin-top:0">${esc(a.text)}</p>
+      ${a.feld || ""}
+      <button class="btn voll" data-claude="${a.id}">📋 Kopieren und Claude öffnen</button>
+      <details style="margin-top:8px"><summary class="leise">Anweisung ansehen</summary><pre style="white-space:pre-wrap;font-size:14px;font-family:inherit">${esc(a.prompt)}</pre></details>
+    </div>`).join("")}
+    <div id="kopierFeld"></div>`);
+  const sz = document.getElementById("szene");
+  if (sz) sz.onchange = () => { claudeWerte.szene = sz.value; claudeMenue(); };
+  const gf = document.getElementById("gfrage");
+  if (gf) gf.onchange = () => { claudeWerte.frage = gf.value.trim(); claudeMenue(); };
+  $app.querySelectorAll("[data-claude]").forEach((b) => (b.onclick = async () => {
+    if (gf) claudeWerte.frage = gf.value.trim();
+    const a = claudeAnweisungen(claudeWerte).find((x) => x.id === b.dataset.claude);
+    if (a.id === "grammatik" && !claudeWerte.frage) { toast("Bitte erst deine Grammatikfrage eintippen."); gf && gf.focus(); return; }
+    let kopiert = false;
+    try { await navigator.clipboard.writeText(a.prompt); kopiert = true; } catch (e) {}
+    if (kopiert) {
+      toast("Kopiert! In Claude: lange ins Eingabefeld drücken → Einfügen → senden.", 6000);
+      window.open("https://claude.ai/new", "_blank");
+    } else {
+      // Falls das Kopieren nicht erlaubt ist: Text zum selbst Markieren anzeigen
+      document.getElementById("kopierFeld").innerHTML = `<div class="meldung info">Automatisches Kopieren ging nicht. Bitte den Text markieren (lange drücken → Alles auswählen → Kopieren), dann <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude öffnen</a>.</div>
+        <textarea readonly style="width:100%;min-height:220px;font:inherit;font-size:15px">${esc(a.prompt)}</textarea>`;
+      document.querySelector("#kopierFeld textarea").select();
+      document.getElementById("kopierFeld").scrollIntoView({ behavior: "smooth" });
+    }
+  }));
+}
+
 // ---------- Fehler wiederholen: nur was oft falsch war ----------
 // "schwach" = mindestens einmal falsch und (Fehler ≥ halb so viele wie Treffer oder Karte fällt schwer).
 // Sobald man es oft genug richtig hat, verschwindet es von selbst aus dieser Liste.
@@ -1438,7 +1527,7 @@ function route() {
   const seiten = {
     start: startseite, karten: kartenMenue, karte: karteZeigen, grammatik: grammatikMenue, verben: verbenMenue,
     tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, verbsatz: vsatzStart,
-    heute: heuteMenue, dialoge: dialogeMenue, dialog: () => dialogZeigen(arg), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
+    heute: heuteMenue, dialoge: dialogeMenue, dialog: () => dialogZeigen(arg), claude: claudeMenue, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },

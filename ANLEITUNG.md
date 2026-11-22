@@ -14,6 +14,10 @@ Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und
 - **🎧 Hör-Dialoge**: 8 kurze Alltagsgespräche (Bar, Bahnhof, Hotel, Restaurant, Markt, Weg, Kennenlernen, Apotheke).
   Erst nur hören, dann Zeile für Zeile oder ganz aufdecken (mit Übersetzung), zum Schluss drei Verständnisfragen.
 - **🎯 Fehler wiederholen**: nur das, was oft falsch war oder als „nicht gewusst“ markiert wurde.
+- **🤖 Mit Claude üben**: fertige Anweisungen für die Claude-App (über das eigene Claude-Abo, ohne Zusatzkosten) –
+  Rollenspiele in 9 Alltagssituationen, freies Gespräch, Sätze korrigieren lassen, Grammatikfragen, eine Geschichte mit
+  den eigenen Fehler-Wörtern und Übersetzungs-Training. Antippen kopiert die Anweisung und öffnet Claude; dort einfügen
+  und senden. Im Sprachmodus der Claude-App kann man sich auch mündlich unterhalten.
 - **Grammatik → Verben im Satz**: die Verbform selbst eintippen, z. B. *Noi ___ (andare) al mare.*
 - **Karteikarten**: rund 450 Grundwörter in 20 Themen und rund 85 Alltagssätze. Die App merkt sich, was du schon kannst,
   und zeigt Wörter in immer größeren Abständen wieder (1 Tag, 2 Tage, 4 Tage …), wie ein Karteikasten mit Fächern.

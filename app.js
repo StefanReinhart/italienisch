@@ -1291,12 +1291,18 @@ const SZENEN = [
   { id: "kennenlernen", name: "🤝 Kennenlernen", du: "eine Italienerin namens Giulia, die ich im Urlaub kennenlerne", ich: "einen deutschen Urlauber, der sich vorstellt und Smalltalk macht" },
   { id: "nachbar", name: "🏡 Smalltalk mit dem Nachbarn", du: "einen netten italienischen Nachbarn namens Paolo", ich: "einen neuen Nachbarn, der über Wetter, Familie, Arbeit und Freizeit plaudert" }
 ];
-const REGELN = `Regeln:
-- Ich bin Anfänger (Niveau A1). Sprich nur einfaches Italienisch: kurze Sätze, Präsens, Grundwortschatz.
-- Sag immer nur eine Sache und warte dann auf meine Antwort.
-- Wenn ich einen Fehler mache: Schreib zuerst kurz die richtige Fassung, dann eine Erklärung in einem Satz auf Deutsch in Klammern. Danach geht das Gespräch normal weiter.
-- Wenn ich auf Deutsch schreibe oder "aiuto" sage, hilf mir mit einem passenden Beispielsatz.
-- Nach etwa 10 Wechseln: Fasse auf Deutsch kurz zusammen, was gut lief und welche Fehler ich am häufigsten gemacht habe.`;
+const REGELN = `Das soll ein echtes Gespräch sein, kein Unterricht. Ich bin Anfänger (Niveau A1).
+
+Jede deiner Antworten hat genau diese Form – nichts anderes:
+1. Nur wenn ich einen Fehler gemacht habe: eine kurze Zeile „✏️ " + die richtige Fassung meines Satzes + höchstens 5 Wörter Erklärung auf Deutsch. Ohne Fehler fällt diese Zeile weg.
+2. Eine natürliche, passende Reaktion auf das, was ich gesagt habe – auf Italienisch, 1–2 kurze, einfache Sätze.
+3. Eine Frage an mich auf Italienisch, damit das Gespräch weitergeht.
+
+Wichtig:
+- Keine Erklärungen, Listen, Überschriften, Übersetzungen oder Lob-Absätze. Halte jede Antwort kurz (höchstens 3 Zeilen), wie in einem echten Gespräch.
+- Einfaches Italienisch: Präsens, Grundwortschatz, kurze Sätze.
+- Wenn ich „aiuto“ sage oder Deutsch spreche: Sag mir kurz den italienischen Satz, den ich sagen könnte, und stell die Frage noch einmal.
+- Erst wenn ich „basta“ sage: kurze Zusammenfassung auf Deutsch, welche Fehler ich am häufigsten gemacht habe.`;
 function woerterListe(liste) { return liste.map((k) => `${k.it} = ${k.de}`).join("; "); }
 function fehlerWoerter() {
   const gesehen = new Set();
@@ -1314,9 +1320,9 @@ function claudeAnweisungen(werte) {
   return [
     { id: "rolle", sym: "🎭", titel: "Rollenspiel", text: "Claude spielt eine Person in einer Alltagssituation, du antwortest auf Italienisch – mit Korrektur.",
       feld: `<select id="szene">${SZENEN.map((s) => `<option value="${s.id}" ${s.id === sz.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`,
-      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nFang du an – auf Italienisch.` },
+      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nBeginne jetzt direkt mit deinem ersten Satz in der Rolle – auf Italienisch, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "frei", sym: "💬", titel: "Freies Gespräch über mich", text: "Claude stellt dir einfache Fragen über dich (Familie, Arbeit, Hobbys, Urlaub) und plaudert mit dir.",
-      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nFang mit einer Begrüßung und der ersten Frage an.` },
+      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nBeginne jetzt direkt mit einer kurzen Begrüßung und deiner ersten Frage – auf Italienisch, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "korrektur", sym: "✏️", titel: "Meine Sätze korrigieren", text: "Du schreibst oder sprichst eigene italienische Sätze, Claude korrigiert und erklärt.",
       prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Ich schreibe dir gleich eigene italienische Sätze.\nFür jeden Satz:\n1. Ist er richtig? Wenn nicht, schreib die korrigierte Fassung.\n2. Erkläre jeden Fehler kurz und einfach auf Deutsch.\n3. Gib mir eine natürlichere Variante, wie ein Italiener es sagen würde.\nHalte die Antworten kurz. Antworte jetzt nur mit "Pronto! Scrivi una frase." und warte auf meinen ersten Satz.` },
     { id: "grammatik", sym: "📘", titel: "Grammatikfrage stellen", text: "Claude erklärt eine Grammatikfrage einfach, mit Beispielen und einer Mini-Übung.",
@@ -1335,7 +1341,7 @@ function claudeMenue() {
   zeige(`
     <div class="meldung info">💡 Das läuft über <b>dein Claude-Abo</b> in der Claude-App – ohne Zusatzkosten.
       Tippe auf eine Übung: Die Anweisung wird <b>kopiert</b> und Claude geöffnet. Dort lange ins Eingabefeld drücken → <b>Einfügen</b> → senden.
-      <br>🎤 Zum <b>Sprechen</b>: In der Claude-App den Sprachmodus wählen (Symbol neben dem Eingabefeld) und Italienisch sprechen.</div>
+      <br>🎤 Zum <b>Sprechen</b>: erst die Anweisung senden, dann im selben Chat den Sprachmodus starten. Mit „aiuto“ bekommst du Hilfe, mit „basta“ beendest du das Gespräch und bekommst eine kurze Fehler-Zusammenfassung.</div>
     ${liste.map((a) => `<div class="einstellung">
       <label>${a.sym} ${esc(a.titel)}</label>
       <p class="leise" style="margin-top:0">${esc(a.text)}</p>

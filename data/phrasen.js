@@ -1,109 +1,109 @@
-// Alltagsphrasen – Italienisch / Deutsch
-// Format je Zeile:  italienisch | deutsch
+// Diese Datei wird von der Seite „Inhalte bearbeiten“ (bearbeiten.html) geschrieben – Änderungen am besten dort machen.
+// Alltagsphrasen – Format je Zeile:  italienisch | deutsch | feste Kennung
 window.PHRASEN = [
 { id: "p_begruessung", name: "Begrüßung & Vorstellen", icon: "🤝", liste: `
-Ciao, come stai? | Hallo, wie geht es dir?
-Buongiorno, come sta? | Guten Tag, wie geht es Ihnen?
-Sto bene, grazie. | Mir geht es gut, danke.
-Non c'è male. | Nicht schlecht.
-E tu? | Und du?
-Come ti chiami? | Wie heißt du?
-Mi chiamo Marco. | Ich heiße Marco.
-Piacere! | Freut mich!
-Di dove sei? | Woher kommst du?
-Sono tedesco. | Ich bin Deutscher.
-Sono di Berlino. | Ich bin aus Berlin.
-Quanti anni hai? | Wie alt bist du?
-Ho cinquanta anni. | Ich bin fünfzig Jahre alt.
-A presto! | Bis bald!
-A domani! | Bis morgen!
-Buona giornata! | Einen schönen Tag!
+Ciao, come stai? | Hallo, wie geht es dir? | p_begruessung:Ciao, come stai?
+Buongiorno, come sta? | Guten Tag, wie geht es Ihnen? | p_begruessung:Buongiorno, come sta?
+Sto bene, grazie. | Mir geht es gut, danke. | p_begruessung:Sto bene, grazie.
+Non c'è male. | Nicht schlecht. | p_begruessung:Non c'è male.
+E tu? | Und du? | p_begruessung:E tu?
+Come ti chiami? | Wie heißt du? | p_begruessung:Come ti chiami?
+Mi chiamo Marco. | Ich heiße Marco. | p_begruessung:Mi chiamo Marco.
+Piacere! | Freut mich! (...dich kennen zu lernen) | p_begruessung:Piacere!
+Di dove sei? | Woher kommst du? | p_begruessung:Di dove sei?
+Sono tedesco. | Ich bin Deutscher. | p_begruessung:Sono tedesco.
+Sono di Berlino. | Ich bin aus Berlin. | p_begruessung:Sono di Berlino.
+Quanti anni hai? | Wie alt bist du? | p_begruessung:Quanti anni hai?
+Ho cinquantaquattro anni. | Ich bin vierundfünfzig Jahre alt. | p_begruessung:Ho cinquanta anni.
+A presto! | Bis bald! | p_begruessung:A presto!
+A domani! | Bis morgen! | p_begruessung:A domani!
+Buona giornata! | Einen schönen Tag! | p_begruessung:Buona giornata!
 ` },
 { id: "p_verstaendigung", name: "Verständigung", icon: "💬", liste: `
-Parla tedesco? | Sprechen Sie Deutsch?
-Parla inglese? | Sprechen Sie Englisch?
-Parlo un po' di italiano. | Ich spreche ein bisschen Italienisch.
-Non capisco. | Ich verstehe nicht.
-Può ripetere, per favore? | Können Sie das bitte wiederholen?
-Più piano, per favore. | Langsamer, bitte.
-Come si dice in italiano? | Wie sagt man das auf Italienisch?
-Che cosa significa? | Was bedeutet das?
-Sto imparando l'italiano. | Ich lerne Italienisch.
-Non lo so. | Ich weiß es nicht.
+Parla tedesco? | Sprechen Sie Deutsch? | p_verstaendigung:Parla tedesco?
+Parla inglese? | Sprechen Sie Englisch? | p_verstaendigung:Parla inglese?
+Parlo un po' di italiano. | Ich spreche ein bisschen Italienisch. | p_verstaendigung:Parlo un po' di italiano.
+Non capisco. | Ich verstehe nicht. | p_verstaendigung:Non capisco.
+Può ripetere, per favore? | Können Sie das bitte wiederholen? | p_verstaendigung:Può ripetere, per favore?
+Più piano, per favore. | Langsamer, bitte. | p_verstaendigung:Più piano, per favore.
+Come si dice in italiano? | Wie sagt man das auf Italienisch? | p_verstaendigung:Come si dice in italiano?
+Che cosa significa? | Was bedeutet das? | p_verstaendigung:Che cosa significa?
+Sto imparando l'italiano. | Ich lerne Italienisch. | p_verstaendigung:Sto imparando l'italiano.
+Non lo so. | Ich weiß es nicht. | p_verstaendigung:Non lo so.
 ` },
 { id: "p_restaurant", name: "Im Restaurant", icon: "🍝", liste: `
-Un tavolo per due, per favore. | Einen Tisch für zwei, bitte.
-Ho una prenotazione. | Ich habe eine Reservierung.
-Il menù, per favore. | Die Speisekarte, bitte.
-Che cosa ci consiglia? | Was empfehlen Sie uns?
-Vorrei una pizza margherita. | Ich hätte gern eine Pizza Margherita.
-Per me una pasta, per favore. | Für mich bitte Nudeln.
-Un bicchiere di vino rosso. | Ein Glas Rotwein.
-Una bottiglia d'acqua naturale. | Eine Flasche stilles Wasser.
-Un caffè, per favore. | Einen Espresso, bitte.
-È delizioso! | Das ist köstlich!
-Il conto, per favore. | Die Rechnung, bitte.
-Posso pagare con la carta? | Kann ich mit Karte zahlen?
-Sono vegetariano. | Ich bin Vegetarier.
-Dov'è il bagno? | Wo ist die Toilette?
+Un tavolo per due, per favore. | Einen Tisch für zwei, bitte. | p_restaurant:Un tavolo per due, per favore.
+Ho una prenotazione. | Ich habe eine Reservierung. | p_restaurant:Ho una prenotazione.
+Il menù, per favore. | Die Speisekarte, bitte. | p_restaurant:Il menù, per favore.
+Che cosa ci consiglia? | Was empfehlen Sie uns? | p_restaurant:Che cosa ci consiglia?
+Vorrei una pizza margherita. | Ich hätte gern eine Pizza Margherita. | p_restaurant:Vorrei una pizza margherita.
+Per me una pasta, per favore. | Für mich bitte Nudeln. | p_restaurant:Per me una pasta, per favore.
+Un bicchiere di vino rosso. | Ein Glas Rotwein. | p_restaurant:Un bicchiere di vino rosso.
+Una bottiglia d'acqua naturale. | Eine Flasche stilles Wasser. | p_restaurant:Una bottiglia d'acqua naturale.
+Un caffè, per favore. | Einen Espresso, bitte. | p_restaurant:Un caffè, per favore.
+È delizioso! | Das ist köstlich! | p_restaurant:È delizioso!
+Il conto, per favore. | Die Rechnung, bitte. | p_restaurant:Il conto, per favore.
+Posso pagare con la carta? | Kann ich mit Karte zahlen? | p_restaurant:Posso pagare con la carta?
+Sono vegetariano. | Ich bin Vegetarier. | p_restaurant:Sono vegetariano.
+Dov'è il bagno? | Wo ist die Toilette? | p_restaurant:Dov'è il bagno?
 ` },
 { id: "p_einkaufen", name: "Einkaufen", icon: "🛍️", liste: `
-Quanto costa? | Was kostet das?
-Quanto costano? | Was kosten die?
-Vorrei questo. | Ich hätte gern das hier.
-Sto solo guardando. | Ich schaue nur.
-Avete una taglia più grande? | Haben Sie eine größere Größe?
-Posso provarlo? | Kann ich es anprobieren?
-È troppo caro. | Das ist zu teuer.
-Lo prendo. | Ich nehme es.
-Un chilo di mele, per favore. | Ein Kilo Äpfel, bitte.
-Nient'altro, grazie. | Sonst nichts, danke.
-A che ora chiudete? | Um wie viel Uhr schließen Sie?
+Quanto costa? | Was kostet das? | p_einkaufen:Quanto costa?
+Quanto costano? | Was kosten die? | p_einkaufen:Quanto costano?
+Vorrei questo. | Ich hätte gern das hier. | p_einkaufen:Vorrei questo.
+Sto solo guardando. | Ich schaue nur. | p_einkaufen:Sto solo guardando.
+Avete una taglia più grande? | Haben Sie eine größere Größe? | p_einkaufen:Avete una taglia più grande?
+Posso provarlo? | Kann ich es anprobieren? | p_einkaufen:Posso provarlo?
+È troppo caro. | Das ist zu teuer. | p_einkaufen:È troppo caro.
+Lo prendo. | Ich nehme es. | p_einkaufen:Lo prendo.
+Un chilo di mele, per favore. | Ein Kilo Äpfel, bitte. | p_einkaufen:Un chilo di mele, per favore.
+Nient'altro, grazie. | Sonst nichts, danke. | p_einkaufen:Nient'altro, grazie.
+A che ora chiudete? | Um wie viel Uhr schließen Sie? | p_einkaufen:A che ora chiudete?
 ` },
 { id: "p_weg", name: "Nach dem Weg fragen", icon: "🗺️", liste: `
-Scusi, dov'è la stazione? | Entschuldigung, wo ist der Bahnhof?
-Come arrivo al centro? | Wie komme ich ins Zentrum?
-È lontano? | Ist es weit?
-È vicino. | Es ist nah.
-Vada sempre dritto. | Gehen Sie immer geradeaus.
-Giri a destra. | Biegen Sie rechts ab.
-Giri a sinistra. | Biegen Sie links ab.
-È dietro l'angolo. | Es ist um die Ecke.
-Mi sono perso. | Ich habe mich verlaufen.
-C'è una farmacia qui vicino? | Gibt es hier in der Nähe eine Apotheke?
+Scusi, dov'è la stazione? | Entschuldigung, wo ist der Bahnhof? | p_weg:Scusi, dov'è la stazione?
+Come arrivo al centro? | Wie komme ich ins Zentrum? | p_weg:Come arrivo al centro?
+È lontano? | Ist es weit? | p_weg:È lontano?
+È vicino. | Es ist nah. | p_weg:È vicino.
+Vada sempre dritto. | Gehen Sie immer geradeaus. | p_weg:Vada sempre dritto.
+Giri a destra. | Biegen Sie rechts ab. | p_weg:Giri a destra.
+Giri a sinistra. | Biegen Sie links ab. | p_weg:Giri a sinistra.
+È dietro l'angolo. | Es ist um die Ecke. | p_weg:È dietro l'angolo.
+Mi sono perso. | Ich habe mich verlaufen. | p_weg:Mi sono perso.
+C'è una farmacia qui vicino? | Gibt es hier in der Nähe eine Apotheke? | p_weg:C'è una farmacia qui vicino?
 ` },
 { id: "p_reisen", name: "Reisen & Hotel", icon: "🧳", liste: `
-Un biglietto per Roma, per favore. | Eine Fahrkarte nach Rom, bitte.
-Solo andata. | Nur Hinfahrt.
-Andata e ritorno. | Hin und zurück.
-A che ora parte il treno? | Um wie viel Uhr fährt der Zug ab?
-Da quale binario parte? | Von welchem Gleis fährt er ab?
-Il treno è in ritardo. | Der Zug hat Verspätung.
-Ho prenotato una camera. | Ich habe ein Zimmer reserviert.
-Avete una camera libera? | Haben Sie ein Zimmer frei?
-A che ora è la colazione? | Um wie viel Uhr ist das Frühstück?
-La chiave, per favore. | Den Schlüssel, bitte.
+Un biglietto per Roma, per favore. | Eine Fahrkarte nach Rom, bitte. | p_reisen:Un biglietto per Roma, per favore.
+Solo andata. | Nur Hinfahrt. | p_reisen:Solo andata.
+Andata e ritorno. | Hin und zurück. | p_reisen:Andata e ritorno.
+A che ora parte il treno? | Um wie viel Uhr fährt der Zug ab? | p_reisen:A che ora parte il treno?
+Da quale binario parte? | Von welchem Gleis fährt er ab? | p_reisen:Da quale binario parte?
+Il treno è in ritardo. | Der Zug hat Verspätung. | p_reisen:Il treno è in ritardo.
+Ho prenotato una camera. | Ich habe ein Zimmer reserviert. | p_reisen:Ho prenotato una camera.
+Avete una camera libera? | Haben Sie ein Zimmer frei? | p_reisen:Avete una camera libera?
+A che ora è la colazione? | Um wie viel Uhr ist das Frühstück? | p_reisen:A che ora è la colazione?
+La chiave, per favore. | Den Schlüssel, bitte. | p_reisen:La chiave, per favore.
 ` },
 { id: "p_alltag", name: "Alltag & Notfall", icon: "🆘", liste: `
-Che ore sono? | Wie spät ist es?
-Sono le tre. | Es ist drei Uhr.
-Che tempo fa? | Wie ist das Wetter?
-Fa caldo. | Es ist heiß.
-Fa freddo. | Es ist kalt.
-Ho fame. | Ich habe Hunger.
-Ho sete. | Ich habe Durst.
-Sono stanco. | Ich bin müde.
-Aiuto! | Hilfe!
-Chiami un medico! | Rufen Sie einen Arzt!
-Mi sento male. | Mir geht es schlecht.
-Mi fa male la testa. | Mir tut der Kopf weh.
-Non c'è problema. | Kein Problem.
-Va bene, grazie. | In Ordnung, danke.
-Mi piace molto. | Das gefällt mir sehr.
+Che ore sono? | Wie spät ist es? | p_alltag:Che ore sono?
+Sono le tre. | Es ist drei Uhr. | p_alltag:Sono le tre.
+Che tempo fa? | Wie ist das Wetter? | p_alltag:Che tempo fa?
+Fa caldo. | Es ist heiß. | p_alltag:Fa caldo.
+Fa freddo. | Es ist kalt. | p_alltag:Fa freddo.
+Ho fame. | Ich habe Hunger. | p_alltag:Ho fame.
+Ho sete. | Ich habe Durst. | p_alltag:Ho sete.
+Sono stanco. | Ich bin müde. | p_alltag:Sono stanco.
+Aiuto! | Hilfe! | p_alltag:Aiuto!
+Chiami un medico! | Rufen Sie einen Arzt! | p_alltag:Chiami un medico!
+Mi sento male. | Mir geht es schlecht. | p_alltag:Mi sento male.
+Mi fa male la testa. | Mir tut der Kopf weh. | p_alltag:Mi fa male la testa.
+Non c'è problema. | Kein Problem. | p_alltag:Non c'è problema.
+Va bene, grazie. | In Ordnung, danke. | p_alltag:Va bene, grazie.
+Mi piace molto. | Das gefällt mir sehr. | p_alltag:Mi piace molto.
 ` }
 ];
 
-// Einfache Sätze für die Übung "Satzbau" (Wörter in die richtige Reihenfolge bringen)
+// Sätze für die Übung "Satzbau" – Format je Zeile:  italienisch | deutsch
 window.SAETZE = `
 Io parlo italiano. | Ich spreche Italienisch.
 Noi mangiamo la pizza. | Wir essen die Pizza.

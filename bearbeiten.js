@@ -35,8 +35,13 @@ let original = {};       // Datei → erzeugter Text des GitHub-Stands (zum Erke
 let ansicht = { bereich: "w", thema: 0, suche: "" };
 let schluessel = "";
 // Unsichtbare Zeichen, Leerzeichen und Zeilenumbrüche entfernen, die beim Kopieren mitkommen können
-const schluesselSaeubern = (s) => String(s || "").replace(/[^\x21-\x7E]/g, "");
-const schluesselGueltig = (s) => /^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(s);
+// und – falls mehr Text mitkopiert wurde – nur den eigentlichen Schlüssel herausnehmen. Ob er stimmt, prüft dann GitHub.
+const schluesselSaeubern = (s) => {
+  const c = String(s || "").replace(/[^\x21-\x7E]/g, "");
+  const m = c.match(/(?:github_pat_|gh[pousr]_)[A-Za-z0-9_\-]+/);
+  return m ? m[0] : c;
+};
+const schluesselGueltig = (s) => s.length >= 30;
 try { schluessel = schluesselSaeubern(localStorage.getItem(K_SCHLUESSEL)); } catch (e) {}
 
 // ---------- Dateien lesen und schreiben ----------
@@ -169,7 +174,7 @@ function einrichten() {
   document.getElementById("speichern").onclick = () => {
     const s = schluesselSaeubern(document.getElementById("schluessel").value);
     if (!s) return toast("Bitte den Schlüssel einfügen.");
-    if (!schluesselGueltig(s)) return toast("Das sieht nicht wie ein GitHub-Schlüssel aus – er beginnt mit github_pat_ und ist sehr lang. Bitte nochmal kopieren.", 6000);
+    if (!schluesselGueltig(s)) return toast(`Der eingefügte Text ist zu kurz (${s.length} Zeichen) – ein GitHub-Schlüssel ist sehr lang. Bitte nochmal vollständig kopieren.`, 6000);
     schluessel = s;
     try { localStorage.setItem(K_SCHLUESSEL, s); } catch (e) {}
     start();

@@ -369,6 +369,7 @@ function startseite() {
   const sagen = ALLE_KARTEN.filter((k) => istGelernt(k.id, "de-it")).length;
   const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:");
   const gespr = gFaellig("dialog:");
+  const fehlerZahl = anzahlFehler();
   zeige(`
     <div class="statistik">
       <div><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></div>
@@ -382,6 +383,7 @@ function startseite() {
       <button class="kachel" data-gehe="hoeren"><span class="sym">👂</span><b>Hören</b><small>Hören und verstehen</small></button>
       <button class="kachel" data-gehe="sprechen"><span class="sym">🎤</span><b>Sprechen</b><small>Nachsprechen mit Korrektur</small></button>
       <button class="kachel breit" data-gehe="gespraech"><span class="sym">🗣️</span><span><b>Frage &amp; Antwort</b><br><small>${gespr ? `<b>${gespr} Fragen zum Wiederholen</b>` : "Auf italienische Fragen italienisch antworten"}</small></span></button>
+      <button class="kachel breit" data-gehe="fehler"><span class="sym">🎯</span><span><b>Fehler wiederholen</b><br><small>${fehlerZahl ? `<b>${fehlerZahl} Dinge, die oft falsch waren</b>` : "Nur das üben, was oft falsch war"}</small></span></button>
       <button class="kachel" data-gehe="phrasen"><span class="sym">💬</span><b>Phrasen</b><small>Alltagssätze anhören</small></button>
       <button class="kachel" data-gehe="nachschlagen"><span class="sym">🔎</span><b>Wörterbuch</b><small>Alle Wörter suchen</small></button>
       <button class="kachel" data-gehe="einstellungen"><span class="sym">⚙️</span><b>Einstellungen</b><small>Stimme, Tempo, Sicherung</small></button>
@@ -459,10 +461,10 @@ function kartenMenue() {
 }
 function karteZeigen() {
   if (!sitzung) return geheZu("karten");
-  setzeKopf("Karteikarten", "karten");
+  setzeKopf("Karteikarten", sitzung.zurueck || "karten");
   if (sitzung.pos >= sitzung.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Geschafft!</div><p>Du hast ${sitzung.gesamt} Karten geübt.</p></div>
-      <div class="reihe"><button class="btn" data-gehe="karten">Zurück zu den Themen</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`);
+      <div class="reihe"><button class="btn" data-gehe="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-gehe="start">Startseite</button></div>`);
     sitzung = null; return;
   }
   const { k, r } = sitzung.liste[sitzung.pos];
@@ -543,17 +545,18 @@ function grammatikMenue() {
   `);
 }
 // Übung c'è / ci sono
+function ceAufgabe(x) {
+  const gross = /^[A-Z]/.test(x.a);
+  const optionen = gross ? ["C'è", "Ci sono"] : ["c'è", "ci sono"];
+  const ganz = x.s.replace("___", x.a);
+  return {
+    frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
+    optionen, richtig: x.a, zwei: true, sprechen: ganz, erklaerung: ganz,
+    beiAntwort: (ok) => gBewerte("ce:" + x.s, ok)
+  };
+}
 function ceStart() {
-  const aufgaben = gewichtetZiehen(CE_CI_SONO, (x) => gGewicht("ce:" + x.s), 10).map((x) => {
-    const gross = /^[A-Z]/.test(x.a);
-    const optionen = gross ? ["C'è", "Ci sono"] : ["c'è", "ci sono"];
-    const ganz = x.s.replace("___", x.a);
-    return {
-      frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
-      optionen, richtig: x.a, zwei: true, sprechen: ganz, erklaerung: ganz,
-      beiAntwort: (ok) => gBewerte("ce:" + x.s, ok)
-    };
-  });
+  const aufgaben = gewichtetZiehen(CE_CI_SONO, (x) => gGewicht("ce:" + x.s), 10).map(ceAufgabe);
   quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "grammatik", titel: "c'è / ci sono", nochmal: "cecisono" });
 }
 function konjugiere(v) {
@@ -592,13 +595,7 @@ function verbenMenue() {
     </div>`);
   $app.querySelectorAll("[data-art]").forEach((b) => (b.onclick = () => {
     const pool = gruppen[b.dataset.art].flatMap((v) => [0, 1, 2, 3, 4, 5].map((p) => ({ v, p, key: `verb:${v.inf}:${p}` })));
-    const aufgaben = gewichtetZiehen(pool, (x) => gGewicht(x.key), 10).map(({ v, p, key }) => {
-      const formen = konjugiere(v), richtig = formen[p];
-      const falsche = mischen([...new Set(formen.filter((f) => f !== richtig))]).slice(0, 3);
-      return { frage: `<div class="leise">${esc(v.inf)} = ${esc(v.de)}</div><div class="gross">${PERSONEN[p]} ___</div><div class="leise">(${PERSONEN_DE[p]})</div>`,
-        optionen: mischen([richtig, ...falsche]), richtig, sprechen: `${PERSONEN[p].split("/")[0]} ${richtig}`, erklaerung: `${PERSONEN[p]} ${richtig}`,
-        beiAntwort: (ok) => gBewerte(key, ok) };
-    });
+    const aufgaben = gewichtetZiehen(pool, (x) => gGewicht(x.key), 10).map(({ v, p }) => verbAufgabe(v, p));
     quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "verben", titel: "Verben konjugieren" });
   }));
 }
@@ -619,12 +616,20 @@ const ARTIKEL_NOMEN = ALLE_WOERTER.map((w) => {
   const m = w.it.match(/^(il|lo|la|i|gli|le) (.+)$/) || w.it.match(/^(l')(.+)$/);
   return m ? { artikel: m[1], nomen: m[2], de: w.de, ganz: w.it } : null;
 }).filter(Boolean);
+function verbAufgabe(v, p) {
+  const key = `verb:${v.inf}:${p}`, formen = konjugiere(v), richtig = formen[p];
+  const falsche = mischen([...new Set(formen.filter((f) => f !== richtig))]).slice(0, 3);
+  return { frage: `<div class="leise">${esc(v.inf)} = ${esc(v.de)}</div><div class="gross">${PERSONEN[p]} ___</div><div class="leise">(${PERSONEN_DE[p]})</div>`,
+    optionen: mischen([richtig, ...falsche]), richtig, sprechen: `${PERSONEN[p].split("/")[0]} ${richtig}`, erklaerung: `${PERSONEN[p]} ${richtig}`,
+    beiAntwort: (ok) => gBewerte(key, ok) };
+}
+const artikelAufgabe = (a) => ({
+  frage: `<div class="leise">Welcher Artikel passt?</div><div class="gross">___ ${esc(a.nomen)}</div>`,
+  optionen: ["il", "lo", "la", "l'", "i", "gli", "le"], richtig: a.artikel, sprechen: a.ganz,
+  erklaerung: `${a.ganz} = ${a.de}`, zwei: true, beiAntwort: (ok) => gBewerte("art:" + a.ganz, ok)
+});
 function artikelStart() {
-  const aufgaben = gewichtetZiehen(ARTIKEL_NOMEN, (a) => gGewicht("art:" + a.ganz), 10).map((a) => ({
-    frage: `<div class="leise">Welcher Artikel passt?</div><div class="gross">___ ${esc(a.nomen)}</div>`,
-    optionen: ["il", "lo", "la", "l'", "i", "gli", "le"], richtig: a.artikel, sprechen: a.ganz,
-    erklaerung: `${a.ganz} = ${a.de}`, zwei: true, beiAntwort: (ok) => gBewerte("art:" + a.ganz, ok)
-  }));
+  const aufgaben = gewichtetZiehen(ARTIKEL_NOMEN, (a) => gGewicht("art:" + a.ganz), 10).map(artikelAufgabe);
   quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "grammatik", titel: "Artikel üben", nochmal: "artikel" });
 }
 
@@ -682,12 +687,13 @@ function quizZeigen() {
 
 // Satzbau
 let satz = null;
-function satzbauStart() {
-  const s = gewichtetZiehen(SAETZE_LISTE, (x) => gGewicht("satz:" + x.it), 1)[0];
+function satzbauStart(pool) {
+  pool = pool && pool.length ? pool : SAETZE_LISTE;
+  const s = gewichtetZiehen(pool, (x) => gGewicht("satz:" + x.it), 1)[0];
   const woerter = s.it.replace(/[.?!]$/, "").split(" ");
   let gemischt = mischen(woerter.map((w, i) => ({ w, i })));
   if (gemischt.every((x, i) => x.i === i)) gemischt = gemischt.reverse();
-  satz = { s, woerter, gemischt, gewaehlt: [], geprueft: false };
+  satz = { s, woerter, gemischt, gewaehlt: [], geprueft: false, pool };
   satzbauZeigen();
 }
 function satzbauZeigen() {
@@ -709,7 +715,7 @@ function satzbauZeigen() {
   $app.querySelectorAll("[data-weg]").forEach((b) => (b.onclick = () => { if (satz.geprueft) return; satz.gewaehlt.splice(+b.dataset.weg, 1); satzbauZeigen(); }));
   const p = document.getElementById("pruefen"); if (p) p.onclick = () => { satz.geprueft = true; gBewerte("satz:" + s.it, richtig); satzbauZeigen(); sprich(s.it); };
   const l = document.getElementById("leeren"); if (l) l.onclick = () => { satz.gewaehlt = []; satzbauZeigen(); };
-  const n = document.getElementById("neu"); if (n) n.onclick = () => satzbauStart();
+  const n = document.getElementById("neu"); if (n) n.onclick = () => satzbauStart(satz.pool === SAETZE_LISTE ? null : schwacheSaetze());
 }
 
 // ---------- Hören ----------
@@ -1023,6 +1029,61 @@ function gespraechZeigen() {
   };
 }
 
+// ---------- Fehler wiederholen: nur was oft falsch war ----------
+// "schwach" = mindestens einmal falsch und (Fehler ≥ halb so viele wie Treffer oder Karte fällt schwer).
+// Sobald man es oft genug richtig hat, verschwindet es von selbst aus dieser Liste.
+const kartenSchwach = (k) => !!k && k.falsch > 0 && (k.falsch * 2 >= k.richtig || k.ease <= 2.2);
+const gSchwach = (g) => !!g && g.falsch > 0 && g.falsch * 2 >= g.richtig;
+const schwaecheWert = (st) => st.falsch * 2 - st.richtig + (st.vergessen || 0) * 2;
+function schwacheKarten() {
+  return Object.entries(S.karten).filter(([key, k]) => kartenSchwach(k) && KARTE_NACH_ID[key.split("|")[0]])
+    .sort((a, b) => schwaecheWert(b[1]) - schwaecheWert(a[1]))
+    .map(([key]) => { const [id, r] = key.split("|"); return { k: KARTE_NACH_ID[id], r }; });
+}
+function schwacheGrammatik() {
+  const aufgaben = [];
+  Object.entries(S.grammatik).filter(([key, g]) => gSchwach(g)).sort((a, b) => schwaecheWert(b[1]) - schwaecheWert(a[1])).forEach(([key]) => {
+    const [art, ...rest] = key.split(":"), wert = rest.join(":");
+    if (art === "verb") { const [inf, p] = [rest.slice(0, -1).join(":"), +rest[rest.length - 1]]; const v = ALLE_VERBEN.find((x) => x.inf === inf); if (v) aufgaben.push(verbAufgabe(v, p)); }
+    if (art === "art") { const a = ARTIKEL_NOMEN.find((x) => x.ganz === wert); if (a) aufgaben.push(artikelAufgabe(a)); }
+    if (art === "ce") { const x = CE_CI_SONO.find((c) => c.s === wert); if (x) aufgaben.push(ceAufgabe(x)); }
+  });
+  return aufgaben;
+}
+const schwacheSaetze = () => SAETZE_LISTE.filter((s) => gSchwach(S.grammatik["satz:" + s.it]));
+const schwacheFragen = () => ALLE_FRAGEN.filter((q) => gSchwach(S.grammatik[q.key]));
+function schwachesSprechen() {
+  return ALLE_KARTEN.filter((k) => { const a = S.aussprache[k.id]; return (a && a.versuche > 0 && a.letzter < 70) || kartenSchwach(zustand(k.id, "de-it")); });
+}
+function anzahlFehler() {
+  return schwacheKarten().length + schwacheGrammatik().length + schwacheSaetze().length + schwacheFragen().length;
+}
+function fehlerMenue() {
+  setzeKopf("Fehler wiederholen", "start");
+  const karten = schwacheKarten(), gram = schwacheGrammatik(), saetze = schwacheSaetze(), fragen = schwacheFragen(), sprechenListe = schwachesSprechen();
+  const zeile = (id, sym, name, n, text) => `<button class="zeile" id="${id}" ${n ? "" : "disabled style='opacity:.5'"}><span class="sym">${sym}</span><span class="mitte">${name}<small>${n ? `<b>${n}</b> ${text}` : "nichts – sehr gut!"}</small></span><span class="pfeil">›</span></button>`;
+  zeige(`
+    <p>Hier übst du <b>nur</b> das, was du oft falsch hattest oder als „nicht gewusst“ markiert hast. Was du ein paar Mal richtig hast, verschwindet von selbst aus der Liste.</p>
+    ${karten.length + gram.length + saetze.length + fragen.length + sprechenListe.length === 0 ? `<div class="meldung gut">🎉 Im Moment gibt es keine Fehler zu wiederholen. Üb erst ein bisschen – Fehler sammeln sich hier automatisch.</div>` : ""}
+    <div class="liste">
+      ${zeile("fKarten", "🗂️", "Vokabeln & Phrasen", karten.length, "Karten (beide Richtungen)")}
+      ${zeile("fGram", "📘", "Grammatik", gram.length, "Verbformen, Artikel, c'è / ci sono")}
+      ${zeile("fSatz", "🧩", "Satzbau", saetze.length, "Sätze")}
+      ${zeile("fSprechen", "🎤", "Sprechen", sprechenListe.length, "Wörter und Sätze")}
+      ${zeile("fFragen", "🗣️", "Frage & Antwort", fragen.length, "Fragen")}
+    </div>`);
+  const klick = (id, fn) => { const el = document.getElementById(id); if (el && !el.disabled) el.onclick = fn; };
+  klick("fKarten", () => {
+    const liste = karten.slice(0, 20);
+    sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "fehler" };
+    geheZu("karte");
+  });
+  klick("fGram", () => quizStarten({ aufgaben: mischen(gram.slice(0, 15)), pos: 0, punkte: 0, zurueck: "fehler", titel: "Grammatik-Fehler", nochmal: "fehler" }));
+  klick("fSatz", () => { satz = null; geheZu("satzbau-fehler"); });
+  klick("fSprechen", () => sprechenStarten(sprechenListe));
+  klick("fFragen", () => { gespraech = { liste: mischen(fragen), pos: 0 }; neueFrage(); geheZu("gespraech-ueben"); });
+}
+
 // ---------- Phrasen ansehen ----------
 function phrasenMenue() {
   setzeKopf("Phrasen", "start");
@@ -1128,6 +1189,7 @@ function route() {
     tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
+    fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen
   };
   (seiten[teil] || startseite)();

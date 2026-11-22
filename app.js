@@ -1307,7 +1307,6 @@ Wichtig:
 - Einfaches Italienisch: Präsens, Grundwortschatz, kurze Sätze.
 - Wenn ich „aiuto“ sage oder Deutsch spreche: Sag mir kurz auf Deutsch, was ich auf Italienisch sagen könnte, und stell dann die Frage noch einmal auf Italienisch.
 - Erst wenn ich „basta“ sage: kurze Zusammenfassung auf Deutsch, welche Fehler ich am häufigsten gemacht habe und warum.`;
-const ITALIENISCH_START = "Parla sempre in italiano, con una pronuncia italiana naturale. (Anweisung für dich auf Deutsch:)\n\n";
 function woerterListe(liste) { return liste.map((k) => `${k.it} = ${k.de}`).join("; "); }
 function fehlerWoerter() {
   const gesehen = new Set();
@@ -1325,9 +1324,9 @@ function claudeAnweisungen(werte) {
   return [
     { id: "rolle", sym: "🎭", titel: "Rollenspiel", text: "Claude spielt eine Person in einer Alltagssituation, du antwortest auf Italienisch – mit Korrektur.",
       feld: `<select id="szene">${SZENEN.map((s) => `<option value="${s.id}" ${s.id === sz.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`,
-      prompt: `${ITALIENISCH_START}Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nBeginne jetzt direkt mit deinem ersten Satz in der Rolle – auf Italienisch, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit deinem ersten Satz in der Rolle, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "frei", sym: "💬", titel: "Freies Gespräch über mich", text: "Claude stellt dir einfache Fragen über dich (Familie, Arbeit, Hobbys, Urlaub) und plaudert mit dir.",
-      prompt: `${ITALIENISCH_START}Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nBeginne jetzt direkt mit einer kurzen Begrüßung und deiner ersten Frage – auf Italienisch, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit einer kurzen Begrüßung und deiner ersten Frage, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "korrektur", sym: "✏️", titel: "Meine Sätze korrigieren", text: "Du schreibst oder sprichst eigene italienische Sätze, Claude korrigiert und erklärt.",
       prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Ich schreibe dir gleich eigene italienische Sätze.\nFür jeden Satz:\n1. Ist er richtig? Wenn nicht, schreib die korrigierte Fassung.\n2. Erkläre jeden Fehler kurz und einfach auf Deutsch.\n3. Gib mir eine natürlichere Variante, wie ein Italiener es sagen würde.\nHalte die Antworten kurz. Antworte jetzt nur mit "Pronto! Scrivi una frase." und warte auf meinen ersten Satz.` },
     { id: "grammatik", sym: "📘", titel: "Grammatikfrage stellen", text: "Claude erklärt eine Grammatikfrage einfach, mit Beispielen und einer Mini-Übung.",

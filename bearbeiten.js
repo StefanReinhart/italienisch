@@ -149,8 +149,9 @@ function einrichten() {
     <ol>
       <li>Auf <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → Fine-grained token anlegen</a> gehen (als <b>StefanReinhart</b> angemeldet).</li>
       <li><b>Token name:</b> z. B. <code>Italienisch bearbeiten</code>. <b>Expiration:</b> z. B. 1 Jahr.</li>
-      <li><b>Repository access:</b> „Only select repositories“ → <b>italienisch</b> auswählen.</li>
-      <li><b>Permissions → Repository permissions → Contents:</b> auf <b>Read and write</b> stellen. Sonst nichts ändern.</li>
+      <li><b>Repository access:</b> „Only select repositories“ anklicken, dann <b>Select repositories</b> → <b>italienisch</b> auswählen.</li>
+      <li>Unter <b>Permissions</b> den Reiter <b>Repositories</b> wählen → rechts <b>＋ Add permissions</b> → <b>Contents</b> ankreuzen.
+        In der neuen Zeile „Contents“ rechts das Auswahlfeld von <b>Read-only</b> auf <b>Read and write</b> umstellen. Sonst nichts ändern.</li>
       <li>Unten <b>Generate token</b>, den angezeigten Schlüssel (beginnt mit <code>github_pat_</code>) kopieren und hier einfügen:</li>
     </ol>
     <input type="password" id="schluessel" placeholder="github_pat_…" autocomplete="off" style="font-family:monospace">

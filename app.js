@@ -1017,7 +1017,7 @@ function einstellungen() {
     <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
-    <p class="leise" style="margin-top:20px">Version 3 · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
+    <p class="leise" style="margin-top:20px">Version 4 · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
   const sel = document.getElementById("stimme");
   if (sel) sel.onchange = () => { E.stimme = sel.value; speichern(); sprich("Ciao, come stai?"); };
   document.getElementById("test").onclick = () => sprich("Ciao! Benvenuto. Impariamo l'italiano insieme.");

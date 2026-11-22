@@ -1,4 +1,4 @@
-# Startet die App zum Ausprobieren auf diesem PC: http://localhost:8765
+﻿# Startet die App zum Ausprobieren auf diesem PC: http://localhost:8765
 # Ausführen: Rechtsklick → "Mit PowerShell ausführen". Beenden: Fenster schließen.
 param([switch]$OhneBrowser)
 $port = 8765

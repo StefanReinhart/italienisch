@@ -93,16 +93,33 @@ Zahnrad → *Sprachdaten installieren* → **Italienisch** herunterladen. Dann g
 
 **Mikrofon:** Beim ersten Tippen auf 🎤 fragt Chrome nach dem Mikrofon → **Zulassen**.
 
-## 4. Änderungen und Updates
+## 4. Inhalte bearbeiten und veröffentlichen
 
-Wenn an der App etwas geändert wird:
-1. In der Datei `sw.js` oben die Versionsnummer erhöhen (z. B. `italienisch-v1` → `italienisch-v2`).
-   Sonst hält das Handy an der alten, gespeicherten Fassung fest.
-2. Hochladen (`git push`).
-3. Auf dem Handy die App öffnen, ganz schließen und wieder öffnen – dann ist die neue Version da.
+**Bearbeiten** (am PC, z. B. mit dem Editor oder Visual Studio Code):
 
-**Eigene Wörter ergänzen:** In `data/wortschatz.js` oder `data/phrasen.js` einfach eine neue Zeile im Format
-`italienisch | deutsch` in das passende Thema schreiben.
+| Was | Datei |
+|---|---|
+| Vokabeln | `data/wortschatz.js` |
+| Phrasen und Satzbau-Sätze | `data/phrasen.js` |
+| Verben, Grammatik-Erklärungen | `data/grammatik.js` |
+| Frage & Antwort | `data/gespraech.js` |
+
+Jede Zeile: `italienisch | deutsch`. Achtung: Wer den **italienischen** Text eines Eintrags ändert, setzt dessen
+Lernstand zurück (die App erkennt Karten am italienischen Text). Den deutschen Text kann man frei ändern.
+
+**Testen** (optional): Rechtsklick auf `lokal-starten.ps1` → „Mit PowerShell ausführen“.
+
+**Veröffentlichen:** Doppelklick auf **`Veröffentlichen.cmd`**. Das Skript
+1. holt zuerst den Stand vom anderen PC (falls dort etwas geändert wurde),
+2. prüft die Datendateien auf typische Tippfehler (fehlender Backtick, Klammern),
+3. erhöht die Versionsnummer, damit das Handy die neue Fassung lädt,
+4. fragt kurz, was du geändert hast, speichert und lädt alles zu GitHub hoch,
+5. wartet, bis die neue Version online ist.
+
+Danach auf dem Handy die App öffnen, ganz schließen und wieder öffnen.
+
+**Am zweiten PC** einmalig in PowerShell im Ordner `Documents`:
+`git clone https://github.com/StefanReinhart/italienisch.git Italienisch-App` – danach funktioniert dort alles genauso.
 
 ## Dateien im Ordner
 

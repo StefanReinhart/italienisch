@@ -143,5 +143,25 @@ window.GESPRAECH = [
     m: ["sì {rest}", "no [mi] [dispiace] [non] [c'è] {rest}", "[è] in fondo {rest}", "[è] a destra|sinistra {rest}", "[è] di sopra|sotto {rest}"] },
   { f: "Quanti giorni ci sono in una settimana?", de: "Wie viele Tage gibt es in einer Woche?", b: "In una settimana ci sono sette giorni.", bde: "In einer Woche gibt es sieben Tage.",
     m: ["[in una settimana] [ci sono] sette [giorni] {rest}"] }
+]},
+{ thema: "Aus den Lektionen", fragen: [
+  { f: "Prendi un cornetto con il caffè?", de: "Nimmst du ein Hörnchen zum Kaffee?", b: "Sì, prendo un cornetto.", bde: "Ja, ich nehme ein Hörnchen.",
+    m: ["sì [prendo] [un] [cornetto] {rest}", "no [grazie] {rest}", "sì [grazie]", "volentieri [grazie]"] },
+  { f: "Come si chiama tua madre?", de: "Wie heißt deine Mutter?", b: "Mia madre si chiama Maria.", bde: "Meine Mutter heißt Maria.",
+    m: ["[mia] [madre] si chiama {x}", "[lei] si chiama {x}"] },
+  { f: "Ti piacciono gli spaghetti?", de: "Magst du Spaghetti?", b: "Sì, mi piacciono molto.", bde: "Ja, ich mag sie sehr.",
+    m: ["sì [mi] [piacciono] [molto|tanto|moltissimo] {rest}", "no [non] [mi] [piacciono] [molto] {rest}", "sì [molto]", "no"] },
+  { f: "Di che colore è la tua giacca?", de: "Welche Farbe hat deine Jacke?", b: "La mia giacca è nera.", bde: "Meine Jacke ist schwarz.",
+    m: ["[la] [mia] [giacca] [è] nera|rossa|blu|verde|gialla|bianca|grigia|marrone|arancione|rosa|azzurra {rest}", "non ho una giacca"] },
+  { f: "C'è una farmacia vicino a casa tua?", de: "Gibt es eine Apotheke in der Nähe deiner Wohnung?", b: "Sì, c'è una farmacia vicino a casa mia.", bde: "Ja, es gibt eine Apotheke in der Nähe meiner Wohnung.",
+    m: ["sì [c'è] [una] [farmacia] {rest}", "no [non] [c'è] {rest}", "sì", "no"] },
+  { f: "Come vai in centro?", de: "Wie kommst du ins Zentrum?", b: "Vado in centro a piedi.", bde: "Ich gehe zu Fuß ins Zentrum.",
+    m: ["[vado] [in] [centro] in autobus|macchina|bicicletta|bici|treno|metro|metropolitana|taxi", "[vado] [in] [centro] a piedi", "[vado] [in] [centro] con il|la|l' {x}"] },
+  { f: "Vuole una camera singola o doppia?", de: "Möchten Sie ein Einzel- oder ein Doppelzimmer?", b: "Una camera doppia, per favore.", bde: "Ein Doppelzimmer, bitte.",
+    m: ["[vorrei] [una] [camera] singola|doppia [per] [favore] {rest}", "[una] doppia|singola [per] [favore]"] },
+  { f: "Posso pagare con la carta? (Antworte als Hotel)", de: "Kann ich mit Karte zahlen? (Du arbeitest an der Rezeption)", b: "Sì, certo.", bde: "Ja, natürlich.",
+    m: ["sì [certo] {rest}", "certo {rest}", "no [mi] [dispiace] {rest}"] },
+  { f: "Che cosa ti fa male?", de: "Was tut dir weh?", b: "Mi fa male la testa.", bde: "Mir tut der Kopf weh.",
+    m: ["mi fa male [il|la|lo|l'] {x}", "mi fanno male [i|le|gli] {x}", "ho mal di {x}", "[non] [mi] [fa] [male] niente {rest}"] }
 ]}
 ];

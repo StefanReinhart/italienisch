@@ -34,7 +34,12 @@ function zeilen(text) {
 }
 const mitKennung = (t) => (e) => ({ it: e.it, de: e.de, id: e.kennung || t.id + ":" + e.it, thema: t.id });
 const THEMEN = WORTSCHATZ.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) }));
-const PHRASEN_GRUPPEN = PHRASEN.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) }));
+// Eigene Wörter und Sätze jeder Lektion (aus lektionen-a1.js) – als eigene Gruppen, auch zum freien Üben
+const LEKTION_GRUPPEN = (window.LEKTIONEN || []).filter((l) => l.neu).map((l, i) => {
+  const g = { id: "lk_" + l.id, name: `Lektion ${i + 1}: ${l.titel}`, icon: l.icon };
+  return { ...g, eintraege: zeilen(l.neu).map(mitKennung(g)) };
+});
+const PHRASEN_GRUPPEN = PHRASEN.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) })).concat(LEKTION_GRUPPEN);
 const ALLE_WOERTER = THEMEN.flatMap((t) => t.eintraege);
 const ALLE_PHRASEN = PHRASEN_GRUPPEN.flatMap((t) => t.eintraege);
 const ALLE_KARTEN = ALLE_WOERTER.concat(ALLE_PHRASEN);
@@ -1288,7 +1293,15 @@ let lektionAktiv = null, lektionTiefe = null;
 function lStand(id) { S.lektionen = S.lektionen || {}; return (S.lektionen[id] = S.lektionen[id] || { schritte: [], bestanden: false, best: 0 }); }
 const aktuelleLektion = () => LEKTION_LISTE.find((l) => !lStand(l.id).bestanden) || null;
 const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id) && !(s.id === "check" && lStand(L.id).bestanden));
-const lektionKarten = (L) => kartenDerThemen(L.themen);
+// Karten einer Lektion = Kernwortschatz (vorhandene Wörter/Sätze, über den italienischen Text gefunden) + eigene Lektions-Gruppe
+const KARTE_NACH_TEXT = {};
+ALLE_KARTEN.forEach((k) => { if (!k.thema.startsWith("lk_") && !KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k; });
+function lektionKarten(L) {
+  if (!L.kern && !L.neu) return kartenDerThemen(L.themen);
+  const kern = (L.kern || []).map((t) => KARTE_NACH_TEXT[t]).filter(Boolean);
+  const eigene = GRUPPE_NACH_ID["lk_" + L.id] ? GRUPPE_NACH_ID["lk_" + L.id].eintraege : [];
+  return [...new Map(kern.concat(eigene).map((k) => [k.id, k])).values()];
+}
 const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
 function lektionWoerterStand(L) {
   const karten = lektionKarten(L);
@@ -1299,7 +1312,8 @@ function lektionenMenue() {
   lektionAktiv = null;
   const akt = aktuelleLektion(), geschafft = LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length;
   zeige(`
-    <p>12 Lektionen, die aufeinander aufbauen – jede mit Erklärung, Wörtern, Grammatik, Hör-Dialog, Sprechen und einem kleinen Abschluss-Check. Alle sind offen: Du kannst jederzeit springen.</p>
+    <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du alle geschafft hast, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
+    <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog, Sprechen und einen kleinen Abschluss-Check. Alle sind offen: Du kannst jederzeit springen.</p>
     <div class="fortschritt"><span>${geschafft} / ${LEKTION_LISTE.length} geschafft</span><div class="balken"><i style="width:${(100 * geschafft) / LEKTION_LISTE.length}%"></i></div></div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
       const st = lStand(L.id), fertig = st.schritte.filter((s) => s !== "check").length;
@@ -1307,7 +1321,7 @@ function lektionenMenue() {
       return `<button class="zeile${st.bestanden ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
         <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}</small></span><span class="pfeil">›</span></button>`;
     }).join("")}</div>
-    <p class="leise" style="margin-top:14px">Danach geht es weiter mit: reflexiven Verben (mi chiamo, mi alzo), „mir/dir“-Wörtern (mi, ti, gli …) und der Vergangenheit – sag Bescheid, wenn du so weit bist.</p>`);
+    <p class="leise" style="margin-top:14px">Danach kommt <b>A2</b>: die Vergangenheit (ho mangiato, sono andato), „mir/dir/ihm“-Wörter (mi, ti, gli …), mehr reflexive Verben, Vergleiche (più grande di …) und die Zukunft – sag Bescheid, wenn du so weit bist.</p>`);
 }
 function lektionZeigen(id) {
   const L = LEKTION_NACH_ID[id]; if (!L) return geheZu("lektionen");

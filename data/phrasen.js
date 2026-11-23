@@ -36,6 +36,8 @@ Un tavolo per due, per favore. | Einen Tisch für zwei, bitte. | p_restaurant:Un
 Ho una prenotazione. | Ich habe eine Reservierung. | p_restaurant:Ho una prenotazione.
 Il menù, per favore. | Die Speisekarte, bitte. | p_restaurant:Il menù, per favore.
 Che cosa ci consiglia? | Was empfehlen Sie uns? | p_restaurant:Che cosa ci consiglia?
+Che cosa mi consiglia? | Was empfehlen Sie mir? | p_restaurant:mi-consiglia
+Qual è la specialità della casa? | Was ist die Spezialität des Hauses? | p_restaurant:specialita
 Vorrei una pizza margherita. | Ich hätte gern eine Pizza Margherita. | p_restaurant:Vorrei una pizza margherita.
 Per me una pasta, per favore. | Für mich bitte Nudeln. | p_restaurant:Per me una pasta, per favore.
 Un bicchiere di vino rosso. | Ein Glas Rotwein. | p_restaurant:Un bicchiere di vino rosso.

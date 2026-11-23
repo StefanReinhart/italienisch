@@ -1298,11 +1298,13 @@ const KARTE_NACH_TEXT = {};
 ALLE_KARTEN.forEach((k) => { if (!k.thema.startsWith("lk_") && !KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k; });
 function lektionKarten(L) {
   if (!L.kern && !L.neu) return kartenDerThemen(L.themen);
-  const kern = (L.kern || []).map((t) => KARTE_NACH_TEXT[t]).filter(Boolean);
+  // über die feste Kennung (bleibt beim Bearbeiten gleich); alte Einträge mit reinem Text gehen zur Sicherheit auch
+  const kern = (L.kern || []).map((t) => KARTE_NACH_ID[t] || KARTE_NACH_TEXT[t]).filter(Boolean);
   const eigene = GRUPPE_NACH_ID["lk_" + L.id] ? GRUPPE_NACH_ID["lk_" + L.id].eintraege : [];
   return [...new Map(kern.concat(eigene).map((k) => [k.id, k])).values()];
 }
-const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
+// Fragen über ihre feste Kennung (id; bei noch nie bearbeiteten Fragen ist das der ursprüngliche Fragetext)
+const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => (q.id || q.f) === f) || ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
 function lektionWoerterStand(L) {
   const karten = lektionKarten(L);
   return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length };

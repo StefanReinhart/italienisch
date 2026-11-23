@@ -1,11 +1,11 @@
 // Ergänzungen der 12 Lektionen für das volle A1-Niveau (wird nach lektionen.js geladen).
-// kern = Wörter/Sätze aus Wortschatz und Phrasen (genauer italienischer Text), die zur Lektion gehören
+// kern = Wörter/Sätze aus Wortschatz und Phrasen, die zur Lektion gehören – über ihre feste Kennung (bleibt gleich, auch wenn der Text geändert wird)
 // neu  = neue Wörter und Beispielsätze der Lektion (Format je Zeile: italienisch | deutsch)
 // grammatikPlus / fragenPlus / erklaerungPlus werden an die Lektion in lektionen.js angehängt
 window.LEKTION_ERGAENZUNG = {
 l1: {
-  kern: ["ciao", "buongiorno", "buonasera", "buonanotte", "arrivederci", "grazie", "prego", "per favore", "scusi", "sì", "no", "io", "tu", "lui", "lei", "noi", "voi", "loro", "come", "dove", "chi", "che cosa", "l'amico", "l'amica", "il nome", "anche",
-    "Ciao, come stai?", "Buongiorno, come sta?", "Sto bene, grazie.", "Non c'è male.", "E tu?", "Come ti chiami?", "Mi chiamo Marco.", "Piacere!", "Di dove sei?", "Sono tedesco.", "A presto!", "A domani!", "Parlo un po' di italiano.", "Non capisco."],
+  kern: ["grundwoerter:ciao", "grundwoerter:buongiorno", "grundwoerter:buonasera", "grundwoerter:buonanotte", "grundwoerter:arrivederci", "grundwoerter:grazie", "grundwoerter:prego", "grundwoerter:per favore", "grundwoerter:scusi", "grundwoerter:sì", "grundwoerter:no", "personen:io", "personen:tu", "personen:lui", "personen:lei", "personen:noi", "personen:voi", "personen:loro", "fragen:come", "fragen:dove", "fragen:chi", "fragen:che cosa", "personen:l'amico", "personen:l'amica", "freizeit:il nome", "grundwoerter:anche",
+    "p_begruessung:Ciao, come stai?", "p_begruessung:Buongiorno, come sta?", "p_begruessung:Sto bene, grazie.", "p_begruessung:Non c'è male.", "p_begruessung:E tu?", "p_begruessung:Come ti chiami?", "p_begruessung:Mi chiamo Marco.", "p_begruessung:Piacere!", "p_begruessung:Di dove sei?", "p_begruessung:Sono tedesco.", "p_begruessung:A presto!", "p_begruessung:A domani!", "p_verstaendigung:Parlo un po' di italiano.", "p_verstaendigung:Non capisco."],
   neu: `
 Sono Marco, e tu? | Ich bin Marco, und du?
 Lei è italiana? | Sind Sie Italienerin?
@@ -23,8 +23,8 @@ Non sono di qui. | Ich bin nicht von hier.
 <p><b>Verneinen:</b> einfach <b>non</b> vor das Verb: <i>Non sono italiano.</i> = Ich bin kein Italiener. <i>Non capisco.</i> = Ich verstehe nicht.</p>`
 },
 l2: {
-  kern: ["uno", "due", "tre", "quattro", "cinque", "sei", "sette", "otto", "nove", "dieci", "undici", "dodici", "quindici", "venti", "ventuno", "trenta", "quaranta", "cinquanta", "sessanta", "settanta", "ottanta", "novanta", "cento", "mille", "quanti", "quanto", "l'anno",
-    "Quanti anni hai?", "Ho cinquantaquattro anni."],
+  kern: ["zahlen:uno", "zahlen:due", "zahlen:tre", "zahlen:quattro", "zahlen:cinque", "zahlen:sei", "zahlen:sette", "zahlen:otto", "zahlen:nove", "zahlen:dieci", "zahlen:undici", "zahlen:dodici", "zahlen:quindici", "zahlen:venti", "zahlen:ventuno", "zahlen:trenta", "zahlen:quaranta", "zahlen:cinquanta", "zahlen:sessanta", "zahlen:settanta", "zahlen:ottanta", "zahlen:novanta", "zahlen:cento", "zahlen:mille", "fragen:quanti", "fragen:quanto", "zeit:l'anno",
+    "p_begruessung:Quanti anni hai?", "p_begruessung:Ho cinquanta anni."],
   neu: `
 ventitré | dreiundzwanzig
 trentadue | zweiunddreißig
@@ -41,8 +41,8 @@ Non ho tempo. | Ich habe keine Zeit.
 `
 },
 l3: {
-  kern: ["il caffè", "il cappuccino", "il tè", "il latte", "l'acqua", "l'acqua frizzante", "l'acqua naturale", "la birra", "il vino", "il succo", "il bicchiere", "la tazza", "la bottiglia", "il bar", "il conto", "lo zucchero", "lo scontrino",
-    "Un caffè, per favore.", "Il conto, per favore.", "Una bottiglia d'acqua naturale.", "Un bicchiere di vino rosso.", "Può ripetere, per favore?", "Più piano, per favore."],
+  kern: ["trinken:il caffè", "trinken:il cappuccino", "trinken:il tè", "trinken:il latte", "trinken:l'acqua", "trinken:l'acqua frizzante", "trinken:l'acqua naturale", "trinken:la birra", "trinken:il vino", "trinken:il succo", "trinken:il bicchiere", "trinken:la tazza", "trinken:la bottiglia", "restaurant:il bar", "restaurant:il conto", "essen:lo zucchero", "einkaufen:lo scontrino",
+    "p_restaurant:Un caffè, per favore.", "p_restaurant:Il conto, per favore.", "p_restaurant:Una bottiglia d'acqua naturale.", "p_restaurant:Un bicchiere di vino rosso.", "p_verstaendigung:Può ripetere, per favore?", "p_verstaendigung:Più piano, per favore."],
   neu: `
 il cornetto | das Hörnchen (Croissant)
 al banco | an der Theke
@@ -67,7 +67,7 @@ Per me una spremuta d'arancia. | Für mich einen frisch gepressten Orangensaft.
 <tr><td>weiblich</td><td><b>una</b> birra</td></tr><tr><td>weiblich vor Selbstlaut</td><td><b>un'</b>acqua, <b>un'</b>amica</td></tr></table>`
 },
 l4: {
-  kern: ["la famiglia", "il padre", "la madre", "il figlio", "la figlia", "il fratello", "la sorella", "il marito", "la moglie", "il nonno", "la nonna", "lo zio", "la zia", "il cugino", "i genitori", "il bambino", "la bambina", "il ragazzo", "la ragazza", "l'uomo", "la donna", "grande", "piccolo", "giovane", "vecchio", "bello"],
+  kern: ["personen:la famiglia", "personen:il padre", "personen:la madre", "personen:il figlio", "personen:la figlia", "personen:il fratello", "personen:la sorella", "personen:il marito", "personen:la moglie", "personen:il nonno", "personen:la nonna", "personen:lo zio", "personen:la zia", "personen:il cugino", "personen:i genitori", "personen:il bambino", "personen:la bambina", "personen:il ragazzo", "personen:la ragazza", "personen:l'uomo", "personen:la donna", "farben:grande", "farben:piccolo", "farben:giovane", "farben:vecchio", "farben:bello"],
   neu: `
 i figli | die Kinder (Söhne und Töchter)
 il nipote | der Enkel / der Neffe
@@ -93,8 +93,8 @@ I nonni hanno un grande giardino. | Die Großeltern haben einen großen Garten.
 <p><b>Eigenschaftswörter</b> passen sich an: <i>il ragazzo alt<b>o</b>, la ragazza alt<b>a</b>, i ragazzi alt<b>i</b>, le ragazze alt<b>e</b></i>. Wörter auf -e haben nur zwei Formen: <i>grand<b>e</b> / grand<b>i</b></i>.</p>`
 },
 l5: {
-  kern: ["la pasta", "la pizza", "il pane", "la carne", "il pesce", "il pollo", "il formaggio", "la verdura", "la frutta", "l'insalata", "il dolce", "il gelato", "la colazione", "il pranzo", "la cena", "il ristorante", "il cameriere", "il menù", "il tavolo", "il primo", "il secondo", "il contorno",
-    "Un tavolo per due, per favore.", "Il menù, per favore.", "Che cosa ci consiglia?", "Che cosa mi consiglia?", "Qual è la specialità della casa?", "Vorrei una pizza margherita.", "È delizioso!", "Sono vegetariano.", "Mi piace molto."],
+  kern: ["essen:la pasta", "essen:la pizza", "essen:il pane", "essen:la carne", "essen:il pesce", "essen:il pollo", "essen:il formaggio", "essen:la verdura", "essen:la frutta", "essen:l'insalata", "essen:il dolce", "essen:il gelato", "essen:la colazione", "essen:il pranzo", "essen:la cena", "restaurant:il ristorante", "restaurant:il cameriere", "restaurant:il menù", "restaurant:il tavolo", "restaurant:il primo", "restaurant:il secondo", "restaurant:il contorno",
+    "p_restaurant:Un tavolo per due, per favore.", "p_restaurant:Il menù, per favore.", "p_restaurant:Che cosa ci consiglia?", "p_restaurant:mi-consiglia", "p_restaurant:specialita", "p_restaurant:Vorrei una pizza margherita.", "p_restaurant:È delizioso!", "p_restaurant:Sono vegetariano.", "p_alltag:Mi piace molto."],
   neu: `
 gli spaghetti | die Spaghetti
 il tiramisù | das Tiramisu
@@ -115,8 +115,8 @@ Le patate non mi piacciono. | Kartoffeln mag ich nicht.
   fragenPlus: ["Ti piacciono gli spaghetti?"]
 },
 l6: {
-  kern: ["il negozio", "il supermercato", "il mercato", "il prezzo", "i soldi", "l'euro", "il chilo", "il litro", "il pezzo", "aperto", "chiuso", "la carta di credito", "la borsa", "la maglietta", "la camicia", "i pantaloni", "la giacca", "le scarpe", "la taglia", "rosso", "blu", "verde", "giallo", "bianco", "nero", "caro", "economico",
-    "Quanto costa?", "Quanto costano?", "Posso provarlo?", "È troppo caro.", "Lo prendo.", "Un chilo di mele, per favore.", "Nient'altro, grazie."],
+  kern: ["einkaufen:il negozio", "einkaufen:il supermercato", "einkaufen:il mercato", "einkaufen:il prezzo", "einkaufen:i soldi", "einkaufen:l'euro", "einkaufen:il chilo", "einkaufen:il litro", "einkaufen:il pezzo", "einkaufen:aperto", "einkaufen:chiuso", "einkaufen:la carta di credito", "einkaufen:la borsa", "kleidung:la maglietta", "kleidung:la camicia", "kleidung:i pantaloni", "kleidung:la giacca", "kleidung:le scarpe", "kleidung:la taglia", "farben:rosso", "farben:blu", "farben:verde", "farben:giallo", "farben:bianco", "farben:nero", "farben:caro", "farben:economico",
+    "p_einkaufen:Quanto costa?", "p_einkaufen:Quanto costano?", "p_einkaufen:Posso provarlo?", "p_einkaufen:È troppo caro.", "p_einkaufen:Lo prendo.", "p_einkaufen:Un chilo di mele, per favore.", "p_einkaufen:Nient'altro, grazie."],
   neu: `
 mezzo chilo | ein halbes Kilo
 un etto | 100 Gramm
@@ -143,8 +143,8 @@ Pago con la carta. | Ich zahle mit Karte.
 <p><i>blu, rosa</i> und <i>arancione</i> ändern sich (fast) nie: <i>le scarpe blu</i>.</p>`
 },
 l7: {
-  kern: ["la città", "la strada", "la via", "la piazza", "il centro", "la chiesa", "il museo", "la banca", "la posta", "l'ospedale", "la stazione", "il parco", "a destra", "a sinistra", "dritto", "vicino", "lontano", "davanti", "dietro", "accanto", "di fronte", "l'angolo", "il semaforo", "l'incrocio",
-    "Scusi, dov'è la stazione?", "Come arrivo al centro?", "È lontano?", "È vicino.", "Vada sempre dritto.", "Giri a destra.", "Giri a sinistra.", "È dietro l'angolo.", "Mi sono perso.", "C'è una farmacia qui vicino?"],
+  kern: ["stadt:la città", "stadt:la strada", "stadt:la via", "stadt:la piazza", "stadt:il centro", "stadt:la chiesa", "stadt:il museo", "stadt:la banca", "stadt:la posta", "stadt:l'ospedale", "stadt:la stazione", "stadt:il parco", "weg:a destra", "weg:a sinistra", "weg:dritto", "weg:vicino", "weg:lontano", "weg:davanti", "weg:dietro", "weg:accanto", "weg:di fronte", "weg:l'angolo", "weg:il semaforo", "weg:l'incrocio",
+    "p_weg:Scusi, dov'è la stazione?", "p_weg:Come arrivo al centro?", "p_weg:È lontano?", "p_weg:È vicino.", "p_weg:Vada sempre dritto.", "p_weg:Giri a destra.", "p_weg:Giri a sinistra.", "p_weg:È dietro l'angolo.", "p_weg:Mi sono perso.", "p_weg:C'è una farmacia qui vicino?"],
   neu: `
 fino a | bis (zu)
 poi | dann
@@ -165,8 +165,8 @@ Questo autobus va in centro? | Fährt dieser Bus ins Zentrum?
   erklaerungPlus: `<p><b>Vier wichtige kleine Wörter:</b> <i>di</i> (von, aus – Herkunft und Besitz: <i>sono di Monaco, la chiave di Marco</i>) · <i>da</i> (von … her: <i>vengo da Roma</i>) · <i>con</i> (mit) · <i>per</i> (für, nach: <i>un biglietto per Firenze</i>).</p>`
 },
 l8: {
-  kern: ["il giorno", "la settimana", "il mese", "l'ora", "la mattina", "il pomeriggio", "la sera", "la notte", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica", "il fine settimana", "presto", "tardi", "dopo", "prima",
-    "parlare", "lavorare", "abitare", "mangiare", "guardare", "comprare", "ascoltare", "arrivare", "Che ore sono?", "Sono le tre."],
+  kern: ["zeit:il giorno", "zeit:la settimana", "zeit:il mese", "zeit:l'ora", "zeit:la mattina", "zeit:il pomeriggio", "zeit:la sera", "zeit:la notte", "zeit:lunedì", "zeit:martedì", "zeit:mercoledì", "zeit:giovedì", "zeit:venerdì", "zeit:sabato", "zeit:domenica", "zeit:il fine settimana", "zeit:presto", "zeit:tardi", "zeit:dopo", "zeit:prima",
+    "verben:parlare", "verben:lavorare", "verben:abitare", "verben:mangiare", "verben:guardare", "verben:comprare", "verben:ascoltare", "verben:arrivare", "p_alltag:Che ore sono?", "p_alltag:Sono le tre."],
   neu: `
 mezzogiorno | zwölf Uhr mittags
 mezzanotte | Mitternacht
@@ -196,8 +196,8 @@ Noi parliamo italiano. | Wir sprechen Italienisch.
 <p><b>Wochentage:</b> <i>lunedì</i> = am Montag · <i>il lunedì</i> = montags (jeden Montag).</p>`
 },
 l9: {
-  kern: ["il treno", "l'autobus", "la macchina", "la bicicletta", "l'aereo", "il taxi", "la metropolitana", "il biglietto", "il binario", "la fermata", "la partenza", "l'arrivo", "il ritardo", "la valigia", "il passaporto", "il viaggio", "le vacanze",
-    "Un biglietto per Roma, per favore.", "Solo andata.", "Andata e ritorno.", "A che ora parte il treno?", "Da quale binario parte?", "Il treno è in ritardo."],
+  kern: ["verkehr:il treno", "verkehr:l'autobus", "verkehr:la macchina", "verkehr:la bicicletta", "verkehr:l'aereo", "verkehr:il taxi", "verkehr:la metropolitana", "verkehr:il biglietto", "verkehr:il binario", "verkehr:la fermata", "verkehr:la partenza", "verkehr:l'arrivo", "verkehr:il ritardo", "verkehr:la valigia", "verkehr:il passaporto", "verkehr:il viaggio", "verkehr:le vacanze",
+    "p_reisen:Un biglietto per Roma, per favore.", "p_reisen:Solo andata.", "p_reisen:Andata e ritorno.", "p_reisen:A che ora parte il treno?", "p_reisen:Da quale binario parte?", "p_reisen:Il treno è in ritardo."],
   neu: `
 uscire | hinausgehen
 prossimo | nächster
@@ -219,8 +219,8 @@ Dov'è la fermata dell'autobus? | Wo ist die Bushaltestelle?
   fragenPlus: ["Come vai in centro?"]
 },
 l10: {
-  kern: ["l'albergo", "la camera", "la chiave", "la prenotazione", "la colazione", "il bagno", "la doccia", "il letto", "la finestra", "volere", "potere", "dovere",
-    "Ho prenotato una camera.", "Avete una camera libera?", "A che ora è la colazione?", "La chiave, per favore.", "Posso pagare con la carta?"],
+  kern: ["stadt:l'albergo", "verkehr:la camera", "verkehr:la chiave", "restaurant:la prenotazione", "essen:la colazione", "haus:il bagno", "haus:la doccia", "haus:il letto", "haus:la finestra", "verben:volere", "verben:potere", "verben:dovere",
+    "p_reisen:Ho prenotato una camera.", "p_reisen:Avete una camera libera?", "p_reisen:A che ora è la colazione?", "p_reisen:La chiave, per favore.", "p_restaurant:Posso pagare con la carta?"],
   neu: `
 la camera singola | das Einzelzimmer
 la camera doppia | das Doppelzimmer
@@ -242,8 +242,8 @@ Non posso dormire, c'è rumore. | Ich kann nicht schlafen, es ist laut.
   fragenPlus: ["Vuole una camera singola o doppia?", "Posso pagare con la carta? (Antworte als Hotel)"]
 },
 l11: {
-  kern: ["la musica", "il film", "il cinema", "il teatro", "lo sport", "il calcio", "la partita", "la festa", "il tempo", "il sole", "la pioggia", "la neve", "il vento", "la primavera", "l'estate", "l'autunno", "l'inverno", "fare", "leggere", "scrivere", "dormire", "vedere",
-    "Che tempo fa?", "Fa caldo.", "Fa freddo."],
+  kern: ["freizeit:la musica", "freizeit:il film", "freizeit:il cinema", "freizeit:il teatro", "freizeit:lo sport", "freizeit:il calcio", "freizeit:la partita", "freizeit:la festa", "wetter:il tempo", "wetter:il sole", "wetter:la pioggia", "wetter:la neve", "wetter:il vento", "wetter:la primavera", "wetter:l'estate", "wetter:l'autunno", "wetter:l'inverno", "verben:fare", "verben:leggere", "verben:scrivere", "verben:dormire", "verben:vedere",
+    "p_alltag:Che tempo fa?", "p_alltag:Fa caldo.", "p_alltag:Fa freddo."],
   neu: `
 giocare | spielen (Sport, Spiel)
 nuotare | schwimmen
@@ -270,8 +270,8 @@ La domenica dormo fino alle nove. | Sonntags schlafe ich bis neun.
   erklaerungPlus: `<p><b>Wie oft?</b> <i>sempre</i> (immer) · <i>spesso</i> (oft) · <i>qualche volta</i> (manchmal) · <i>non … mai</i> (nie): <i>Non bevo <b>mai</b> birra.</i> – das <i>non</i> steht vor dem Verb, <i>mai</i> dahinter.</p>`
 },
 l12: {
-  kern: ["la testa", "gli occhi", "il naso", "la bocca", "l'orecchio", "i denti", "il braccio", "la mano", "la gamba", "il piede", "la schiena", "lo stomaco", "il medico", "la medicina", "il dolore", "la febbre", "malato", "sano", "stanco",
-    "Mi sento male.", "Mi fa male la testa.", "Chiami un medico!", "Aiuto!", "Ho fame.", "Ho sete.", "Sono stanco."],
+  kern: ["koerper:la testa", "koerper:gli occhi", "koerper:il naso", "koerper:la bocca", "koerper:l'orecchio", "koerper:i denti", "koerper:il braccio", "koerper:la mano", "koerper:la gamba", "koerper:il piede", "koerper:la schiena", "koerper:lo stomaco", "koerper:il medico", "koerper:la medicina", "koerper:il dolore", "koerper:la febbre", "koerper:malato", "koerper:sano", "farben:stanco",
+    "p_alltag:Mi sento male.", "p_alltag:Mi fa male la testa.", "p_alltag:Chiami un medico!", "p_alltag:Aiuto!", "p_alltag:Ho fame.", "p_alltag:Ho sete.", "p_alltag:Sono stanco."],
   neu: `
 la tosse | der Husten
 il raffreddore | der Schnupfen, die Erkältung

@@ -55,7 +55,8 @@ const STANDARD = {
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
   lektionen: {},       // Lektions-ID → { schritte, bestanden, best }
-  wuensche: [],        // gewünschte Erklärungen: { id, it, de, zeit, gesendet }
+  wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
+  eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
   einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
@@ -993,10 +994,17 @@ function musterPasst(M, T, i = 0, j = 0) {
 }
 const GESPRAECH_THEMEN = GESPRAECH.map((t, ti) => ({ ...t, id: "g" + ti, fragen: t.fragen.map((q) => ({ ...q, key: "dialog:" + (q.id || q.f), muster: q.m.map(musterBauen) })) }));
 const ALLE_FRAGEN = GESPRAECH_THEMEN.flatMap((t) => t.fragen);
+// Antworten, die man selbst als richtig markiert hat (auf diesem Gerät), in vereinfachter Schreibweise
+const antwortNorm = (t) => woerterVon(t).map((x) => x.n).join(" ");
+function eigeneAntworten(key) {
+  const abgelehnt = ((window.ABGELEHNTE_ANTWORTEN || {})[key] || []).map(antwortNorm);
+  return ((S.eigeneAntworten || {})[key] || []).filter((a) => !abgelehnt.includes(a));
+}
 function pruefeAntwort(q, texte) {
   for (const t of texte) {
     const T = woerterVon(t).map((x) => x.n);
     if (T.length && q.muster.some((M) => musterPasst(M, T))) return { stufe: "richtig", text: t };
+    if (T.length && eigeneAntworten(q.key).includes(T.join(" "))) return { stufe: "richtig", text: t, eigene: true };
   }
   const beste = texte.map((t) => ({ t, v: vergleiche(q.b, t) })).sort((a, b) => b.v.prozent - a.v.prozent)[0];
   return { stufe: beste.v.prozent >= 70 ? "fast" : "falsch", text: beste.t, vergleich: beste.v };
@@ -1035,7 +1043,7 @@ function gespraechZeigen() {
   const frageSichtbar = S.einstellungen.gespraechText || g.textGezeigt || !!e;
   let ergebnisHtml = "";
   if (e) {
-    const kopf = e.stufe === "richtig" ? "✅ Richtig – gute Antwort!" : e.stufe === "fast" ? "🟠 Fast – vergleiche mit der Beispielantwort." : "❌ Das passt noch nicht.";
+    const kopf = e.stufe === "richtig" ? (e.eigene ? "✅ Richtig – diese Antwort hast du als richtig markiert." : "✅ Richtig – gute Antwort!") :e.stufe === "fast" ? "🟠 Fast – vergleiche mit der Beispielantwort." : "❌ Das passt noch nicht.";
     ergebnisHtml = `<div class="frage">
       <div class="meldung ${e.stufe === "richtig" ? "gut" : e.stufe === "fast" ? "info" : "schlecht"}" style="margin-top:0"><b>${kopf}</b></div>
       <p class="leise">Deine Antwort: „${esc(e.text)}“</p>
@@ -1108,7 +1116,15 @@ function gespraechZeigen() {
     g.korrigiert = true;
     const st = S.grammatik[q.key]; if (st) { st.falsch = Math.max(0, st.falsch - 1); speichern(); }
     gBewerte(q.key, true); g.alsRichtigGezaehlt = true;
-    g.ergebnis = { ...g.ergebnis, stufe: "richtig" }; gespraechZeigen();
+    // Antwort merken: ab jetzt auf diesem Gerät als richtig erkannt – und zur Prüfung an Claude schicken
+    const text = (g.ergebnis.text || "").trim(), norm = antwortNorm(text);
+    if (norm) {
+      S.eigeneAntworten = S.eigeneAntworten || {};
+      const liste = (S.eigeneAntworten[q.key] = S.eigeneAntworten[q.key] || []);
+      if (!liste.includes(norm)) liste.push(norm);
+      antwortZurPruefung(q, text);
+    }
+    g.ergebnis = { ...g.ergebnis, stufe: "richtig", eigene: true }; gespraechZeigen();
   });
   const feld = document.getElementById("gantwort");
   if (feld) {
@@ -1711,7 +1727,16 @@ const eintragHtml = (e) => `<div class="eintrag">${lautBtn(e.it, true)}<div clas
 // und schickt die Wünsche (mit GitHub-Schlüssel) in die Datei data/wuensche.json – Claude liest sie
 // bei der nächsten Bearbeitung aus und trägt die Erklärungen ein.
 const hinweisZu = (id) => (window.HINWEISE || {})[id];
-const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id);
+const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id && w.typ !== "antwort");
+// Eintrag in der Wunschliste: Erklärung zu einer Karte – oder eine selbst als richtig markierte Antwort zur Prüfung
+const wunschSchluessel = (w) => `${w.typ || "erklaerung"}|${w.id}|${w.antwort || ""}`;
+function antwortZurPruefung(q, text) {
+  const w = { typ: "antwort", id: q.key, frage: q.f, antwort: text, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
+  if ((S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) return;
+  S.wuensche = (S.wuensche || []).concat(w); speichern();
+  toast("Gemerkt: Diese Antwort gilt ab jetzt als richtig. Claude prüft sie bei der nächsten Bearbeitung.", 4500);
+  clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 2000);
+}
 function hinweisHtml(k, klein) {
   const h = hinweisZu(k.id);
   if (h) return `<div class="hinweis${klein ? " klein" : ""}">💡 ${esc(h)}</div>`;
@@ -1740,12 +1765,15 @@ async function wuenscheSenden() {
       const r = await fetch(url + "?ref=master", { headers: kopf, cache: "no-store" });
       if (r.ok) { const j = await r.json(); sha = j.sha; liste = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), (c) => c.charCodeAt(0))) || "[]"); }
       else if (r.status !== 404) throw new Error("GitHub antwortet mit Fehler " + r.status);
-      const vorhanden = new Set(liste.map((w) => w.id));
-      offen.forEach((w) => { if (!vorhanden.has(w.id)) liste.push({ id: w.id, it: w.it, de: w.de, zeit: w.zeit }); });
+      const vorhanden = new Set(liste.map(wunschSchluessel));
+      offen.forEach((w) => {
+        if (vorhanden.has(wunschSchluessel(w))) return;
+        liste.push(w.typ === "antwort" ? { typ: "antwort", id: w.id, frage: w.frage, antwort: w.antwort, zeit: w.zeit } : { id: w.id, it: w.it, de: w.de, zeit: w.zeit });
+      });
       const text = JSON.stringify(liste, null, 1);
       const autor = { name: "StefanReinhart", email: "154806245+StefanReinhart@users.noreply.github.com" };
       const p = await fetch(url, { method: "PUT", headers: { ...kopf, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `Erklärung gewünscht: ${offen.map((w) => w.it).join(", ")}`, content: btoa(unescape(encodeURIComponent(text))), sha, branch: "master", author: autor, committer: autor }) });
+        body: JSON.stringify({ message: `Wünsche: ${offen.map((w) => (w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen` : `Erklärung zu ${w.it}`)).join(", ")}`, content: btoa(unescape(encodeURIComponent(text))), sha, branch: "master", author: autor, committer: autor }) });
       if (p.status === 409 || p.status === 422) continue; // Datei wurde gleichzeitig geändert – noch einmal versuchen
       if (!p.ok) throw new Error("GitHub antwortet mit Fehler " + p.status);
       offen.forEach((w) => (w.gesendet = true)); speichern();
@@ -1813,8 +1841,8 @@ function einstellungen() {
     ${(() => {
       const alle = S.wuensche || [], offen = alle.filter((w) => !w.gesendet);
       return `<div class="einstellung">
-        <p style="margin-top:0">${alle.length ? `Gewünscht: <b>${alle.length}</b> Karten${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch keine Erklärungen gewünscht. Tippe bei einer Karte ohne 💡 auf „❓ Erklärung wünschen“."}</p>
-        ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => `${esc(w.it)}${w.gesendet ? " ✓" : ""}`).join(" · ")}</p></details>` : ""}
+        <p style="margin-top:0">${alle.length ? `Auf der Liste: <b>${alle.length}</b>${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch nichts auf der Liste. Tippe bei einer Karte ohne 💡 auf „❓ Erklärung wünschen“ – oder bei Frage &amp; Antwort auf „Meine Antwort war richtig“."}</p>
+        ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => (w.typ === "antwort" ? `Antwort „${esc(w.antwort)}“ (zu: ${esc(w.frage)})` : `Erklärung: ${esc(w.it)}`) + (w.gesendet ? " ✓" : "")).join("<br>")}</p></details>` : ""}
         ${wunschStatus ? `<p class="leise">${esc(wunschStatus)}</p>` : ""}
         <p class="leise">Gesendete Wünsche liest Claude bei der nächsten Bearbeitung der App aus und schreibt die Erklärungen dazu. Damit die Wünsche automatisch ankommen, braucht dieses Gerät einmalig den <b>GitHub-Schlüssel</b> (derselbe wie für die Bearbeiten-Seite): ${githubSchluessel() ? "<b>✓ vorhanden</b>" : "<b>fehlt noch</b>"}</p>
         <input type="password" id="ghSchluessel" placeholder="github_pat_… einfügen" autocomplete="off" style="font-family:monospace">

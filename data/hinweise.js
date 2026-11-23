@@ -1,6 +1,12 @@
 // Kurze Erklärungen zu einzelnen Karten ("💡"), über die feste Kennung der Karte.
 // Format:  "kennung": "Hinweis",
 // Gewünschte Erklärungen sammelt die App in data/wuensche.json – Claude trägt sie hier ein.
+
+// Antworten, die jemand bei „Frage & Antwort“ als richtig markiert hat, die aber falsch sind.
+// Format:  "dialog:<Kennung der Frage>": ["falsche Antwort", …],   – die App nimmt sie dann wieder heraus.
+window.ABGELEHNTE_ANTWORTEN = {
+};
+
 window.HINWEISE = {
   // Erste Wörter
   "grundwoerter:prego": "Antwort auf „grazie“ (bitte sehr, gern geschehen). Zum Bitten sagt man „per favore“.",

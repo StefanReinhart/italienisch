@@ -1339,7 +1339,7 @@ function lektionZeigen(id) {
       const erledigt = st.schritte.includes(s.id) || (s.id === "check" && st.bestanden);
       const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : s.id === "check" && st.best ? ` · bestes Ergebnis ${st.best} %` : "";
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
-        <span class="mitte">${i + 1}. ${s.name}<small>${s.text}${extra}</small></span><span class="haken">${erledigt ? "✓" : ""}</span></button>`;
+        <span class="mitte">${i + 1}. ${s.name}<small>${s.text}${extra}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
     <button class="btn zweit voll" id="lClaude" style="margin-top:12px">🤖 Passendes Rollenspiel mit Claude</button>
     <div class="reihe">
@@ -1349,6 +1349,18 @@ function lektionZeigen(id) {
   const weiter = document.getElementById("lWeiter");
   if (weiter) weiter.onclick = () => lektionStarten(L, offen[0].id);
   $app.querySelectorAll("[data-lschritt]").forEach((b) => (b.onclick = () => lektionStarten(L, b.dataset.lschritt)));
+  // Kästchen antippen = von Hand abhaken oder Haken wegnehmen (die Zeile selbst startet den Schritt)
+  $app.querySelectorAll("[data-lhaken]").forEach((h) => (h.onclick = (ev) => {
+    ev.stopPropagation();
+    const id = h.dataset.lhaken;
+    if (id === "check") {
+      if (st.bestanden && confirm("Die Lektion wieder als „nicht geschafft“ markieren?")) { st.bestanden = false; speichern(); ohneSprung(() => lektionZeigen(L.id)); }
+      else if (!st.bestanden) toast("Der Abschluss-Check wird erst mit 80 % abgehakt – tippe auf die Zeile, um ihn zu machen.", 4000);
+      return;
+    }
+    st.schritte = st.schritte.includes(id) ? st.schritte.filter((x) => x !== id) : st.schritte.concat(id);
+    speichern(); ohneSprung(() => lektionZeigen(L.id));
+  }));
   document.getElementById("lClaude").onclick = () => { claudeWerte.szene = L.szene; geheZu("claude"); };
 }
 function zurueckZuLektion() {

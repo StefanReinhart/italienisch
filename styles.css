@@ -84,6 +84,8 @@ p { margin: 8px 0; }
 .zeile .pfeil { color: var(--grau); font-size: 24px; }
 .zeile.aktiv { border-color: var(--gruen); background: var(--gruen-hell); }
 .haken { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--rand); display: grid; place-items: center; font-size: 16px; flex: none; }
+/* antippbares Kästchen: größere Fläche für den Finger */
+.haken-gross { width: 34px; height: 34px; font-size: 20px; cursor: pointer; margin: -4px -4px -4px 0; box-shadow: 0 0 0 6px transparent; }
 .zeile.aktiv .haken { background: var(--gruen); border-color: var(--gruen); color: #fff; }
 .balken { height: 6px; background: var(--rand); border-radius: 3px; overflow: hidden; margin-top: 6px; }
 .balken i { display: block; height: 100%; background: var(--gruen); }

@@ -917,7 +917,12 @@ function sprechenZeigen() {
         a.versuche++; a.letzter = beste.v.prozent; a.bester = Math.max(a.bester, beste.v.prozent);
         S.aussprache[k.id] = a;
         // aus dem Gedächtnis gesprochen → zählt für "selbst sagen" (nur der erste Versuch je Karte)
-        if (verdeckt && !sprechen.gezeigt && !sprechen.gewertet) { sprechen.gewertet = true; rueckmeldung(k.id, "de-it", beste.v.prozent >= 80); }
+        if (verdeckt && !sprechen.gezeigt && !sprechen.gewertet) {
+          sprechen.gewertet = true;
+          const ok = beste.v.prozent >= 80;
+          // neue Phrase richtig aus dem Gedächtnis gesagt → als Karteikarte "selbst sagen" aufnehmen (wie "Gut": in 2 Tagen)
+          if (ok && istNeu(k.id, "de-it")) bewerte(k.id, "de-it", 2); else rueckmeldung(k.id, "de-it", ok);
+        }
         geuebt();
         sprechenZeigen();
         if (beste.v.prozent < 90) setTimeout(() => sprich(k.it), 500);

@@ -371,7 +371,10 @@ function abgelaufen(eltern) {
   history.back();
   setTimeout(() => { if (location.hash === hier) ersetzeDurch(eltern); }, 350); // falls es kein "davor" gibt
 }
-function zeige(html) { $app.innerHTML = html; window.scrollTo(0, 0); }
+// Neue Seite → nach oben. Beim Auswählen/Umschalten auf derselben Seite (ohneSprung) bleibt die Seite stehen.
+let scrollBehalten = false;
+function zeige(html) { const y = window.scrollY; $app.innerHTML = html; window.scrollTo(0, scrollBehalten ? y : 0); }
+function ohneSprung(fn) { scrollBehalten = true; try { fn(); } finally { scrollBehalten = false; } }
 const lautBtn = (text, klein) => `<button class="lautsprecher${klein ? " klein" : ""}" data-sprich="${esc(text)}" aria-label="Vorlesen">🔊</button>`;
 const langsamBtn = (text) => `<button class="lautsprecher" data-sprich="${esc(text)}" data-langsam="1" aria-label="Langsam vorlesen">🐢</button>`;
 $app.addEventListener("click", (e) => {
@@ -444,7 +447,7 @@ function themenKlickbar(neuZeichnen) {
   $app.querySelectorAll("[data-thema]").forEach((b) => (b.onclick = () => {
     const id = b.dataset.thema, liste = S.einstellungen.themen;
     S.einstellungen.themen = liste.includes(id) ? liste.filter((x) => x !== id) : liste.concat(id);
-    speichern(); neuZeichnen();
+    speichern(); ohneSprung(neuZeichnen);
   }));
 }
 
@@ -474,7 +477,7 @@ function kartenMenue() {
     <h2>Phrasen</h2>${themenAuswahl(PHRASEN_GRUPPEN, gew)}
   `);
   themenKlickbar(kartenMenue);
-  $app.querySelectorAll("#richtung button").forEach((b) => (b.onclick = () => { S.einstellungen.richtung = b.dataset.w; speichern(); kartenMenue(); }));
+  $app.querySelectorAll("#richtung button").forEach((b) => (b.onclick = () => { S.einstellungen.richtung = b.dataset.w; speichern(); ohneSprung(kartenMenue); }));
   document.getElementById("los").onclick = () => {
     const neue = plan.neue.slice(0, neu), fa = plan.faellige, liste = [];
     // jede dritte Karte eine neue, damit Neues und Wiederholung gemischt sind
@@ -843,12 +846,14 @@ function sprechenMenue() {
       hoeren: "Du siehst nur den deutschen Satz und hörst den italienischen vorgelesen. Den italienischen Text zeigt die App erst, wenn du auf „Text zeigen“ tippst oder gesprochen hast.",
       gedaechtnis: "Du siehst nur den deutschen Satz und sagst ihn ohne Hilfe auf Italienisch. Das Ergebnis zählt für den Lernstand „selbst sagen“."
     }[S.einstellungen.sprechenModus]} Was dir schwerfällt, kommt bevorzugt dran.</p>
+    <button class="btn voll" id="sLos" ${kartenDerThemen(S.einstellungen.themen).length ? "" : "disabled"}>🎤 Sprechen starten (${kartenDerThemen(S.einstellungen.themen).length} Einträge)</button>
     <h2>Was möchtest du sprechen?</h2>
-    <div class="liste">
-      ${PHRASEN_GRUPPEN.concat(THEMEN).map((g) => `<button class="zeile" data-gruppe="${g.id}"><span class="sym">${g.icon}</span><span class="mitte">${esc(g.name)}<small>${g.eintraege.length} ${g.id.startsWith("p_") ? "Sätze" : "Wörter"}</small></span><span class="pfeil">›</span></button>`).join("")}
-    </div>`);
-  $app.querySelectorAll("#smodus button").forEach((b) => (b.onclick = () => { S.einstellungen.sprechenModus = b.dataset.w; speichern(); sprechenMenue(); }));
-  $app.querySelectorAll("[data-gruppe]").forEach((b) => (b.onclick = () => sprechenStarten(GRUPPE_NACH_ID[b.dataset.gruppe].eintraege)));
+    <p class="leise">Themen antippen, mehrere sind möglich. Dieselbe Auswahl wie bei den Karteikarten und beim Hören.</p>
+    <h2>Phrasen</h2>${themenAuswahl(PHRASEN_GRUPPEN, S.einstellungen.themen)}
+    <h2>Wortschatz</h2>${themenAuswahl(THEMEN, S.einstellungen.themen)}`);
+  $app.querySelectorAll("#smodus button").forEach((b) => (b.onclick = () => { S.einstellungen.sprechenModus = b.dataset.w; speichern(); ohneSprung(sprechenMenue); }));
+  themenKlickbar(sprechenMenue);
+  document.getElementById("sLos").onclick = () => sprechenStarten(kartenDerThemen(S.einstellungen.themen));
 }
 function sprechenZeigen() {
   if (!sprechen) return abgelaufen("sprechen");
@@ -992,7 +997,7 @@ function gespraechMenue() {
     <button class="btn voll" id="alle">🎲 10 Fragen aus allen Themen</button>
     <h2>Themen</h2>
     <div class="liste">${GESPRAECH_THEMEN.map((t) => `<button class="zeile" data-gthema="${t.id}"><span class="sym">💬</span><span class="mitte">${esc(t.thema)}<small>${t.fragen.length} Fragen${z(f(t.fragen))}</small></span><span class="pfeil">›</span></button>`).join("")}</div>`);
-  $app.querySelectorAll("#gtext button").forEach((b) => (b.onclick = () => { S.einstellungen.gespraechText = b.dataset.w === "ja"; speichern(); gespraechMenue(); }));
+  $app.querySelectorAll("#gtext button").forEach((b) => (b.onclick = () => { S.einstellungen.gespraechText = b.dataset.w === "ja"; speichern(); ohneSprung(gespraechMenue); }));
   const starten = (fragen, n) => {
     gespraech = { liste: gewichtetZiehen(fragen, (q) => gGewicht(q.key), n), pos: 0 };
     neueFrage(); geheZu("gespraech-ueben");
@@ -1179,13 +1184,13 @@ function dialogZeigen(id) {
     }).join("")}</div>
     <button class="btn voll" id="fragen" style="margin-top:14px">❓ Fragen zum Dialog beantworten</button>`);
   document.getElementById("abspielen").onclick = () => {
-    if (A.laeuft) { A.laeuft = false; speechSynthesis.cancel(); dialogZeigen(id); } else dialogAbspielen(d, 0);
+    if (A.laeuft) { A.laeuft = false; speechSynthesis.cancel(); ohneSprung(() => dialogZeigen(id)); } else dialogAbspielen(d, 0);
   };
-  $app.querySelectorAll("#tempo button").forEach((b) => (b.onclick = () => { A.langsam = b.dataset.w === "langsam"; dialogZeigen(id); }));
-  $app.querySelectorAll("#anzeige button").forEach((b) => (b.onclick = () => { A.text = b.dataset.w !== "nichts"; A.de = b.dataset.w === "de"; dialogZeigen(id); }));
+  $app.querySelectorAll("#tempo button").forEach((b) => (b.onclick = () => { A.langsam = b.dataset.w === "langsam"; ohneSprung(() => dialogZeigen(id)); }));
+  $app.querySelectorAll("#anzeige button").forEach((b) => (b.onclick = () => { A.text = b.dataset.w !== "nichts"; A.de = b.dataset.w === "de"; ohneSprung(() => dialogZeigen(id)); }));
   $app.querySelectorAll("[data-zeile]").forEach((el) => (el.onclick = () => {
     const i = +el.dataset.zeile;
-    if (!A.offen.has(i)) { A.offen.add(i); dialogZeigen(id); }
+    if (!A.offen.has(i)) { A.offen.add(i); ohneSprung(() => dialogZeigen(id)); }
     A.laeuft = false; dialogAbspielen(d, i, true);
   }));
   document.getElementById("fragen").onclick = () => {
@@ -1361,9 +1366,9 @@ function claudeMenue() {
     </div>`).join("")}
     <div id="kopierFeld"></div>`);
   const sz = document.getElementById("szene");
-  if (sz) sz.onchange = () => { claudeWerte.szene = sz.value; claudeMenue(); };
+  if (sz) sz.onchange = () => { claudeWerte.szene = sz.value; ohneSprung(claudeMenue); };
   const gf = document.getElementById("gfrage");
-  if (gf) gf.onchange = () => { claudeWerte.frage = gf.value.trim(); claudeMenue(); };
+  if (gf) gf.onchange = () => { claudeWerte.frage = gf.value.trim(); ohneSprung(claudeMenue); };
   $app.querySelectorAll("[data-claude]").forEach((b) => (b.onclick = async () => {
     if (gf) claudeWerte.frage = gf.value.trim();
     const a = claudeAnweisungen(claudeWerte).find((x) => x.id === b.dataset.claude);
@@ -1456,7 +1461,7 @@ function phrasenGruppe(id) {
     <p class="leise">${verdeckt ? "Du siehst nur den deutschen Satz. Hör ihn dir mit 🔊 an oder überleg selbst – antippen zeigt das Italienische." : "Tippe auf 🔊 zum Anhören."}</p>
     <div class="liste">${g.eintraege.map((e, i) => (verdeckt ? eintragVerdecktHtml(e, i) : eintragHtml(e))).join("")}</div>
     <div class="reihe"><button class="btn" id="ueben">🎤 Diese Sätze sprechen üben</button></div>`);
-  $app.querySelectorAll("#pverdeckt button").forEach((b) => (b.onclick = () => { S.einstellungen.phrasenVerdeckt = b.dataset.w === "ja"; speichern(); phrasenGruppe(id); }));
+  $app.querySelectorAll("#pverdeckt button").forEach((b) => (b.onclick = () => { S.einstellungen.phrasenVerdeckt = b.dataset.w === "ja"; speichern(); ohneSprung(() => phrasenGruppe(id)); }));
   $app.querySelectorAll("[data-auf]").forEach((z) => (z.onclick = (ev) => {
     if (ev.target.closest("[data-sprich]")) return;
     const feld = z.querySelector("[data-it]");

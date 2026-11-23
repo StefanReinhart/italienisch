@@ -17,9 +17,13 @@ Come si chiama Lei? | Wie heißen Sie?
 Anch'io sono tedesco. | Ich bin auch Deutscher.
 Ci vediamo domani! | Wir sehen uns morgen!
 Non sono di qui. | Ich bin nicht von hier.
+Cosa fai qui? | Was machst du hier?
+Cos'è? | Was ist das?
+Che fai stasera? | Was machst du heute Abend?
 `,
   grammatikPlus: [{ luecke: "fragewoerter" }],
   erklaerungPlus: `<p><b>Fragewörter:</b> <i>come</i> (wie) · <i>dove</i> (wo) · <i>di dove</i> (woher) · <i>chi</i> (wer) · <i>che cosa</i> (was) · <i>quando</i> (wann) · <i>quanto</i> (wie viel) · <i>perché</i> (warum).</p>
+<p><b>„Was?“ gibt es dreimal – alle richtig:</b> <i>Che cosa prendi?</i> (vollständig) · <i>Cosa prendi?</i> (im Alltag am häufigsten) · <i>Che prendi?</i> (ganz umgangssprachlich). Vor <i>è</i> wird zusammengezogen: <i>Cos'è?</i> = Was ist das?</p>
 <p><b>Verneinen:</b> einfach <b>non</b> vor das Verb: <i>Non sono italiano.</i> = Ich bin kein Italiener. <i>Non capisco.</i> = Ich verstehe nicht.</p>`
 },
 l2: {
@@ -59,6 +63,8 @@ Senza zucchero, grazie. | Ohne Zucker, danke.
 Ecco a Lei! | Bitte schön (für Sie)!
 Al banco o al tavolo? | An der Theke oder am Tisch?
 Per me una spremuta d'arancia. | Für mich einen frisch gepressten Orangensaft.
+Cosa prende? | Was nehmen Sie?
+Cosa prendi da bere? | Was nimmst du zu trinken?
 `,
   grammatikPlus: [{ luecke: "unbestimmt" }],
   fragenPlus: ["Prendi un cornetto con il caffè?"],

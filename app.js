@@ -813,7 +813,8 @@ function hoerenStart() {
         <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
       optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
       beimStart: () => setTimeout(() => sprich(k.it), 250),
-      beiAntwort: (ok) => { rueckmeldung(k.id, "it-de", ok); geuebt(); },
+      // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
+      beiAntwort: (ok) => { if (ok && istNeu(k.id, "it-de")) bewerte(k.id, "it-de", 2); else { rueckmeldung(k.id, "it-de", ok); geuebt(); } },
       nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
     };
   });

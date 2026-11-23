@@ -74,7 +74,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {};
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.lektionen = s.lektionen || {};
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   return s;
 }
@@ -383,6 +383,7 @@ $app.addEventListener("click", (e) => {
   const g = e.target.closest("[data-gehe]");
   if (g) geheZu(g.dataset.gehe);
   if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
+  if (e.target.closest("[data-lektion-weiter]")) zurueckZuLektion();
   // Ergebnis-Seiten: "Zurück" geht einen Schritt zurück, "Startseite" springt ganz an den Anfang – ohne neue Seiten anzuhängen
   const z = e.target.closest("[data-zurueck]");
   if (z) { if (tiefeJetzt() > 0) history.back(); else ersetzeDurch(z.dataset.zurueck); }
@@ -396,12 +397,13 @@ function umschalter(id, wert, optionen) {
 // ---------- Startseite ----------
 function startseite() {
   setzeKopf("Italienisch lernen", null);
-  heuteAktiv = null;
+  heuteAktiv = null; lektionAktiv = null;
+  const akt = aktuelleLektion();
   const hs = heuteSchritte(), hst = heuteStand();
   const hOffen = hs.filter((s) => !s.leer && !hst.erledigt.includes(s.id)).length;
   const verstanden = ALLE_KARTEN.filter((k) => istGelernt(k.id, "it-de")).length;
   const sagen = ALLE_KARTEN.filter((k) => istGelernt(k.id, "de-it")).length;
-  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:");
+  const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:") + gFaellig("lk:") + gFaellig("zahl:");
   const gespr = gFaellig("dialog:");
   const fehlerZahl = anzahlFehler();
   zeige(`
@@ -413,6 +415,8 @@ function startseite() {
     </div>
     <div class="kacheln">
       <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
+      <button class="kachel breit" data-gehe="${akt ? "lektion/" + akt.id : "lektionen"}"><span class="sym">📚</span><span><b>Lektionen</b><br><small>${akt ? `Als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : "🎉 Alle 12 Lektionen geschafft!"}</small></span></button>
+      <button class="kachel breit" data-gehe="lektionen" style="min-height:auto;padding:10px 16px"><span class="sym" style="font-size:22px">🗺️</span><span><small>Alle Lektionen ansehen (${LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length} von 12 geschafft)</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
       <button class="kachel" data-gehe="dialoge"><span class="sym">🎧</span><b>Hör-Dialoge</b><small>Kurze Gespräche verstehen</small></button>
@@ -568,6 +572,8 @@ function grammatikMenue() {
   zeige(`
     <div class="liste">
       <button class="zeile" data-gehe="verben"><span class="sym">🔤</span><span class="mitte">Verben konjugieren<small>essere, avere, -are/-ere/-ire, unregelmäßige${hinweis(fv)}</small></span><span class="pfeil">›</span></button>
+      ${Object.entries(LUECKEN).map(([id, set]) => `<button class="zeile" data-gehe="uebung/${id}"><span class="sym">🧷</span><span class="mitte">${esc(set.titel)}<small>Lückensätze${hinweis(gFaellig("lk:" + id + ":"))}</small></span><span class="pfeil">›</span></button>`).join("")}
+      <button class="zeile" data-gehe="uebung/zahlen"><span class="sym">🔢</span><span class="mitte">Zahlen<small>0 bis 100 und mehr${hinweis(gFaellig("zahl:"))}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="verbsatz"><span class="sym">✍️</span><span class="mitte">Verben im Satz (eintippen)<small>Die Verbform selbst schreiben – wirkt am stärksten${hinweis(gFaellig("vsatz:"))}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="tabellen"><span class="sym">📋</span><span class="mitte">Verbtabellen nachschlagen<small>Alle Formen zum Anhören</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="artikel"><span class="sym">🏷️</span><span class="mitte">Artikel üben<small>il, lo, la, l', i, gli, le${hinweis(fa)}</small></span><span class="pfeil">›</span></button>
@@ -666,7 +672,7 @@ function verbTabellen() {
 }
 const ARTIKEL_NOMEN = ALLE_WOERTER.map((w) => {
   const m = w.it.match(/^(il|lo|la|i|gli|le) (.+)$/) || w.it.match(/^(l')(.+)$/);
-  return m ? { artikel: m[1], nomen: m[2], de: w.de, ganz: w.it } : null;
+  return m ? { artikel: m[1], nomen: m[2], de: w.de, ganz: w.it, thema: w.thema } : null;
 }).filter(Boolean);
 function verbAufgabe(v, p) {
   const key = `verb:${v.inf}:${p}`, formen = konjugiere(v), richtig = formen[p];
@@ -689,7 +695,7 @@ function artikelStart() {
 function quizStarten(q) {
   quiz = q;
   if (location.hash === "#quiz") quizZeigen();
-  else if (["#artikel", "#cecisono", "#verbsatz"].includes(location.hash)) ersetzeDurch("quiz"); // sonst startet "Zurück" sofort ein neues Quiz
+  else if (["#artikel", "#cecisono", "#verbsatz"].includes(location.hash) || location.hash.startsWith("#uebung/")) ersetzeDurch("quiz"); // sonst startet "Zurück" sofort ein neues Quiz
   else geheZu("quiz");
 }
 function quizZeigen() {
@@ -702,6 +708,7 @@ function quizZeigen() {
     zeige(`<div class="karte"><div class="wort">${p === n ? "🏆" : p >= n * 0.7 ? "👍" : "💪"} ${p} von ${n}</div>
       <p>${p === n ? "Perfetto! Alles richtig." : p >= n * 0.7 ? "Bravo! Sehr gut." : "Weiter üben – das wird!"}</p>
       ${p < n ? `<p class="leise">Die Fehler hat sich die App gemerkt – sie kommen bald wieder.</p>` : ""}</div>
+      ${quiz.endeHinweis ? quiz.endeHinweis(p, n) : ""}
       ${ausHeute ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" id="nochmal">Nochmal</button><button class="btn zweit" data-zurueck="${quiz.zurueck}">Zurück</button></div>`}`);
     const nm = document.getElementById("nochmal");
     if (nm) nm.onclick = () => { const z = quiz.nochmal || quiz.zurueck; quiz = null; z === "artikel" ? artikelStart() : z === "cecisono" ? ceStart() : z === "verbsatz" ? vsatzStart() : z === "hoeren-neu" ? hoerenStart() : geheZu(z); };
@@ -809,19 +816,20 @@ function hoerenMenue() {
 function hoerenStart() {
   const pool = kartenDerThemen(S.einstellungen.themen);
   if (pool.length < 4) return geheZu("hoeren");
-  const aufgaben = gewichtetZiehen(pool, (k) => gewicht(k.id, "it-de"), 10).map((k) => {
-    const falsche = mischen([...new Set(pool.filter((x) => x.de !== k.de).map((x) => x.de))]).slice(0, 3);
-    return {
-      frage: `<div class="leise">Was bedeutet das?</div>
-        <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
-      optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
-      beimStart: () => setTimeout(() => sprich(k.it), 250),
-      // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
-      beiAntwort: (ok) => { if (ok && istNeu(k.id, "it-de")) bewerte(k.id, "it-de", 2); else { rueckmeldung(k.id, "it-de", ok); geuebt(); } },
-      nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
-    };
-  });
+  const aufgaben = gewichtetZiehen(pool, (k) => gewicht(k.id, "it-de"), 10).map((k) => hoerAufgabe(k, pool));
   quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "hoeren", titel: "Hören", nochmal: "hoeren-neu" });
+}
+function hoerAufgabe(k, pool) {
+  const falsche = mischen([...new Set(pool.filter((x) => x.de !== k.de).map((x) => x.de))]).slice(0, 3);
+  return {
+    frage: `<div class="leise">Was bedeutet das?</div>
+      <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
+    optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
+    beimStart: () => setTimeout(() => sprich(k.it), 250),
+    // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
+    beiAntwort: (ok) => { if (ok && istNeu(k.id, "it-de")) bewerte(k.id, "it-de", 2); else { rueckmeldung(k.id, "it-de", ok); geuebt(); } },
+    nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
+  };
 }
 
 // ---------- Sprechen ----------
@@ -1204,6 +1212,192 @@ function dialogZeigen(id) {
   };
 }
 
+// ---------- Weitere Grammatik-Übungen: Lückensätze und Zahlen ----------
+function lueckeAufgabe(setId, x) {
+  const set = LUECKEN[setId], key = "lk:" + setId + ":" + x.s;
+  const amAnfang = x.s.startsWith("___");
+  const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  const optionen = x.o ? mischen(x.o) : set.optionen.map((o) => (amAnfang ? gross(o) : o));
+  const ganz = x.s.replace("___", x.a).replace(" → ", ", ");
+  return {
+    frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
+    optionen, richtig: x.a, zwei: optionen.length !== 3, sprechen: ganz, erklaerung: x.s.replace("___", x.a),
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+  };
+}
+const zahlMitAkzent = (n) => { const w = zahlwort(n); return n > 20 && /tre$/.test(w) ? w.slice(0, -1) + "é" : w; }; // ventitré
+const ZAHLEN_POOL = Array.from({ length: 101 }, (_, i) => i).concat([200, 500, 1000]);
+function zahlAufgabe(n) {
+  const key = "zahl:" + n;
+  const nahe = [...new Set([n + 1, n - 1, n + 10, n - 10, (n % 10) * 10 + Math.floor(n / 10), n + 2].filter((x) => x >= 0 && x !== n && x <= 1000))];
+  const optionen = mischen([n, ...mischen(nahe).slice(0, 3)].map(zahlMitAkzent));
+  return {
+    frage: `<div class="leise">Wie heißt diese Zahl auf Italienisch?</div><div class="gross" style="font-size:44px">${n}</div>`,
+    optionen, richtig: zahlMitAkzent(n), sprechen: zahlMitAkzent(n), erklaerung: `${n} = ${zahlMitAkzent(n)}`,
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+  };
+}
+// Übungs-Topf einer Lektion (oder einer einzelnen Übung): Liste von { key, bau }
+function grammatikTopf(specs, themen) {
+  const topf = [];
+  specs.forEach((sp, gi) => {
+    if (sp.verben) sp.verben.forEach((inf) => {
+      const v = ALLE_VERBEN.find((x) => x.inf === inf); if (!v) return;
+      [0, 1, 2, 3, 4, 5].forEach((p) => topf.push({ gruppe: gi, key: `verb:${inf}:${p}`, bau: () => verbAufgabe(v, p) }));
+      VERB_SAETZE.filter((x) => x.inf === inf).forEach((x) => topf.push({ gruppe: gi, key: "vsatz:" + x.s, bau: () => vsatzAufgabe(x) }));
+    });
+    if (sp.artikel) {
+      let liste = themen ? ARTIKEL_NOMEN.filter((a) => themen.includes(a.thema)) : ARTIKEL_NOMEN;
+      if (liste.length < 6) liste = ARTIKEL_NOMEN;
+      liste.forEach((a) => topf.push({ gruppe: gi, key: "art:" + a.ganz, bau: () => artikelAufgabe(a) }));
+    }
+    if (sp.ce) CE_CI_SONO.forEach((x) => topf.push({ gruppe: gi, key: "ce:" + x.s, bau: () => ceAufgabe(x) }));
+    if (sp.zahlen) ZAHLEN_POOL.forEach((n) => topf.push({ gruppe: gi, key: "zahl:" + n, bau: () => zahlAufgabe(n) }));
+    if (sp.luecke && LUECKEN[sp.luecke]) LUECKEN[sp.luecke].saetze.forEach((x) => topf.push({ gruppe: gi, key: "lk:" + sp.luecke + ":" + x.s, bau: () => lueckeAufgabe(sp.luecke, x) }));
+  });
+  return topf;
+}
+// Zieht n Aufgaben – abwechselnd aus jedem Grammatik-Schwerpunkt, damit ein großer (z. B. Zahlen) die anderen nicht verdrängt
+function ausTopf(topf, n) {
+  const gruppen = Object.values(topf.reduce((g, x) => ((g[x.gruppe || 0] = g[x.gruppe || 0] || []).push(x), g), {})).map(mischen);
+  const aus = [];
+  for (let i = 0; aus.length < n && gruppen.some((g) => g.length); i++) {
+    const g = gruppen[i % gruppen.length]; if (!g.length) continue;
+    const x = gewichtetZiehen(g, (y) => gGewicht(y.key), 1)[0];
+    g.splice(g.indexOf(x), 1); aus.push(x);
+  }
+  return mischen(aus).map((x) => x.bau());
+}
+function uebungStarten(titel, specs, zurueck, nochmal) {
+  quizStarten({ aufgaben: ausTopf(grammatikTopf(specs), 10), pos: 0, punkte: 0, zurueck, titel, nochmal });
+}
+
+// ---------- Lektionen: aufbauender Lernpfad ----------
+const LEKTION_LISTE = LEKTIONEN.map((l, i) => ({ ...l, nr: i + 1 }));
+const LEKTION_NACH_ID = Object.fromEntries(LEKTION_LISTE.map((l) => [l.id, l]));
+const LEKTION_SCHRITTE = [
+  { id: "erkl", sym: "📖", name: "Kurz erklärt", text: "Worum es geht, die Grammatik in einfachen Worten" },
+  { id: "woerter", sym: "🗂️", name: "Neue Wörter", text: "Wörter und Sätze der Lektion als Karteikarten" },
+  { id: "grammatik", sym: "📘", name: "Grammatik", text: "Übungen zum Grammatik-Schwerpunkt" },
+  { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: "Ein kurzes Gespräch zum Thema" },
+  { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Fragen zum Thema auf Italienisch beantworten" },
+  { id: "check", sym: "🏁", name: "Abschluss-Check", text: "10 gemischte Aufgaben – ab 80 % geschafft" }
+];
+let lektionAktiv = null, lektionTiefe = null;
+function lStand(id) { return (S.lektionen[id] = S.lektionen[id] || { schritte: [], bestanden: false, best: 0 }); }
+const aktuelleLektion = () => LEKTION_LISTE.find((l) => !lStand(l.id).bestanden) || null;
+const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id) && !(s.id === "check" && lStand(L.id).bestanden));
+const lektionKarten = (L) => kartenDerThemen(L.themen);
+const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
+function lektionWoerterStand(L) {
+  const karten = lektionKarten(L);
+  return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length };
+}
+function lektionenMenue() {
+  setzeKopf("Lektionen", "start");
+  lektionAktiv = null;
+  const akt = aktuelleLektion(), geschafft = LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length;
+  zeige(`
+    <p>12 Lektionen, die aufeinander aufbauen – jede mit Erklärung, Wörtern, Grammatik, Hör-Dialog, Sprechen und einem kleinen Abschluss-Check. Alle sind offen: Du kannst jederzeit springen.</p>
+    <div class="fortschritt"><span>${geschafft} / ${LEKTION_LISTE.length} geschafft</span><div class="balken"><i style="width:${(100 * geschafft) / LEKTION_LISTE.length}%"></i></div></div>
+    <div class="liste">${LEKTION_LISTE.map((L) => {
+      const st = lStand(L.id), fertig = st.schritte.filter((s) => s !== "check").length;
+      const status = st.bestanden ? `✓ geschafft (${st.best} %)` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von 5 Schritten` : fertig ? `${fertig} von 5 Schritten` : "noch nicht begonnen";
+      return `<button class="zeile${st.bestanden ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
+        <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}</small></span><span class="pfeil">›</span></button>`;
+    }).join("")}</div>
+    <p class="leise" style="margin-top:14px">Danach geht es weiter mit: reflexiven Verben (mi chiamo, mi alzo), „mir/dir“-Wörtern (mi, ti, gli …) und der Vergangenheit – sag Bescheid, wenn du so weit bist.</p>`);
+}
+function lektionZeigen(id) {
+  const L = LEKTION_NACH_ID[id]; if (!L) return geheZu("lektionen");
+  setzeKopf(`Lektion ${L.nr}`, "lektionen");
+  lektionAktiv = null; lektionTiefe = tiefeJetzt();
+  const st = lStand(L.id), offen = offeneSchritte(L), w = lektionWoerterStand(L);
+  zeige(`
+    <div class="frage" style="text-align:left">
+      <div style="font-size:24px;font-weight:700">${L.icon} ${esc(L.titel)}</div>
+      <p style="margin-bottom:0">🎯 ${esc(L.ziel)}</p>
+      ${st.bestanden ? `<div class="meldung gut" style="margin-bottom:0">✓ Lektion geschafft – Abschluss-Check: ${st.best} %</div>` : ""}
+    </div>
+    ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
+    <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
+      const erledigt = st.schritte.includes(s.id) || (s.id === "check" && st.bestanden);
+      const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : s.id === "check" && st.best ? ` · bestes Ergebnis ${st.best} %` : "";
+      return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
+        <span class="mitte">${i + 1}. ${s.name}<small>${s.text}${extra}</small></span><span class="haken">${erledigt ? "✓" : ""}</span></button>`;
+    }).join("")}</div>
+    <button class="btn zweit voll" id="lClaude" style="margin-top:12px">🤖 Passendes Rollenspiel mit Claude</button>
+    <div class="reihe">
+      ${L.nr > 1 ? `<button class="btn zweit" data-gehe="lektion/${LEKTION_LISTE[L.nr - 2].id}">‹ Lektion ${L.nr - 1}</button>` : ""}
+      ${L.nr < LEKTION_LISTE.length ? `<button class="btn zweit" data-gehe="lektion/${LEKTION_LISTE[L.nr].id}">Lektion ${L.nr + 1} ›</button>` : ""}
+    </div>`);
+  const weiter = document.getElementById("lWeiter");
+  if (weiter) weiter.onclick = () => lektionStarten(L, offen[0].id);
+  $app.querySelectorAll("[data-lschritt]").forEach((b) => (b.onclick = () => lektionStarten(L, b.dataset.lschritt)));
+  document.getElementById("lClaude").onclick = () => { claudeWerte.szene = L.szene; geheZu("claude"); };
+}
+function zurueckZuLektion() {
+  const id = letzteLektion;
+  const schritte = lektionTiefe === null ? 0 : lektionTiefe - tiefeJetzt();
+  if (schritte < 0) history.go(schritte); else geheZu("lektion/" + id);
+}
+function lektionErklaerung(id) {
+  const L = LEKTION_NACH_ID[id]; if (!L) return geheZu("lektionen");
+  setzeKopf(`${L.icon} ${L.titel}`, "lektion/" + id);
+  zeige(`
+    <div class="meldung info">🎯 ${esc(L.ziel)}</div>
+    <div class="hilfe">${L.erklaerung}</div>
+    <button class="btn voll" id="verstanden" style="margin-top:14px">✓ Verstanden – weiter</button>`);
+  document.getElementById("verstanden").onclick = () => {
+    if (!lektionAktiv) lektionAktiv = { lid: L.id, schritt: "erkl" };
+    const ausHeute = !!heuteAktiv;
+    schrittFertig();
+    if (ausHeute) zurueckZuHeute(); else zurueckZuLektion();
+  };
+}
+function lektionStarten(L, schritt) {
+  lektionAktiv = { lid: L.id, schritt };
+  letzteLektion = L.id;
+  const zurueck = heuteAktiv ? "heute" : "lektion/" + L.id;
+  if (schritt === "erkl") return geheZu("lerkl/" + L.id);
+  if (schritt === "woerter") {
+    const plan = rundePlanen(lektionKarten(L), S.einstellungen.richtung);
+    const neue = plan.neue.slice(0, 12), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
+    let d = 0, n = 0;
+    while (d < fa.length || n < neue.length) { if (n < neue.length && (d >= fa.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(fa[d++]); }
+    let frei = false;
+    if (!liste.length) { // alles schon gelernt und nichts fällig: zum Auffrischen 10 Karten ohne Wertung
+      frei = true;
+      mischen(lektionKarten(L)).slice(0, 10).forEach((k) => liste.push({ k, r: "it-de" }));
+    }
+    sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck, frei };
+    return geheZu("karte");
+  }
+  if (schritt === "grammatik") {
+    return quizStarten({ aufgaben: ausTopf(grammatikTopf(L.grammatik, L.themen), 8), pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Grammatik`, nochmal: zurueck });
+  }
+  if (schritt === "dialog") return geheZu("dialog/" + L.dialog);
+  if (schritt === "sprechen") {
+    gespraech = { liste: mischen(lektionFragen(L)), pos: 0 };
+    neueFrage(); return geheZu("gespraech-ueben");
+  }
+  if (schritt === "check") {
+    const karten = lektionKarten(L);
+    const hoeren = gewichtetZiehen(karten, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), 4).map((k) => hoerAufgabe(k, karten));
+    const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), 6);
+    return quizStarten({ aufgaben: mischen(hoeren.concat(gram)), pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Abschluss-Check`, nochmal: zurueck,
+      beimEnde: (p, n) => {
+        const st = lStand(L.id), prozent = Math.round((100 * p) / n);
+        st.best = Math.max(st.best || 0, prozent);
+        if (prozent >= 80) st.bestanden = true;
+        speichern();
+      },
+      endeHinweis: (p, n) => Math.round((100 * p) / n) >= 80
+        ? `<div class="meldung gut">🎉 <b>Lektion ${L.nr} geschafft!</b> ${aktuelleLektion() ? `Als Nächstes empfohlen: Lektion ${aktuelleLektion().nr} – ${esc(aktuelleLektion().titel)}.` : "Damit hast du alle 12 Lektionen geschafft – Bravissimo!"}</div>`
+        : `<div class="meldung info">Für „geschafft“ braucht es 80 %. Wiederhol am besten noch einmal die Schritte, die schwer waren – dann den Check erneut.</div>` });
+  }
+}
+
 // ---------- Heute üben: ein Tagesablauf von ca. 15 Minuten ----------
 let heuteAktiv = null; // Schritt, der gerade aus "Heute üben" heraus läuft
 function heuteStand() {
@@ -1214,23 +1408,45 @@ function heuteSchritte() {
   const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
   const nKarten = Math.min(20, plan.faellige.length + Math.min(5, plan.neue.length, neueHeuteUebrig()));
   const nFehler = Math.min(8, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
-  const dlg = naechsterDialog();
+  // Zwei Schritte der aktuellen Lektion (offene Schritte der Reihe nach)
+  const L = aktuelleLektion(), offeneL = L ? offeneSchritte(L) : [];
+  const st = heuteStand();
+  const lName = (nr) => {
+    const vorher = ["lektionA", "lektionB"].slice(0, nr).filter((x) => st.erledigt.includes(x)).length; // schon heute erledigte Lektionsschritte
+    const s = offeneL[nr - vorher];
+    return s ? `Lektion ${L.nr}: ${s.sym} ${s.name}` : "";
+  };
+  const lA = st.erledigt.includes("lektionA") ? "erledigt" : lName(0), lB = st.erledigt.includes("lektionB") ? "erledigt" : lName(1);
   return [
     { id: "karten", sym: "🗂️", name: "Karteikarten", text: nKarten ? `${nKarten} Karten (fällige zuerst)` : "heute nichts fällig", leer: !nKarten },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
-    { id: "grammatik", sym: "📘", name: "Grammatik", text: "6 Aufgaben, davon 2 zum Eintippen" },
-    { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: `${dlg.icon} ${dlg.titel}` },
+    { id: "lektionA", sym: "📚", name: "Lektion – nächster Schritt", text: lA || "alle Lektionen geschafft", leer: !lA },
+    { id: "lektionB", sym: "📚", name: "Lektion – noch ein Schritt", text: lB || "nichts mehr offen", leer: !lB },
     { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
   ];
 }
-function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heute üben"
-  if (!heuteAktiv) return false;
-  const st = heuteStand();
-  if (!st.erledigt.includes(heuteAktiv)) st.erledigt.push(heuteAktiv);
-  heuteAktiv = null; speichern();
-  return true;
+let letzterKontext = null, letzteLektion = null;
+function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heute üben" oder einer Lektion
+  let kam = false;
+  if (lektionAktiv) {
+    const ls = lStand(lektionAktiv.lid);
+    // der Abschluss-Check zählt nur über "bestanden" (ab 80 %), nicht als bloß erledigter Schritt
+    if (lektionAktiv.schritt !== "check" && !ls.schritte.includes(lektionAktiv.schritt)) ls.schritte.push(lektionAktiv.schritt);
+    letzterKontext = "lektion"; letzteLektion = lektionAktiv.lid; lektionAktiv = null; kam = true;
+  }
+  if (heuteAktiv) {
+    const st = heuteStand();
+    if (!st.erledigt.includes(heuteAktiv)) st.erledigt.push(heuteAktiv);
+    letzterKontext = "heute"; heuteAktiv = null; kam = true;
+  }
+  if (kam) speichern();
+  return kam;
 }
 function heuteWeiterKnopf() {
+  if (letzterKontext === "lektion") {
+    const L = LEKTION_NACH_ID[letzteLektion], offen = L ? offeneSchritte(L) : [];
+    return `<div class="reihe"><button class="btn voll" data-lektion-weiter="1">${offen.length ? `▶ Weiter mit Lektion ${L.nr}` : `📚 Zurück zu Lektion ${L ? L.nr : ""}`}</button></div>`;
+  }
   const offen = heuteSchritte().filter((s) => !s.leer && !heuteStand().erledigt.includes(s.id)).length;
   return `<div class="reihe"><button class="btn voll" data-heute-weiter="1">${offen ? "▶ Weiter mit „Heute üben“" : "🎉 Zu „Heute üben“ – alles geschafft!"}</button></div>`;
 }
@@ -1242,7 +1458,7 @@ function zurueckZuHeute() {
 }
 function heuteMenue() {
   setzeKopf("Heute üben", "start");
-  heuteAktiv = null;
+  heuteAktiv = null; lektionAktiv = null;
   heuteTiefe = tiefeJetzt();
   const st = heuteStand(), schritte = heuteSchritte();
   const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
@@ -1262,6 +1478,11 @@ function heuteMenue() {
 }
 function heuteStarten(id) {
   heuteAktiv = id;
+  if (id === "lektionA" || id === "lektionB") {
+    const L = aktuelleLektion(), s = L && offeneSchritte(L)[0];
+    if (!s) { heuteAktiv = null; return heuteMenue(); }
+    return lektionStarten(L, s.id);
+  }
   if (id === "karten") {
     const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
     const neue = plan.neue.slice(0, Math.min(5, neueHeuteUebrig())), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
@@ -1407,6 +1628,8 @@ function schwacheGrammatik() {
     if (art === "art") { const a = ARTIKEL_NOMEN.find((x) => x.ganz === wert); if (a) aufgaben.push(artikelAufgabe(a)); }
     if (art === "ce") { const x = CE_CI_SONO.find((c) => c.s === wert); if (x) aufgaben.push(ceAufgabe(x)); }
     if (art === "vsatz") { const x = VERB_SAETZE.find((c) => c.s === wert); if (x) aufgaben.push(vsatzAufgabe(x)); }
+    if (art === "zahl") aufgaben.push(zahlAufgabe(+wert));
+    if (art === "lk") { const setId = rest[0], s = rest.slice(1).join(":"); const x = LUECKEN[setId] && LUECKEN[setId].saetze.find((c) => c.s === s); if (x) aufgaben.push(lueckeAufgabe(setId, x)); }
   });
   return aufgaben;
 }
@@ -1548,7 +1771,9 @@ function route() {
   const seiten = {
     start: startseite, karten: kartenMenue, karte: karteZeigen, grammatik: grammatikMenue, verben: verbenMenue,
     tabellen: verbTabellen, artikel: artikelStart, cecisono: ceStart, verbsatz: vsatzStart,
-    heute: heuteMenue, dialoge: dialogeMenue, dialog: () => dialogZeigen(arg), claude: claudeMenue, satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
+    heute: heuteMenue, dialoge: dialogeMenue, dialog: () => dialogZeigen(arg), claude: claudeMenue,
+    lektionen: lektionenMenue, lektion: () => lektionZeigen(arg), lerkl: () => lektionErklaerung(arg),
+    uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },

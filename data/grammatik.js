@@ -154,3 +154,76 @@ window.VERB_SAETZE = [
   { s: "Lui ___ in Italia ogni anno.", inf: "andare", p: 2, de: "Er fährt jedes Jahr nach Italien." },
   { s: "Voi che cosa ___ domenica?", inf: "fare", p: 4, de: "Was macht ihr am Sonntag?" }
 ];
+
+// Lückensätze für die Lektionen: ___ wird durch eine der Möglichkeiten ersetzt.
+// optionen = Auswahl für alle Sätze des Sets (o = eigene Auswahl für einen Satz), a = richtige Antwort
+window.LUECKEN = {
+  piacere: { titel: "mi piace / mi piacciono", optionen: ["mi piace", "mi piacciono"], saetze: [
+    { s: "___ la pizza.", a: "Mi piace", de: "Ich mag Pizza." },
+    { s: "___ gli spaghetti.", a: "Mi piacciono", de: "Ich mag Spaghetti." },
+    { s: "Non ___ il pesce.", a: "mi piace", de: "Ich mag keinen Fisch." },
+    { s: "___ i dolci.", a: "Mi piacciono", de: "Ich mag Süßspeisen." },
+    { s: "___ l'Italia.", a: "Mi piace", de: "Mir gefällt Italien." },
+    { s: "___ le mele.", a: "Mi piacciono", de: "Ich mag Äpfel." },
+    { s: "Non ___ i pomodori.", a: "mi piacciono", de: "Ich mag keine Tomaten." },
+    { s: "___ molto il caffè.", a: "Mi piace", de: "Ich mag Kaffee sehr." },
+    { s: "___ cucinare.", a: "Mi piace", de: "Ich koche gern." },
+    { s: "___ i film italiani.", a: "Mi piacciono", de: "Ich mag italienische Filme." },
+    { s: "___ la musica italiana.", a: "Mi piace", de: "Ich mag italienische Musik." },
+    { s: "Non ___ le patate.", a: "mi piacciono", de: "Ich mag keine Kartoffeln." }
+  ]},
+  mehrzahl: { titel: "Mehrzahl", saetze: [
+    { s: "il ragazzo → ___", o: ["i ragazzi", "le ragazze", "gli ragazzi"], a: "i ragazzi", de: "der Junge → die Jungen" },
+    { s: "la casa → ___", o: ["le case", "i casi", "le casa"], a: "le case", de: "das Haus → die Häuser" },
+    { s: "il treno → ___", o: ["i treni", "le treni", "gli treni"], a: "i treni", de: "der Zug → die Züge" },
+    { s: "la mela → ___", o: ["le mele", "i meli", "le mela"], a: "le mele", de: "der Apfel → die Äpfel" },
+    { s: "lo zio → ___", o: ["gli zii", "i zii", "lo zii"], a: "gli zii", de: "der Onkel → die Onkel" },
+    { s: "l'amico → ___", o: ["gli amici", "i amici", "le amiche"], a: "gli amici", de: "der Freund → die Freunde" },
+    { s: "l'amica → ___", o: ["le amiche", "gli amici", "le amice"], a: "le amiche", de: "die Freundin → die Freundinnen" },
+    { s: "il padre → ___", o: ["i padri", "le padre", "i padre"], a: "i padri", de: "der Vater → die Väter" },
+    { s: "la chiave → ___", o: ["le chiavi", "le chiave", "i chiavi"], a: "le chiavi", de: "der Schlüssel → die Schlüssel" },
+    { s: "il bicchiere → ___", o: ["i bicchieri", "le bicchiere", "gli bicchieri"], a: "i bicchieri", de: "das Glas → die Gläser" },
+    { s: "lo studente → ___", o: ["gli studenti", "i studenti", "le studente"], a: "gli studenti", de: "der Student → die Studenten" },
+    { s: "la figlia → ___", o: ["le figlie", "le figli", "i figlie"], a: "le figlie", de: "die Tochter → die Töchter" }
+  ]},
+  possessiv: { titel: "mio / mia / miei / mie", optionen: ["mio", "mia", "miei", "mie"], saetze: [
+    { s: "Questo è ___ fratello.", a: "mio", de: "Das ist mein Bruder." },
+    { s: "Questa è ___ sorella.", a: "mia", de: "Das ist meine Schwester." },
+    { s: "Questi sono i ___ amici.", a: "miei", de: "Das sind meine Freunde." },
+    { s: "Queste sono le ___ chiavi.", a: "mie", de: "Das sind meine Schlüssel." },
+    { s: "Dov'è la ___ borsa?", a: "mia", de: "Wo ist meine Tasche?" },
+    { s: "Il ___ libro è qui.", a: "mio", de: "Mein Buch ist hier." },
+    { s: "Ecco i ___ biglietti.", a: "miei", de: "Hier sind meine Fahrkarten." },
+    { s: "Le ___ scarpe sono nuove.", a: "mie", de: "Meine Schuhe sind neu." },
+    { s: "___ moglie si chiama Anna.", a: "Mia", de: "Meine Frau heißt Anna." },
+    { s: "Il ___ cane è piccolo.", a: "mio", de: "Mein Hund ist klein." },
+    { s: "La ___ casa è grande.", a: "mia", de: "Mein Haus ist groß." },
+    { s: "I ___ genitori abitano a Monaco.", a: "miei", de: "Meine Eltern wohnen in München." }
+  ]},
+  orte: { titel: "a / in / al / alla", optionen: ["a", "in", "al", "alla"], saetze: [
+    { s: "Abito ___ Monaco.", a: "a", de: "Ich wohne in München." },
+    { s: "Vado ___ Italia.", a: "in", de: "Ich fahre nach Italien." },
+    { s: "Vado ___ mare.", a: "al", de: "Ich fahre ans Meer." },
+    { s: "Vado ___ stazione.", a: "alla", de: "Ich gehe zum Bahnhof." },
+    { s: "Sono ___ Roma.", a: "a", de: "Ich bin in Rom." },
+    { s: "Andiamo ___ Germania.", a: "in", de: "Wir fahren nach Deutschland." },
+    { s: "Il museo è vicino ___ chiesa.", a: "alla", de: "Das Museum ist nahe bei der Kirche." },
+    { s: "Stasera vado ___ cinema.", a: "al", de: "Heute Abend gehe ich ins Kino." },
+    { s: "Lavoro ___ ufficio.", a: "in", de: "Ich arbeite im Büro." },
+    { s: "Mangiamo ___ ristorante.", a: "al", de: "Wir essen im Restaurant." },
+    { s: "Vado ___ casa.", a: "a", de: "Ich gehe nach Hause." },
+    { s: "Andiamo ___ piedi.", a: "a", de: "Wir gehen zu Fuß." }
+  ]},
+  male: { titel: "mi fa male / mi fanno male", optionen: ["mi fa male", "mi fanno male"], saetze: [
+    { s: "___ la testa.", a: "Mi fa male", de: "Mir tut der Kopf weh." },
+    { s: "___ i piedi.", a: "Mi fanno male", de: "Mir tun die Füße weh." },
+    { s: "___ la schiena.", a: "Mi fa male", de: "Mir tut der Rücken weh." },
+    { s: "___ gli occhi.", a: "Mi fanno male", de: "Mir tun die Augen weh." },
+    { s: "___ lo stomaco.", a: "Mi fa male", de: "Mir tut der Magen weh." },
+    { s: "___ i denti.", a: "Mi fanno male", de: "Mir tun die Zähne weh." },
+    { s: "___ il braccio.", a: "Mi fa male", de: "Mir tut der Arm weh." },
+    { s: "___ le gambe.", a: "Mi fanno male", de: "Mir tun die Beine weh." },
+    { s: "___ la mano.", a: "Mi fa male", de: "Mir tut die Hand weh." },
+    { s: "___ le orecchie.", a: "Mi fanno male", de: "Mir tun die Ohren weh." }
+  ]}
+};

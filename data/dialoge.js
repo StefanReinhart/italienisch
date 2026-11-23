@@ -105,5 +105,55 @@ Farmacista | Otto euro. | Acht Euro.
   { f: "Welche Beschwerden hat die Person?", o: ["Kopfschmerzen und etwas Fieber", "Bauchschmerzen", "Husten und Schnupfen"], r: 0 },
   { f: "Seit wann?", o: ["Seit gestern Abend", "Seit drei Tagen", "Seit heute Morgen"], r: 0 },
   { f: "Wie soll sie das Medikament nehmen?", o: ["Dreimal am Tag nach dem Essen", "Zweimal am Tag vor dem Essen", "Einmal am Abend"], r: 0 }
+]},
+{ id: "eta", titel: "Quanti anni hai?", icon: "🎂", situation: "Zwei neue Kollegen lernen sich kennen.", text: `
+Luca | Ciao, sono Luca. Tu come ti chiami? | Hallo, ich bin Luca. Wie heißt du?
+Anna | Mi chiamo Anna. Piacere! | Ich heiße Anna. Freut mich!
+Luca | Piacere! Quanti anni hai, se posso chiedere? | Freut mich! Wie alt bist du, wenn ich fragen darf?
+Anna | Ho trentadue anni. E tu? | Ich bin zweiunddreißig. Und du?
+Luca | Io ho ventotto anni. | Ich bin achtundzwanzig.
+Anna | Qual è il tuo numero di telefono? | Was ist deine Telefonnummer?
+Luca | Tre quattro sette, due due uno, otto nove. | Drei vier sieben, zwei zwei eins, acht neun.
+`, fragen: [
+  { f: "Wie alt ist Anna?", o: ["32", "23", "28"], r: 0 },
+  { f: "Wie alt ist Luca?", o: ["28", "32", "18"], r: 0 },
+  { f: "Wonach fragt Anna am Ende?", o: ["Nach der Telefonnummer", "Nach der Adresse", "Nach dem Beruf"], r: 0 }
+]},
+{ id: "famiglia", titel: "La famiglia", icon: "👪", situation: "Zwei Freunde schauen sich ein Familienfoto an.", text: `
+Sara | Chi è questa signora nella foto? | Wer ist diese Frau auf dem Foto?
+Marco | È mia madre. E questo è mio padre. | Das ist meine Mutter. Und das ist mein Vater.
+Sara | Hai fratelli? | Hast du Geschwister?
+Marco | Sì, ho una sorella e due fratelli. | Ja, ich habe eine Schwester und zwei Brüder.
+Sara | E i tuoi nonni? | Und deine Großeltern?
+Marco | I miei nonni abitano a Napoli. Hanno un grande giardino. | Meine Großeltern wohnen in Neapel. Sie haben einen großen Garten.
+`, fragen: [
+  { f: "Wer ist auf dem Foto?", o: ["Marcos Mutter und Vater", "Marcos Großeltern", "Marcos Schwester"], r: 0 },
+  { f: "Wie viele Geschwister hat Marco?", o: ["Drei", "Zwei", "Eins"], r: 0 },
+  { f: "Wo wohnen die Großeltern?", o: ["In Neapel", "In Rom", "In Mailand"], r: 0 }
+]},
+{ id: "giornata", titel: "Una giornata", icon: "🕐", situation: "Ein Nachbar fragt nach dem Tagesablauf.", text: `
+Paolo | Ciao Elena! A che ora lavori domani? | Hallo Elena! Um wie viel Uhr arbeitest du morgen?
+Elena | Lavoro dalle nove alle cinque. | Ich arbeite von neun bis fünf.
+Paolo | E a che ora mangi? | Und um wie viel Uhr isst du?
+Elena | Mangio all'una con i colleghi. | Ich esse um eins mit den Kollegen.
+Paolo | Stasera guardi la partita con noi? | Schaust du heute Abend das Spiel mit uns?
+Elena | Sì, volentieri! A che ora? | Ja, gern! Um wie viel Uhr?
+Paolo | Alle otto e mezza, a casa mia. | Um halb neun, bei mir zu Hause.
+`, fragen: [
+  { f: "Wann arbeitet Elena morgen?", o: ["Von 9 bis 17 Uhr", "Von 8 bis 16 Uhr", "Von 9 bis 15 Uhr"], r: 0 },
+  { f: "Mit wem isst sie zu Mittag?", o: ["Mit den Kollegen", "Mit Paolo", "Allein"], r: 0 },
+  { f: "Wann und wo ist das Spiel?", o: ["Um 20:30 Uhr bei Paolo", "Um 20 Uhr im Stadion", "Um 18:30 Uhr in der Bar"], r: 0 }
+]},
+{ id: "weekend", titel: "Il fine settimana", icon: "⚽", situation: "Zwei Freunde planen das Wochenende.", text: `
+Giulia | Che cosa fai questo fine settimana? | Was machst du dieses Wochenende?
+Tom | Sabato gioco a calcio. E tu? | Am Samstag spiele ich Fußball. Und du?
+Giulia | Io vado al mare, se fa bel tempo. | Ich fahre ans Meer, wenn schönes Wetter ist.
+Tom | Che bello! Domenica però piove. | Wie schön! Am Sonntag regnet es allerdings.
+Giulia | Allora domenica leggo un libro e guardo un film. | Dann lese ich am Sonntag ein Buch und schaue einen Film.
+Tom | Buona idea! Buon fine settimana! | Gute Idee! Schönes Wochenende!
+`, fragen: [
+  { f: "Was macht Tom am Samstag?", o: ["Er spielt Fußball", "Er fährt ans Meer", "Er schaut einen Film"], r: 0 },
+  { f: "Wie wird das Wetter am Sonntag?", o: ["Es regnet", "Es ist heiß", "Es schneit"], r: 0 },
+  { f: "Was macht Giulia am Sonntag?", o: ["Lesen und einen Film schauen", "Fußball spielen", "Einkaufen gehen"], r: 0 }
 ]}
 ];

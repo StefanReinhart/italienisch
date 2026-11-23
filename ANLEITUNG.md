@@ -9,8 +9,12 @@ Man kann sie sich wie ein Buch vorstellen, das einmal ins Handy kopiert wird und
 
 ## Was die App kann
 
-- **▶ Heute üben** (oben auf der Startseite): eine gemischte Runde von etwa 15 Minuten – fällige Karteikarten,
-  Fehler, Grammatik, ein Hör-Dialog und Frage & Antwort. Am besten täglich; danach ist man „für heute fertig“.
+- **📚 Lektionen**: ein aufbauender Lernpfad mit 12 Lektionen (A1) – von „Begrüßen & Vorstellen“ bis „Gesundheit“.
+  Jede Lektion hat 6 Schritte: kurz erklärt → neue Wörter → Grammatik → Hör-Dialog → Sprechen → Abschluss-Check
+  (ab 80 % gilt sie als geschafft). Alle Lektionen sind offen; die App empfiehlt die nächste.
+  Zu jeder Lektion gibt es ein passendes Rollenspiel mit Claude.
+- **▶ Heute üben** (oben auf der Startseite): eine Runde von etwa 15 Minuten – fällige Karteikarten, Fehler,
+  zwei Schritte der aktuellen Lektion und Frage & Antwort. Am besten täglich; so geht es jeden Tag ein Stück voran.
 - **🎧 Hör-Dialoge**: 8 kurze Alltagsgespräche (Bar, Bahnhof, Hotel, Restaurant, Markt, Weg, Kennenlernen, Apotheke).
   Erst nur hören, dann Zeile für Zeile oder ganz aufdecken (mit Übersetzung), zum Schluss drei Verständnisfragen.
 - **🎯 Fehler wiederholen**: nur das, was oft falsch war oder als „nicht gewusst“ markiert wurde.

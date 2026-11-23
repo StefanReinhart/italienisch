@@ -55,6 +55,7 @@ const STANDARD = {
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
   lektionen: {},       // Lektions-ID → { schritte, bestanden, best }
+  wuensche: [],        // gewünschte Erklärungen: { id, it, de, zeit, gesendet }
   einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
@@ -80,7 +81,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.lektionen = s.lektionen || {};
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   return s;
 }
@@ -390,6 +391,8 @@ $app.addEventListener("click", (e) => {
   if (g) geheZu(g.dataset.gehe);
   if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
   if (e.target.closest("[data-lektion-weiter]")) zurueckZuLektion();
+  const wb = e.target.closest("[data-wunsch]");
+  if (wb) { e.stopPropagation(); wunschHinzufuegen(wb.dataset.wunsch); wb.outerHTML = `<div class="leise" style="font-size:13px">✓ Erklärung gewünscht</div>`; }
   // Ergebnis-Seiten: "Zurück" geht einen Schritt zurück, "Startseite" springt ganz an den Anfang – ohne neue Seiten anzuhängen
   const z = e.target.closest("[data-zurueck]");
   if (z) { if (tiefeJetzt() > 0) history.back(); else ersetzeDurch(z.dataset.zurueck); }
@@ -533,7 +536,7 @@ function karteZeigen() {
         ? `<div class="trenner"></div>
            ${ein && ein.eingabe ? `<div class="leise">Deine Antwort: <b>${esc(ein.eingabe)}</b></div>` : ""}
            ${ein ? `<div class="meldung ${ein.stufe === "falsch" ? "schlecht" : ein.stufe === "richtig" || ein.stufe === "akzent" ? "gut" : "info"}" style="margin:4px 0">${esc(ein.text)}</div>` : ""}
-           <div class="loesung">${esc(hinten)}</div>${itDe ? "" : lautBtn(k.it)}`
+           <div class="loesung">${esc(hinten)}</div>${itDe ? "" : lautBtn(k.it)}${hinweisHtml(k)}`
         : tippen
           ? `<input type="text" id="antwort" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Italienisch eintippen …" style="text-align:center;margin:6px 0 0">`
           : `<p class="leise">Überlege die Antwort, dann tippe auf „Aufdecken“.</p>`}
@@ -1701,7 +1704,58 @@ function phrasenMenue() {
   setzeKopf("Phrasen", "start");
   zeige(`<div class="liste">${PHRASEN_GRUPPEN.map((g) => `<button class="zeile" data-gehe="phrasen/${g.id}"><span class="sym">${g.icon}</span><span class="mitte">${esc(g.name)}<small>${g.eintraege.length} Sätze</small></span><span class="pfeil">›</span></button>`).join("")}</div>`);
 }
-const eintragHtml = (e) => `<div class="eintrag">${lautBtn(e.it, true)}<div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div></div></div>`;
+const eintragHtml = (e) => `<div class="eintrag">${lautBtn(e.it, true)}<div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div>${hinweisHtml(e, true)}</div></div>`;
+
+// ---------- Hinweise 💡 zu einzelnen Karten und Wünsche nach Erklärungen ----------
+// Hinweise stehen in data/hinweise.js. Fehlt einer, kann man ihn wünschen: Die App merkt sich das
+// und schickt die Wünsche (mit GitHub-Schlüssel) in die Datei data/wuensche.json – Claude liest sie
+// bei der nächsten Bearbeitung aus und trägt die Erklärungen ein.
+const hinweisZu = (id) => (window.HINWEISE || {})[id];
+const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id);
+function hinweisHtml(k, klein) {
+  const h = hinweisZu(k.id);
+  if (h) return `<div class="hinweis${klein ? " klein" : ""}">💡 ${esc(h)}</div>`;
+  if (gewuenscht(k.id)) return `<div class="leise" style="font-size:13px">✓ Erklärung gewünscht</div>`;
+  return `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">❓ Erklärung wünschen</button>`;
+}
+function wunschHinzufuegen(id) {
+  const k = KARTE_NACH_ID[id]; if (!k || gewuenscht(id)) return;
+  S.wuensche = (S.wuensche || []).concat({ id, it: k.it, de: k.de, zeit: new Date().toISOString().slice(0, 10), gesendet: false });
+  speichern();
+  toast(githubSchluessel() ? "Gemerkt – die Erklärung kommt mit der nächsten Version." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät – siehe Einstellungen.)", 4000);
+  clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 2000);
+}
+function githubSchluessel() {
+  try { const s = (localStorage.getItem("italienisch-github-schluessel") || "").replace(/[^\x21-\x7E]/g, ""); return s.length >= 30 ? s : ""; } catch (e) { return ""; }
+}
+let wunschStatus = "";
+async function wuenscheSenden() {
+  const offen = (S.wuensche || []).filter((w) => !w.gesendet), schl = githubSchluessel();
+  if (!offen.length || !schl || !navigator.onLine) return;
+  const url = "https://api.github.com/repos/StefanReinhart/italienisch/contents/data/wuensche.json";
+  const kopf = { Accept: "application/vnd.github+json", Authorization: "Bearer " + schl };
+  for (let versuch = 0; versuch < 2; versuch++) {
+    try {
+      let liste = [], sha;
+      const r = await fetch(url + "?ref=master", { headers: kopf, cache: "no-store" });
+      if (r.ok) { const j = await r.json(); sha = j.sha; liste = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), (c) => c.charCodeAt(0))) || "[]"); }
+      else if (r.status !== 404) throw new Error("GitHub antwortet mit Fehler " + r.status);
+      const vorhanden = new Set(liste.map((w) => w.id));
+      offen.forEach((w) => { if (!vorhanden.has(w.id)) liste.push({ id: w.id, it: w.it, de: w.de, zeit: w.zeit }); });
+      const text = JSON.stringify(liste, null, 1);
+      const autor = { name: "StefanReinhart", email: "154806245+StefanReinhart@users.noreply.github.com" };
+      const p = await fetch(url, { method: "PUT", headers: { ...kopf, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: `Erklärung gewünscht: ${offen.map((w) => w.it).join(", ")}`, content: btoa(unescape(encodeURIComponent(text))), sha, branch: "master", author: autor, committer: autor }) });
+      if (p.status === 409 || p.status === 422) continue; // Datei wurde gleichzeitig geändert – noch einmal versuchen
+      if (!p.ok) throw new Error("GitHub antwortet mit Fehler " + p.status);
+      offen.forEach((w) => (w.gesendet = true)); speichern();
+      wunschStatus = `✓ ${offen.length} Wunsch/Wünsche an GitHub gesendet.`;
+      return;
+    } catch (e) { wunschStatus = "Senden hat nicht geklappt: " + e.message; return; }
+  }
+}
+setTimeout(wuenscheSenden, 4000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(wuenscheSenden, 2000); });
 // Verdeckt: nur Deutsch sichtbar, Italienisch erst nach Antippen
 const eintragVerdecktHtml = (e, i) => `<div class="eintrag" data-auf="${i}" style="cursor:pointer">${lautBtn(e.it, true)}<div class="mitte">
   <div class="it">${esc(e.de)}</div><div class="de verdeckt-it" data-it="${esc(e.it)}">👆 antippen zum Aufdecken</div></div></div>`;
@@ -1755,6 +1809,18 @@ function einstellungen() {
     <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
+    <h2>💡 Erklärungs-Wünsche</h2>
+    ${(() => {
+      const alle = S.wuensche || [], offen = alle.filter((w) => !w.gesendet);
+      return `<div class="einstellung">
+        <p style="margin-top:0">${alle.length ? `Gewünscht: <b>${alle.length}</b> Karten${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch keine Erklärungen gewünscht. Tippe bei einer Karte ohne 💡 auf „❓ Erklärung wünschen“."}</p>
+        ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => `${esc(w.it)}${w.gesendet ? " ✓" : ""}`).join(" · ")}</p></details>` : ""}
+        ${wunschStatus ? `<p class="leise">${esc(wunschStatus)}</p>` : ""}
+        <p class="leise">Gesendete Wünsche liest Claude bei der nächsten Bearbeitung der App aus und schreibt die Erklärungen dazu. Damit die Wünsche automatisch ankommen, braucht dieses Gerät einmalig den <b>GitHub-Schlüssel</b> (derselbe wie für die Bearbeiten-Seite): ${githubSchluessel() ? "<b>✓ vorhanden</b>" : "<b>fehlt noch</b>"}</p>
+        <input type="password" id="ghSchluessel" placeholder="github_pat_… einfügen" autocomplete="off" style="font-family:monospace">
+        <div class="reihe" style="margin-bottom:0"><button class="btn zweit" id="ghSpeichern">Schlüssel speichern</button>${offen.length ? `<button class="btn" id="wSenden">Jetzt senden</button>` : ""}${alle.length ? `<button class="btn zweit" id="wKopieren">📋 Liste kopieren</button>` : ""}</div>
+      </div>`;
+    })()}
     <h2>Inhalte</h2>
     <a class="btn zweit voll" href="bearbeiten.html" style="text-decoration:none">✏️ Wörter, Phrasen und Fragen bearbeiten (am PC)</a>
     <p class="leise" style="margin-top:20px"><span id="versionText">Version ?</span> · Vorlesen: ${TTS ? "ja" : "nein"} · Spracherkennung: ${SR ? "ja" : "nein"}</p>`);
@@ -1768,6 +1834,19 @@ function einstellungen() {
   document.getElementById("neu").oninput = (e) => { E.neueProTag = +e.target.value; document.getElementById("neuWert").textContent = E.neueProTag; speichern(); };
   document.getElementById("auto").onchange = (e) => { E.automatischVorlesen = e.target.checked; speichern(); };
   document.getElementById("tippen").onchange = (e) => { E.eintippen = e.target.checked; speichern(); };
+  document.getElementById("ghSpeichern").onclick = () => {
+    const roh = document.getElementById("ghSchluessel").value.replace(/[^\x21-\x7E]/g, ""), m = roh.match(/(?:github_pat_|gh[pousr]_)[A-Za-z0-9_\-]+/), s = m ? m[0] : roh;
+    if (s.length < 30) return toast("Das ist zu kurz für einen GitHub-Schlüssel – bitte vollständig kopieren.", 4000);
+    try { localStorage.setItem("italienisch-github-schluessel", s); } catch (e) {}
+    toast("Schlüssel gespeichert ✓"); wuenscheSenden().then(() => ohneSprung(einstellungen));
+  };
+  const ws = document.getElementById("wSenden");
+  if (ws) ws.onclick = async () => { ws.disabled = true; ws.textContent = "Sende …"; await wuenscheSenden(); ohneSprung(einstellungen); };
+  const wk = document.getElementById("wKopieren");
+  if (wk) wk.onclick = async () => {
+    const text = "Bitte Erklärungen für diese Karten der Italienisch-App:\n" + (S.wuensche || []).map((w) => `${w.id} – ${w.it} = ${w.de}`).join("\n");
+    try { await navigator.clipboard.writeText(text); toast("Liste kopiert ✓"); } catch (e) { toast("Kopieren ging nicht."); }
+  };
   document.getElementById("export").onclick = () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `italienisch-lernstand-${heute()}.json`; a.click();

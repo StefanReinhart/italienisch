@@ -49,6 +49,7 @@ const STANDARD = {
   karten: {},          // "id|richtung" → { ease, intervall, wdh, faellig, richtig, falsch, vergessen }
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
+  lektionen: {},       // Lektions-ID → { schritte, bestanden, best }
   einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
@@ -1284,7 +1285,7 @@ const LEKTION_SCHRITTE = [
   { id: "check", sym: "🏁", name: "Abschluss-Check", text: "10 gemischte Aufgaben – ab 80 % geschafft" }
 ];
 let lektionAktiv = null, lektionTiefe = null;
-function lStand(id) { return (S.lektionen[id] = S.lektionen[id] || { schritte: [], bestanden: false, best: 0 }); }
+function lStand(id) { S.lektionen = S.lektionen || {}; return (S.lektionen[id] = S.lektionen[id] || { schritte: [], bestanden: false, best: 0 }); }
 const aktuelleLektion = () => LEKTION_LISTE.find((l) => !lStand(l.id).bestanden) || null;
 const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id) && !(s.id === "check" && lStand(L.id).bestanden));
 const lektionKarten = (L) => kartenDerThemen(L.themen);

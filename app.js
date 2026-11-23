@@ -1571,9 +1571,26 @@ const SZENEN = [
   { id: "kennenlernen", name: "🤝 Kennenlernen", du: "eine Italienerin namens Giulia, die ich im Urlaub kennenlerne", ich: "einen deutschen Urlauber, der sich vorstellt und Smalltalk macht" },
   { id: "nachbar", name: "🏡 Smalltalk mit dem Nachbarn", du: "einen netten italienischen Nachbarn namens Paolo", ich: "einen neuen Nachbarn, der über Wetter, Familie, Arbeit und Freizeit plaudert" }
 ];
-const REGELN = `Das soll ein echtes Gespräch sein, kein Unterricht. Ich bin Anfänger (Niveau A1).
+// Sprach-Niveau für die Gespräche mit Claude (in „Mit Claude üben“ wählbar)
+const CLAUDE_NIVEAUS = {
+  einfach: { name: "Ganz einfach", grenzen: "höchstens 6 Wörter pro Satz; nur Gegenwart (Präsens); nur die häufigsten Grundwörter; sprich langsam und deutlich; wiederhole wichtige Wörter ruhig" },
+  a1: { name: "Normal (A1)", grenzen: "höchstens 10 Wörter pro Satz; nur Gegenwart (Präsens); nur Wortschatz von Niveau A1; keine Nebensätze" },
+  schwerer: { name: "Etwas schwerer", grenzen: "höchstens 15 Wörter pro Satz; Gegenwart und ab und zu die einfache Vergangenheit (passato prossimo); Wortschatz A1 bis A2" }
+};
+const STUFEN = ["einfach", "a1", "schwerer"];
+function regeln(niveau) {
+  const n = CLAUDE_NIVEAUS[niveau] || CLAUDE_NIVEAUS.a1;
+  return `Das soll ein echtes Gespräch sein, kein Unterricht.
 
-Sprache und Aussprache:
+Niveau – sehr wichtig:
+- Feste Grenzen: ${n.grenzen}.
+- Bleib das GANZE Gespräch auf genau diesem Niveau, auch wenn ich gut antworte. Steigere dich nie von selbst – auch nicht nach vielen Wechseln.
+- Wenn ich „più semplice“ sage: ab sofort noch einfacher (kürzere Sätze, leichtere Wörter).
+- Wenn ich „più difficile“ sage: ab sofort eine Stufe schwerer – aber nur dann.
+
+` + REGELN_REST;
+}
+const REGELN_REST = `Sprache und Aussprache:
 - Sprich im Gespräch ausschließlich Italienisch – mit natürlicher italienischer Aussprache wie ein Muttersprachler aus Italien, nicht mit deutschem Akzent.
 - Im laufenden Gespräch kein einziges deutsches Wort, auch nicht in der Korrektur. Deutsch nur, wenn ich „aiuto“ oder „basta“ sage.
 
@@ -1584,7 +1601,6 @@ Jede deiner Antworten hat genau diese Form – nichts anderes:
 
 Wichtig:
 - Keine Erklärungen, Listen, Überschriften, Übersetzungen oder Lob-Absätze. Halte jede Antwort kurz (höchstens 3 Sätze), wie in einem echten Gespräch.
-- Einfaches Italienisch: Präsens, Grundwortschatz, kurze Sätze.
 - Wenn ich „aiuto“ sage oder Deutsch spreche: Sag mir kurz auf Deutsch, was ich auf Italienisch sagen könnte, und stell dann die Frage noch einmal auf Italienisch.
 - Erst wenn ich „basta“ sage: kurze Zusammenfassung auf Deutsch, welche Fehler ich am häufigsten gemacht habe und warum.`;
 function woerterListe(liste) { return liste.map((k) => `${k.it} = ${k.de}`).join("; "); }
@@ -1604,28 +1620,34 @@ function claudeAnweisungen(werte) {
   return [
     { id: "rolle", sym: "🎭", titel: "Rollenspiel", text: "Claude spielt eine Person in einer Alltagssituation, du antwortest auf Italienisch – mit Korrektur.",
       feld: `<select id="szene">${SZENEN.map((s) => `<option value="${s.id}" ${s.id === sz.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`,
-      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${REGELN}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit deinem ersten Satz in der Rolle, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${regeln(werte.niveau)}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit deinem ersten Satz in der Rolle, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "frei", sym: "💬", titel: "Freies Gespräch über mich", text: "Claude stellt dir einfache Fragen über dich (Familie, Arbeit, Hobbys, Urlaub) und plaudert mit dir.",
-      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${REGELN}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit einer kurzen Begrüßung und deiner ersten Frage, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${regeln(werte.niveau)}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit einer kurzen Begrüßung und deiner ersten Frage, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "korrektur", sym: "✏️", titel: "Meine Sätze korrigieren", text: "Du schreibst oder sprichst eigene italienische Sätze, Claude korrigiert und erklärt.",
       prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Ich schreibe dir gleich eigene italienische Sätze.\nFür jeden Satz:\n1. Ist er richtig? Wenn nicht, schreib die korrigierte Fassung.\n2. Erkläre jeden Fehler kurz und einfach auf Deutsch.\n3. Gib mir eine natürlichere Variante, wie ein Italiener es sagen würde.\nHalte die Antworten kurz. Antworte jetzt nur mit "Pronto! Scrivi una frase." und warte auf meinen ersten Satz.` },
     { id: "grammatik", sym: "📘", titel: "Grammatikfrage stellen", text: "Claude erklärt eine Grammatikfrage einfach, mit Beispielen und einer Mini-Übung.",
       feld: `<input type="text" id="gfrage" placeholder="z. B. Wann sage ich c'è und wann ci sono?" value="${esc(werte.frage || "")}">`,
       prompt: `Ich lerne Italienisch (Anfänger, Niveau A1) und bin kein Sprachexperte. Erkläre mir bitte ganz einfach auf Deutsch, ohne Fachbegriffe (oder mit Erklärung der Fachbegriffe):\n\n${werte.frage || "[hier deine Frage]"}\n\nGib 3 kurze Beispielsätze mit deutscher Übersetzung und am Ende 3 kleine Übungsaufgaben. Die Lösungen zeigst du erst, wenn ich geantwortet habe.` },
     { id: "geschichte", sym: "📖", titel: fehler.length ? "Geschichte mit meinen Fehler-Wörtern" : "Geschichte mit meinen Wörtern", text: fehler.length ? `Eine kurze Geschichte mit ${fehler.length} Wörtern, die du oft falsch hattest.` : "Eine kurze Geschichte mit Wörtern, die du schon gelernt hast.",
-      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Schreib mir eine kurze, einfache Geschichte auf Italienisch (8–10 Sätze, Präsens), in der möglichst viele dieser Wörter vorkommen:\n${woerterListe(uebungsWoerter)}\n\nDanach:\n1. Die Geschichte noch einmal Satz für Satz mit deutscher Übersetzung.\n2. 4 Verständnisfragen auf Italienisch. Ich antworte auf Italienisch, du korrigierst meine Antworten.` },
+      prompt: `Ich lerne Italienisch. Schreib mir eine kurze, einfache Geschichte auf Italienisch (8–10 Sätze; ${(CLAUDE_NIVEAUS[werte.niveau] || CLAUDE_NIVEAUS.a1).grenzen}), in der möglichst viele dieser Wörter vorkommen:\n${woerterListe(uebungsWoerter)}\n\nDanach:\n1. Die Geschichte noch einmal Satz für Satz mit deutscher Übersetzung.\n2. 4 Verständnisfragen auf Italienisch. Ich antworte auf Italienisch, du korrigierst meine Antworten.` },
     { id: "uebersetzen", sym: "🔁", titel: "Übersetzungs-Training", text: "Claude gibt dir deutsche Sätze, du übersetzt ins Italienische – mit deinen Wörtern.",
-      prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Gib mir nacheinander 10 kurze, alltägliche deutsche Sätze zum Übersetzen ins Italienische. Verwende dabei möglichst diese Wörter:\n${woerterListe(uebungsWoerter)}\n\nImmer nur ein Satz, dann wartest du auf meine Übersetzung. Danach: richtig/falsch, die korrekte Fassung und eine kurze Erklärung auf Deutsch. Zum Schluss eine kurze Auswertung.` }
+      prompt: `Ich lerne Italienisch. Gib mir nacheinander 10 kurze, alltägliche deutsche Sätze zum Übersetzen ins Italienische (die italienische Lösung soll diese Grenzen einhalten: ${(CLAUDE_NIVEAUS[werte.niveau] || CLAUDE_NIVEAUS.a1).grenzen}). Verwende dabei möglichst diese Wörter:\n${woerterListe(uebungsWoerter)}\n\nImmer nur ein Satz, dann wartest du auf meine Übersetzung. Danach: richtig/falsch, die korrekte Fassung und eine kurze Erklärung auf Deutsch. Zum Schluss eine kurze Auswertung.` }
   ];
 }
 let claudeWerte = { szene: "bar", frage: "" };
 function claudeMenue() {
   setzeKopf("Mit Claude üben", "start");
+  claudeWerte.niveau = S.einstellungen.claudeNiveau || "a1";
   const liste = claudeAnweisungen(claudeWerte);
   zeige(`
     <div class="meldung info">💡 Das läuft über <b>dein Claude-Abo</b> in der Claude-App – ohne Zusatzkosten.
       Tippe auf eine Übung: Die Anweisung wird <b>kopiert</b> und Claude geöffnet. Dort lange ins Eingabefeld drücken → <b>Einfügen</b> → senden.
-      <br>🎤 Zum <b>Sprechen</b>: erst die Anweisung senden, dann im selben Chat den Sprachmodus starten. Mit „aiuto“ bekommst du Hilfe, mit „basta“ beendest du das Gespräch und bekommst eine kurze Fehler-Zusammenfassung.</div>
+      <br>🎤 Zum <b>Sprechen</b>: erst die Anweisung senden, dann im selben Chat den Sprachmodus starten.</div>
+    <h2 style="margin-top:6px">Wie schwer soll Claude sprechen?</h2>
+    ${umschalter("cniveau", claudeWerte.niveau, STUFEN.map((s) => [s, CLAUDE_NIVEAUS[s].name]))}
+    <p class="leise">Gilt für Rollenspiel, Gespräch, Geschichte und Übersetzen. <b>Im Gespräch</b> kannst du jederzeit sagen:
+      <b>„più semplice“</b> (einfacher) · <b>„più difficile“</b> (schwerer) · <b>„aiuto“</b> (Hilfe) · <b>„basta“</b> (Schluss mit Fehler-Zusammenfassung).
+      Wird es trotzdem langsam schwerer: einfach einen neuen Chat beginnen (etwa alle 15–20 Wechsel).</p>
     ${liste.map((a) => `<div class="einstellung">
       <label>${a.sym} ${esc(a.titel)}</label>
       <p class="leise" style="margin-top:0">${esc(a.text)}</p>
@@ -1634,6 +1656,7 @@ function claudeMenue() {
       <details style="margin-top:8px"><summary class="leise">Anweisung ansehen</summary><pre style="white-space:pre-wrap;font-size:14px;font-family:inherit">${esc(a.prompt)}</pre></details>
     </div>`).join("")}
     <div id="kopierFeld"></div>`);
+  $app.querySelectorAll("#cniveau button").forEach((b) => (b.onclick = () => { S.einstellungen.claudeNiveau = b.dataset.w; speichern(); ohneSprung(claudeMenue); }));
   const sz = document.getElementById("szene");
   if (sz) sz.onchange = () => { claudeWerte.szene = sz.value; ohneSprung(claudeMenue); };
   const gf = document.getElementById("gfrage");

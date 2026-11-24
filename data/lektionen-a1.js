@@ -165,8 +165,45 @@ Attenzione, è caldo! | Vorsicht, das ist heiß!
 <tr><td>weiblich</td><td><b>una</b> birra</td></tr><tr><td>weiblich vor Selbstlaut</td><td><b>un'</b>acqua, <b>un'</b>amica</td></tr></table>`
 },
 l4: {
-  kern: ["personen:la famiglia", "personen:il padre", "personen:la madre", "personen:il figlio", "personen:la figlia", "personen:il fratello", "personen:la sorella", "personen:il marito", "personen:la moglie", "personen:il nonno", "personen:la nonna", "personen:lo zio", "personen:la zia", "personen:il cugino", "personen:i genitori", "personen:il bambino", "personen:la bambina", "personen:il ragazzo", "personen:la ragazza", "personen:l'uomo", "personen:la donna", "farben:grande", "farben:piccolo", "farben:giovane", "farben:vecchio", "farben:bello"],
+  kern: ["personen:la famiglia", "personen:il padre", "personen:la madre", "personen:il figlio", "personen:la figlia", "personen:il fratello", "personen:la sorella", "personen:il marito", "personen:la moglie", "personen:il nonno", "personen:la nonna", "personen:lo zio", "personen:la zia", "personen:il cugino", "personen:i genitori", "personen:il bambino", "personen:la bambina", "personen:il ragazzo", "personen:la ragazza", "personen:l'uomo", "personen:la donna", "farben:grande", "farben:piccolo", "farben:giovane", "farben:vecchio", "farben:bello",
+    "personen:il signore", "personen:la signora", "farben:felice", "farben:nuovo", "wetter:il cane", "wetter:il gatto", "haus:la casa"],
   neu: `
+la nipote | die Enkelin / die Nichte
+il fidanzato | der feste Freund / der Verlobte
+la fidanzata | die feste Freundin / die Verlobte
+il compagno | der Partner (Lebensgefährte)
+la compagna | die Partnerin (Lebensgefährtin)
+divorziato | geschieden
+figlio unico | Einzelkind
+maggiore | älter (bei Geschwistern)
+minore | jünger (bei Geschwistern)
+gentile | freundlich, nett
+carino | hübsch, nett
+Sei sposato? | Bist du verheiratet?
+Sì, da trent'anni. | Ja, seit dreißig Jahren.
+Hai figli? | Hast du Kinder?
+Non ho figli. | Ich habe keine Kinder.
+Ho un figlio e una figlia. | Ich habe einen Sohn und eine Tochter.
+Quanti anni hanno i tuoi figli? | Wie alt sind deine Kinder?
+Sono già grandi. | Sie sind schon erwachsen.
+Hai fratelli o sorelle? | Hast du Geschwister?
+Ho un fratello e due sorelle. | Ich habe einen Bruder und zwei Schwestern.
+Sono figlio unico. | Ich bin Einzelkind.
+Mio fratello è più grande di me. | Mein Bruder ist älter als ich.
+Mia sorella è più giovane. | Meine Schwester ist jünger.
+Mia figlia abita a Berlino. | Meine Tochter wohnt in Berlin.
+Ho tre nipoti. | Ich habe drei Enkel.
+Vivo da solo. | Ich lebe allein.
+Vivo con la mia compagna. | Ich lebe mit meiner Partnerin zusammen.
+Siamo una famiglia grande. | Wir sind eine große Familie.
+Ecco una foto dei miei figli. | Hier ist ein Foto von meinen Kindern.
+Che bella famiglia! | Was für eine schöne Familie!
+Tuo figlio è molto carino. | Dein Sohn ist sehr nett.
+Hai un cane? | Hast du einen Hund?
+Abbiamo un gatto. | Wir haben eine Katze.
+Mio padre non c'è più. | Mein Vater lebt nicht mehr.
+Come stanno i tuoi? | Wie geht es deiner Familie?
+Salutami tua moglie! | Grüß deine Frau von mir!
 i figli | die Kinder (Söhne und Töchter)
 il nipote | der Enkel / der Neffe
 sposato | verheiratet
@@ -192,8 +229,44 @@ I nonni hanno un grande giardino. | Die Großeltern haben einen großen Garten.
 },
 l5: {
   kern: ["essen:la pasta", "essen:la pizza", "essen:il pane", "essen:la carne", "essen:il pesce", "essen:il pollo", "essen:il formaggio", "essen:la verdura", "essen:la frutta", "essen:l'insalata", "essen:il dolce", "essen:il gelato", "essen:la colazione", "essen:il pranzo", "essen:la cena", "restaurant:il ristorante", "restaurant:il cameriere", "restaurant:il menù", "restaurant:il tavolo", "restaurant:il primo", "restaurant:il secondo", "restaurant:il contorno",
-    "p_restaurant:Un tavolo per due, per favore.", "p_restaurant:Il menù, per favore.", "p_restaurant:Che cosa ci consiglia?", "p_restaurant:mi-consiglia", "p_restaurant:specialita", "p_restaurant:Vorrei una pizza margherita.", "p_restaurant:È delizioso!", "p_restaurant:Sono vegetariano.", "p_alltag:Mi piace molto."],
+    "p_restaurant:Un tavolo per due, per favore.", "p_restaurant:Il menù, per favore.", "p_restaurant:Che cosa ci consiglia?", "p_restaurant:mi-consiglia", "p_restaurant:specialita", "p_restaurant:Vorrei una pizza margherita.", "p_restaurant:È delizioso!", "p_restaurant:Sono vegetariano.", "p_alltag:Mi piace molto.",
+    "essen:il riso", "essen:l'uovo", "essen:il pomodoro", "essen:la patata", "essen:la zuppa", "essen:la torta", "essen:il sale", "essen:il pepe", "essen:l'olio",
+    "restaurant:l'antipasto", "restaurant:il piatto", "restaurant:la forchetta", "restaurant:il coltello", "restaurant:il cucchiaio", "restaurant:la mancia", "restaurant:la prenotazione",
+    "p_restaurant:Ho una prenotazione.", "p_restaurant:Per me una pasta, per favore.", "p_restaurant:Un bicchiere di vino rosso.", "p_restaurant:Una bottiglia d'acqua naturale.", "p_alltag:Ho fame.", "p_alltag:Ho sete.", "farben:buono"],
   neu: `
+la bistecca | das Steak
+il risotto | das Risotto
+la marmellata | die Marmelade
+fresco | frisch
+crudo | roh
+cotto | gekocht
+il vino della casa | der Hauswein
+il coperto | das Gedeck (Brot und Gedeck auf der Rechnung)
+il piatto preferito | das Lieblingsgericht
+Buon appetito! | Guten Appetit!
+Grazie, altrettanto. | Danke, gleichfalls.
+Salute! | Prost! / Gesundheit!
+Avete un tavolo libero? | Haben Sie einen Tisch frei?
+Possiamo sederci fuori? | Können wir draußen sitzen?
+Siete pronti per ordinare? | Möchten Sie bestellen?
+Non ancora, un momento. | Noch nicht, einen Moment.
+Da bere? | Zu trinken?
+Mezzo litro di vino della casa. | Einen halben Liter Hauswein.
+Che cos'è questo? | Was ist das?
+Senza carne, per favore. | Ohne Fleisch, bitte.
+La bistecca al sangue, per favore. | Das Steak blutig, bitte.
+Ancora un po' di pane, per favore. | Noch etwas Brot, bitte.
+Era tutto buonissimo, grazie. | Es war alles köstlich, danke.
+Basta, sono pieno. | Danke, ich bin satt.
+Il servizio è incluso? | Ist die Bedienung inbegriffen?
+Possiamo pagare separatamente? | Können wir getrennt zahlen?
+Offro io! | Ich lade ein!
+Qual è il tuo piatto preferito? | Was ist dein Lieblingsgericht?
+Il mio piatto preferito è la lasagna. | Mein Lieblingsgericht ist Lasagne.
+A colazione mangio pane e marmellata. | Zum Frühstück esse ich Brot mit Marmelade.
+Mi piace cucinare. | Ich koche gern.
+Il prosciutto crudo è buonissimo. | Der luftgetrocknete Schinken ist köstlich.
+È fresco il pesce? | Ist der Fisch frisch?
 gli spaghetti | die Spaghetti
 il tiramisù | das Tiramisu
 piccante | scharf
@@ -214,8 +287,43 @@ Le patate non mi piacciono. | Kartoffeln mag ich nicht.
 },
 l6: {
   kern: ["einkaufen:il negozio", "einkaufen:il supermercato", "einkaufen:il mercato", "einkaufen:il prezzo", "einkaufen:i soldi", "einkaufen:l'euro", "einkaufen:il chilo", "einkaufen:il litro", "einkaufen:il pezzo", "einkaufen:aperto", "einkaufen:chiuso", "einkaufen:la carta di credito", "einkaufen:la borsa", "kleidung:la maglietta", "kleidung:la camicia", "kleidung:i pantaloni", "kleidung:la giacca", "kleidung:le scarpe", "kleidung:la taglia", "farben:rosso", "farben:blu", "farben:verde", "farben:giallo", "farben:bianco", "farben:nero", "farben:caro", "farben:economico",
-    "p_einkaufen:Quanto costa?", "p_einkaufen:Quanto costano?", "p_einkaufen:Posso provarlo?", "p_einkaufen:È troppo caro.", "p_einkaufen:Lo prendo.", "p_einkaufen:Un chilo di mele, per favore.", "p_einkaufen:Nient'altro, grazie."],
+    "p_einkaufen:Quanto costa?", "p_einkaufen:Quanto costano?", "p_einkaufen:Posso provarlo?", "p_einkaufen:È troppo caro.", "p_einkaufen:Lo prendo.", "p_einkaufen:Un chilo di mele, per favore.", "p_einkaufen:Nient'altro, grazie.",
+    "einkaufen:il sacchetto", "einkaufen:lo sconto", "einkaufen:il centesimo", "einkaufen:il panificio", "einkaufen:la macelleria", "einkaufen:la farmacia", "essen:la mela",
+    "kleidung:la gonna", "kleidung:il vestito", "kleidung:il cappotto", "kleidung:i vestiti", "farben:grigio", "farben:marrone", "farben:rosa", "farben:arancione", "farben:lungo", "farben:corto",
+    "p_einkaufen:Vorrei questo.", "p_einkaufen:Sto solo guardando.", "p_einkaufen:Avete una taglia più grande?", "p_einkaufen:A che ora chiudete?"],
   neu: `
+il commesso | der Verkäufer
+la commessa | die Verkäuferin
+il camerino | die Umkleidekabine
+i saldi | der Schlussverkauf
+il regalo | das Geschenk
+un paio di | ein Paar
+un pacco di | eine Packung
+Buongiorno, desidera? | Guten Tag, was wünschen Sie?
+Mi dica! | Bitte schön? (Was darf es sein?)
+Altro? | Sonst noch etwas?
+Cerco una giacca. | Ich suche eine Jacke.
+Che taglia porta? | Welche Größe tragen Sie?
+Porto la quarantadue. | Ich trage Größe 42.
+Che numero porta? | Welche Schuhgröße haben Sie?
+Dov'è il camerino? | Wo ist die Umkleidekabine?
+Mi sta bene? | Steht mir das?
+Le sta benissimo! | Das steht Ihnen sehr gut!
+È troppo piccola. | Sie ist zu klein.
+Ce l'ha in blu? | Haben Sie das in Blau?
+Non mi piace il colore. | Die Farbe gefällt mir nicht.
+È un regalo. | Es ist ein Geschenk.
+Posso cambiarlo? | Kann ich es umtauschen?
+Due etti di formaggio, per favore. | 200 Gramm Käse, bitte.
+Un pacco di pasta. | Eine Packung Nudeln.
+Una bottiglia di olio d'oliva. | Eine Flasche Olivenöl.
+Sei uova, per favore. | Sechs Eier, bitte.
+Un po' di più. | Ein bisschen mehr.
+Va bene così. | So ist es gut.
+Quant'è in tutto? | Was macht das zusammen?
+Mi fa uno sconto? | Geben Sie mir einen Rabatt?
+Avete un sacchetto? | Haben Sie eine Tüte?
+A che ora apre il negozio? | Wann öffnet das Geschäft?
 mezzo chilo | ein halbes Kilo
 un etto | 100 Gramm
 il resto | das Wechselgeld

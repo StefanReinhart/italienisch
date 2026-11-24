@@ -230,12 +230,12 @@ function sprich(text, langsam = false) {
 // ---------- Spracherkennung ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let erkennung = null;
-function zuhoeren({ start, ergebnis, fehler, ende }) {
+function zuhoeren({ start, ergebnis, fehler, ende, sprache }) {
   if (!SR) { fehler("Dieses Gerät oder dieser Browser unterstützt keine Spracherkennung. Bitte Chrome verwenden."); return; }
   if (erkennung) { try { erkennung.abort(); } catch (e) {} }
   const r = new SR();
   erkennung = r;
-  r.lang = "it-IT"; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
+  r.lang = sprache || "it-IT"; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
   let bekommen = false;
   r.onstart = start;
   r.onresult = (e) => {
@@ -356,6 +356,26 @@ function pruefeEingabe(eingabe, karte) {
   return { stufe: best.stufe, text: texte[best.stufe], ziel: best.ziel || karte.it };
 }
 const VORSCHLAG = { richtig: 2, akzent: 2, artikel: 1, fast: 1, falsch: 0 };
+
+// Gesprochene deutsche Antwort prüfen (Italienisch → Deutsch): tolerant bei Artikeln, Klammern und „/“-Varianten
+function pruefeDeutsch(gesagt, karte) {
+  const norm = (s) => ohneAkzente(String(s).toLowerCase()).replace(/\([^)]*\)/g, " ").replace(/[^a-z0-9ß ]/g, " ")
+    .replace(/\b(der|die|das|den|dem|ein|eine|einen|einem)\b/g, " ").replace(/\s+/g, " ").trim();
+  const g = norm(gesagt);
+  if (!g) return { stufe: "falsch", text: "Nichts verstanden." };
+  const varianten = [karte.de].concat(karte.de.split(/\/|,|;| oder /)).map(norm).filter(Boolean);
+  if (varianten.includes(g)) return { stufe: "richtig", text: "✅ Richtig!" };
+  const best = Math.max(...varianten.map((v) => aehnlich(v, g)));
+  const enthalten = varianten.some((v) => v.length > 3 && (g.includes(v) || v.includes(g)) && g.length > 2);
+  if (best >= 0.8 || enthalten) return { stufe: "fast", text: "🟠 Fast – vergleiche genau mit der Lösung." };
+  return { stufe: "falsch", text: "❌ Leider falsch." };
+}
+// Aus mehreren Erkennungs-Vorschlägen den besten nehmen
+function besteSprachAntwort(alternativen, karte, itDe) {
+  const rang = { richtig: 4, akzent: 3, artikel: 2, fast: 1, falsch: 0 };
+  return alternativen.map((t) => ({ t, r: itDe ? pruefeDeutsch(t, karte) : pruefeEingabe(t, karte) }))
+    .sort((a, b) => rang[b.r.stufe] - rang[a.r.stufe])[0];
+}
 
 // ---------- Kleine Bausteine für Bildschirme ----------
 function setzeKopf(titel, zurueck) {
@@ -541,7 +561,8 @@ function karteZeigen() {
            <div class="loesung">${esc(hinten)}</div>${itDe ? "" : lautBtn(k.it)}${hinweisHtml(k)}`
         : tippen
           ? `<input type="text" id="antwort" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Italienisch eintippen …" style="text-align:center;margin:6px 0 0">`
-          : `<p class="leise">Überlege die Antwort, dann tippe auf „Aufdecken“.</p>`}
+          : `<p class="leise">Überlege die Antwort, dann tippe auf „Aufdecken“${SR ? " – oder sprich sie mit 🎤" : ""}.</p>`}
+      ${!sitzung.aufgedeckt && SR ? `<div id="kstatus" class="leise" style="min-height:1.2em"></div>` : ""}
     </div>
     ${sitzung.aufgedeckt
       ? `<div class="bewertung">
@@ -549,8 +570,8 @@ function karteZeigen() {
         </div>
         ${ein ? `<p class="leise" style="text-align:center">Der umrandete Knopf ist der Vorschlag der App – du kannst auch anders bewerten.</p>` : ""}`
       : tippen
-        ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button><button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
-        : `<button class="btn voll" id="aufdecken" style="margin-top:14px">Aufdecken</button>`}
+        ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button>${SR ? `<button class="btn zweit" id="ksprechen" title="Antwort sprechen" style="flex:0 0 64px">🎤</button>` : ""}<button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
+        : `<div class="reihe" style="margin-top:14px"><button class="btn" id="aufdecken">Aufdecken</button>${SR ? `<button class="btn zweit" id="ksprechen">🎤 Antwort sprechen</button>` : ""}</div>`}
   `);
   if (!sitzung.aufgedeckt && itDe && S.einstellungen.automatischVorlesen) sprich(k.it);
   if (sitzung.aufgedeckt && !itDe && S.einstellungen.automatischVorlesen) sprich(k.it);
@@ -564,6 +585,22 @@ function karteZeigen() {
     document.getElementById("pruefen").onclick = pruefen;
     document.getElementById("weissnicht").onclick = () => { sitzung.eingabe = { stufe: "falsch", text: "Kein Problem – so heißt es:", eingabe: "" }; sitzung.aufgedeckt = true; karteZeigen(); };
   }
+  // Antwort sprechen: Italienisch bei Deutsch → Italienisch, Deutsch bei Italienisch → Deutsch
+  const ksp = document.getElementById("ksprechen");
+  if (ksp) ksp.onclick = () => {
+    if (TTS) speechSynthesis.cancel();
+    const status = document.getElementById("kstatus");
+    zuhoeren({
+      sprache: itDe ? "de-DE" : "it-IT",
+      start: () => { ksp.classList.add("hoert"); ksp.textContent = "🎤 …"; if (status) status.textContent = `Ich höre zu – sag die Antwort auf ${itDe ? "Deutsch" : "Italienisch"}.`; },
+      ergebnis: (alternativen) => {
+        const b = besteSprachAntwort(alternativen, k, itDe);
+        sitzung.eingabe = { ...b.r, eingabe: "🎤 " + b.t }; sitzung.aufgedeckt = true; karteZeigen();
+      },
+      fehler: (text) => { if (status) status.textContent = text; ksp.textContent = tippen ? "🎤" : "🎤 Antwort sprechen"; },
+      ende: () => ksp.classList.remove("hoert")
+    });
+  };
   $app.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => {
     const n = +b.dataset.n;
     if (!sitzung.frei) {
@@ -727,7 +764,7 @@ function quizZeigen() {
   }
   const a = quiz.aufgaben[quiz.pos];
   const antwortHtml = a.tippen
-    ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1"><button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div>`
+    ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1">${SR ? `<button class="btn zweit" id="qsprechen" title="Antwort sprechen" style="flex:none">🎤</button>` : ""}<button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div><div id="qstatus" class="leise"></div>`
     : `<div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
   zeige(`${fortschrittsLeiste(quiz.pos + 1, quiz.aufgaben.length)}
     <div class="frage">${a.frage}</div>
@@ -766,6 +803,24 @@ function quizZeigen() {
     };
     feld.onkeydown = (ev) => { if (ev.key === "Enter") pruefen(); };
     document.getElementById("qpruefen").onclick = pruefen;
+    // Antwort sprechen: der passendste Erkennungs-Vorschlag kommt ins Feld und wird gleich geprüft
+    const qsp = document.getElementById("qsprechen");
+    if (qsp) qsp.onclick = () => {
+      const status = document.getElementById("qstatus");
+      zuhoeren({
+        start: () => { qsp.classList.add("hoert"); status.textContent = "Ich höre zu – sag die Antwort auf Italienisch."; },
+        ergebnis: (alt) => {
+          const z = ohneAkzente(saeubern(a.richtig));
+          // oft erkennt das Handy ganze Sätze – dann das passende Wort darin suchen
+          const genau = alt.find((t) => ohneAkzente(saeubern(t)) === z);
+          const imSatz = alt.find((t) => (" " + ohneAkzente(saeubern(t)) + " ").includes(" " + z + " "));
+          feld.value = genau || (imSatz ? a.richtig : alt[0]);
+          status.textContent = "Verstanden: „" + alt[0] + "“"; pruefen();
+        },
+        fehler: (text) => { status.textContent = text; },
+        ende: () => qsp.classList.remove("hoert")
+      });
+    };
   }
   const ng = document.getElementById("nichtGewusst");
   if (ng) ng.onclick = () => {
@@ -1517,13 +1572,26 @@ function heuteMenue() {
     <div class="fortschritt"><span>${fertig} / ${schritte.length}</span><div class="balken"><i style="width:${(100 * fertig) / schritte.length}%"></i></div></div>
     <div class="liste">${schritte.map((s, i) => {
       const erledigt = st.erledigt.includes(s.id) || s.leer;
-      return `<div class="zeile${erledigt ? " aktiv" : ""}" style="cursor:default"><span class="sym">${s.sym}</span><span class="mitte">${i + 1}. ${s.name}<small>${esc(s.text)}</small></span><span class="haken">${erledigt ? "✓" : ""}</span></div>`;
+      return `<button class="zeile${erledigt ? " aktiv" : ""}" data-hschritt="${s.id}"><span class="sym">${s.sym}</span><span class="mitte">${i + 1}. ${s.name}<small>${esc(s.text)}</small></span><span class="haken haken-gross" data-hhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
     ${offen.length
       ? `<button class="btn voll" id="heuteLos" style="margin-top:14px;min-height:64px;font-size:20px">▶ ${fertig ? "Weiter" : "Los geht's"}: ${offen[0].name}</button>`
       : `<div class="meldung gut" style="margin-top:14px">🎉 <b>Bravissimo!</b> Für heute ist alles geschafft. Du kannst natürlich trotzdem weiter üben.</div>`}`);
   const los = document.getElementById("heuteLos");
   if (los) los.onclick = () => heuteStarten(offen[0].id);
+  // Zeile antippen = diesen Schritt direkt starten; Kästchen antippen = von Hand abhaken / Haken wegnehmen
+  $app.querySelectorAll("[data-hschritt]").forEach((b) => (b.onclick = () => {
+    const s = schritte.find((x) => x.id === b.dataset.hschritt);
+    if (s.leer) return toast(`${s.name}: ${s.text}.`, 3000);
+    heuteStarten(s.id);
+  }));
+  $app.querySelectorAll("[data-hhaken]").forEach((h) => (h.onclick = (ev) => {
+    ev.stopPropagation();
+    const id = h.dataset.hhaken, s = schritte.find((x) => x.id === id);
+    if (s.leer) return toast(`${s.name}: ${s.text} – gilt automatisch als erledigt.`, 3000);
+    st.erledigt = st.erledigt.includes(id) ? st.erledigt.filter((x) => x !== id) : st.erledigt.concat(id);
+    speichern(); ohneSprung(heuteMenue);
+  }));
 }
 function heuteStarten(id) {
   heuteAktiv = id;

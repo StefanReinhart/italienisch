@@ -5,7 +5,8 @@
 window.LEKTION_ERGAENZUNG = {
 l1: {
   kern: ["grundwoerter:ciao", "grundwoerter:buongiorno", "grundwoerter:buonasera", "grundwoerter:buonanotte", "grundwoerter:arrivederci", "grundwoerter:grazie", "grundwoerter:prego", "grundwoerter:per favore", "grundwoerter:scusi", "grundwoerter:sì", "grundwoerter:no", "personen:io", "personen:tu", "personen:lui", "personen:lei", "personen:noi", "personen:voi", "personen:loro", "fragen:come", "fragen:dove", "fragen:chi", "fragen:che cosa", "personen:l'amico", "personen:l'amica", "freizeit:il nome", "grundwoerter:anche",
-    "p_begruessung:Ciao, come stai?", "p_begruessung:Buongiorno, come sta?", "p_begruessung:Sto bene, grazie.", "p_begruessung:Non c'è male.", "p_begruessung:E tu?", "p_begruessung:Come ti chiami?", "p_begruessung:Mi chiamo Marco.", "p_begruessung:Piacere!", "p_begruessung:Di dove sei?", "p_begruessung:Sono tedesco.", "p_begruessung:A presto!", "p_begruessung:A domani!", "p_verstaendigung:Parlo un po' di italiano.", "p_verstaendigung:Non capisco."],
+    "p_begruessung:Ciao, come stai?", "p_begruessung:Buongiorno, come sta?", "p_begruessung:Sto bene, grazie.", "p_begruessung:Non c'è male.", "p_begruessung:E tu?", "p_begruessung:Come ti chiami?", "p_begruessung:Mi chiamo Marco.", "p_begruessung:Piacere!", "p_begruessung:Di dove sei?", "p_begruessung:Sono tedesco.", "p_begruessung:A presto!", "p_begruessung:A domani!", "p_verstaendigung:Parlo un po' di italiano.", "p_verstaendigung:Non capisco.",
+    "grundwoerter:va bene", "grundwoerter:scusa", "personen:il signore", "personen:la signora", "p_begruessung:Buona giornata!", "p_verstaendigung:Come si dice in italiano?", "p_verstaendigung:Che cosa significa?", "p_verstaendigung:Non lo so.", "p_verstaendigung:Sto imparando l'italiano."],
   neu: `
 Sono Marco, e tu? | Ich bin Marco, und du?
 Lei è italiana? | Sind Sie Italienerin?
@@ -20,6 +21,42 @@ Non sono di qui. | Ich bin nicht von hier.
 Cosa fai qui? | Was machst du hier?
 Cos'è? | Was ist das?
 Che fai stasera? | Was machst du heute Abend?
+salve | hallo (neutral, auch zu Fremden)
+Buongiorno, signora! | Guten Tag (zu einer Frau)!
+Buonasera, signore! | Guten Abend (zu einem Mann)!
+Salve! | Hallo!
+Come va? | Wie geht's?
+Tutto bene? | Alles gut?
+Tutto bene, grazie. | Alles gut, danke.
+Benissimo! | Sehr gut!
+Così così. | So lala.
+Abbastanza bene. | Ziemlich gut.
+E Lei? | Und Ihnen?
+Molto piacere! | Sehr erfreut!
+Il piacere è mio. | Ganz meinerseits.
+Questo è mio marito. | Das ist mein Mann.
+Questa è mia moglie. | Das ist meine Frau.
+Ti presento Anna. | Ich stelle dir Anna vor.
+Di dov'è Lei? | Woher kommen Sie?
+Sono di Monaco, in Germania. | Ich bin aus München, in Deutschland.
+Abito vicino a Monaco. | Ich wohne in der Nähe von München.
+Sono qui in vacanza. | Ich bin hier im Urlaub.
+Sono qui per lavoro. | Ich bin beruflich hier.
+È la prima volta in Italia. | Es ist das erste Mal in Italien.
+Parlo solo un po' di italiano. | Ich spreche nur ein bisschen Italienisch.
+Può parlare più lentamente? | Können Sie langsamer sprechen?
+Scusi, non ho capito. | Entschuldigung, ich habe nicht verstanden.
+Come si scrive? | Wie schreibt man das?
+Che cosa vuol dire? | Was bedeutet das?
+Grazie mille! | Vielen Dank!
+Di niente. | Keine Ursache.
+Prego, si accomodi. | Bitte, nehmen Sie Platz.
+Mi scusi! | Entschuldigen Sie!
+Non fa niente. | Macht nichts.
+Buona serata! | Einen schönen Abend!
+Buon fine settimana! | Schönes Wochenende!
+Arrivederci, a presto! | Auf Wiedersehen, bis bald!
+Ci vediamo! | Wir sehen uns!
 `,
   grammatikPlus: [{ luecke: "fragewoerter" }],
   erklaerungPlus: `<p><b>Fragewörter:</b> <i>come</i> (wie) · <i>dove</i> (wo) · <i>di dove</i> (woher) · <i>chi</i> (wer) · <i>che cosa</i> (was) · <i>quando</i> (wann) · <i>quanto</i> (wie viel) · <i>perché</i> (warum).</p>
@@ -42,11 +79,39 @@ Hai un cellulare? | Hast du ein Handy?
 Hanno tre bambini. | Sie haben drei Kinder.
 Avete tempo domani? | Habt ihr morgen Zeit?
 Non ho tempo. | Ich habe keine Zeit.
+il numero | die Nummer, die Zahl
+il numero di telefono | die Telefonnummer
+l'indirizzo | die Adresse
+il compleanno | der Geburtstag
+i contanti | das Bargeld
+quasi | fast
+Qual è il tuo numero di telefono? | Was ist deine Telefonnummer?
+Il mio numero è tre tre otto, uno due tre, quattro cinque sei. | Meine Nummer ist 338 123 456.
+Quanti anni ha? | Wie alt sind Sie?
+Ho quasi sessant'anni. | Ich bin fast sechzig.
+Mio figlio ha venticinque anni. | Mein Sohn ist fünfundzwanzig.
+Quanti figli hai? | Wie viele Kinder hast du?
+Ho due figli, un maschio e una femmina. | Ich habe zwei Kinder, einen Jungen und ein Mädchen.
+Siamo in quattro. | Wir sind zu viert.
+Un tavolo per quattro, per favore. | Einen Tisch für vier, bitte.
+Quante persone? | Wie viele Personen?
+Abito in via Roma, numero dodici. | Ich wohne in der Via Roma Nummer zwölf.
+Il mio compleanno è a maggio. | Mein Geburtstag ist im Mai.
+Hai tempo oggi? | Hast du heute Zeit?
+Ho una domanda. | Ich habe eine Frage.
+Ha ragione. | Sie haben recht.
+Hai ragione. | Du hast recht.
+Ho fretta. | Ich habe es eilig.
+Non ho contanti. | Ich habe kein Bargeld.
+Costa dieci euro. | Es kostet zehn Euro.
+Sono trenta euro. | Das macht dreißig Euro.
+Quanto fa venti più trenta? – Cinquanta. | Wie viel ist zwanzig plus dreißig? – Fünfzig.
 `
 },
 l3: {
   kern: ["trinken:il caffè", "trinken:il cappuccino", "trinken:il tè", "trinken:il latte", "trinken:l'acqua", "trinken:l'acqua frizzante", "trinken:l'acqua naturale", "trinken:la birra", "trinken:il vino", "trinken:il succo", "trinken:il bicchiere", "trinken:la tazza", "trinken:la bottiglia", "restaurant:il bar", "restaurant:il conto", "essen:lo zucchero", "einkaufen:lo scontrino",
-    "p_restaurant:Un caffè, per favore.", "p_restaurant:Il conto, per favore.", "p_restaurant:Una bottiglia d'acqua naturale.", "p_restaurant:Un bicchiere di vino rosso.", "p_verstaendigung:Può ripetere, per favore?", "p_verstaendigung:Più piano, per favore."],
+    "p_restaurant:Un caffè, per favore.", "p_restaurant:Il conto, per favore.", "p_restaurant:Una bottiglia d'acqua naturale.", "p_restaurant:Un bicchiere di vino rosso.", "p_verstaendigung:Può ripetere, per favore?", "p_verstaendigung:Più piano, per favore.",
+    "farben:caldo", "farben:freddo", "essen:il prosciutto", "essen:il dolce", "p_restaurant:Posso pagare con la carta?", "p_restaurant:Dov'è il bagno?", "p_einkaufen:Nient'altro, grazie."],
   neu: `
 il cornetto | das Hörnchen (Croissant)
 al banco | an der Theke
@@ -65,6 +130,33 @@ Al banco o al tavolo? | An der Theke oder am Tisch?
 Per me una spremuta d'arancia. | Für mich einen frisch gepressten Orangensaft.
 Cosa prende? | Was nehmen Sie?
 Cosa prendi da bere? | Was nimmst du zu trinken?
+il caffè macchiato | der Espresso mit etwas Milchschaum
+il decaffeinato | der koffeinfreie Kaffee
+il panino | das belegte Brötchen
+il tramezzino | das (dreieckige) Sandwich
+la brioche | das süße Hörnchen
+il ghiaccio | das Eis (Eiswürfel)
+il limone | die Zitrone
+Un caffè macchiato, per favore. | Einen Espresso mit Milchschaum, bitte.
+Un decaffeinato, grazie. | Einen koffeinfreien Kaffee, danke.
+Anche per me. | Für mich auch.
+Lo stesso, per favore. | Das Gleiche, bitte.
+Per me niente, grazie. | Für mich nichts, danke.
+Vorrei un panino al prosciutto. | Ich hätte gern ein Schinkenbrötchen.
+Avete qualcosa da mangiare? | Haben Sie etwas zu essen?
+Che cosa avete? | Was haben Sie da?
+Con ghiaccio? | Mit Eis?
+Senza ghiaccio, per favore. | Ohne Eis, bitte.
+Un bicchiere d'acqua, per favore. | Ein Glas Wasser, bitte.
+Posso sedermi qui? | Kann ich mich hier hinsetzen?
+È libero questo tavolo? | Ist dieser Tisch frei?
+Basta così, grazie. | Das ist alles, danke.
+Quanto le devo? | Was schulde ich Ihnen?
+Tenga il resto. | Behalten Sie den Rest.
+Il caffè è buonissimo! | Der Kaffee ist super!
+Un altro caffè, per favore. | Noch einen Kaffee, bitte.
+Prendiamo due cappuccini. | Wir nehmen zwei Cappuccini.
+Attenzione, è caldo! | Vorsicht, das ist heiß!
 `,
   grammatikPlus: [{ luecke: "unbestimmt" }],
   fragenPlus: ["Prendi un cornetto con il caffè?"],

@@ -57,6 +57,7 @@ const STANDARD = {
   lektionen: {},       // Lektions-ID → { schritte, bestanden, best }
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
   eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
+  claudeFehler: [],    // Fehler, die Claude in Gesprächen gefunden hat: { text, zeit, genutzt }
   einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
@@ -1602,7 +1603,57 @@ Jede deiner Antworten hat genau diese Form – nichts anderes:
 Wichtig:
 - Keine Erklärungen, Listen, Überschriften, Übersetzungen oder Lob-Absätze. Halte jede Antwort kurz (höchstens 3 Sätze), wie in einem echten Gespräch.
 - Wenn ich „aiuto“ sage oder Deutsch spreche: Sag mir kurz auf Deutsch, was ich auf Italienisch sagen könnte, und stell dann die Frage noch einmal auf Italienisch.
-- Erst wenn ich „basta“ sage: kurze Zusammenfassung auf Deutsch, welche Fehler ich am häufigsten gemacht habe und warum.`;
+- Erst wenn ich „basta“ sage: kurze Zusammenfassung auf Deutsch, welche Fehler ich am häufigsten gemacht habe und warum. Danach – damit ich sie in meine Lern-App übernehmen kann – genau in diesem Format, ohne weiteren Text dazwischen:
+FEHLERLISTE
+- falsch: … → richtig: … (Erklärung in wenigen Wörtern)
+(eine Zeile pro Fehler, höchstens 8)`;
+
+// ---------- Deine Fehler für Claude: aus der App + aus früheren Gesprächen ----------
+// Beschreibt die aktuellen Schwachstellen in einfachen Worten, damit Claude sie im Gespräch üben lässt.
+function fehlerFuerClaude() {
+  const zeilen = [];
+  // Wörter und Sätze, die oft falsch waren
+  fehlerWoerter().slice(0, 6).forEach((k) => zeilen.push(`Wort: ${k.it} (= ${k.de})`));
+  // Grammatik, die oft falsch war
+  Object.entries(S.grammatik).filter(([, g]) => gSchwach(g)).sort((a, b) => schwaecheWert(b[1]) - schwaecheWert(a[1])).slice(0, 6).forEach(([key]) => {
+    const [art, ...rest] = key.split(":"), wert = rest.join(":");
+    if (art === "verb") { const inf = rest.slice(0, -1).join(":"), p = +rest[rest.length - 1], v = ALLE_VERBEN.find((x) => x.inf === inf); if (v) zeilen.push(`Verbform: ${PERSONEN[p].split("/")[0]} ${konjugiere(v)[p]} (von ${inf})`); }
+    else if (art === "art") zeilen.push(`Artikel: ${wert}`);
+    else if (art === "ce") { const x = CE_CI_SONO.find((c) => c.s === wert); if (x) zeilen.push(`c'è / ci sono: ${x.s.replace("___", x.a)}`); }
+    else if (art === "vsatz") { const x = VERB_SAETZE.find((c) => c.s === wert); if (x) zeilen.push(`Verb im Satz: ${x.s.replace("___", konjugiere(ALLE_VERBEN.find((v) => v.inf === x.inf))[x.p])}`); }
+    else if (art === "lk") { const set = LUECKEN[rest[0]], s = rest.slice(1).join(":"), x = set && set.saetze.find((c) => c.s === s); if (x) zeilen.push(`${set.titel}: ${x.s.replace("___", x.a).replace(" → ", " = ")}`); }
+    else if (art === "zahl") zeilen.push(`Zahl: ${wert} = ${zahlMitAkzent(+wert)}`);
+    else if (art === "satz") zeilen.push(`Satzbau: ${wert}`);
+    else if (art === "dialog") { const q = ALLE_FRAGEN.find((x) => x.key === key); if (q) zeilen.push(`Antworten auf „${q.f}“ (z. B. ${q.b})`); }
+  });
+  // Fehler, die Claude in früheren Gesprächen gefunden hat (über „Fehler aus dem Gespräch übernehmen“)
+  (S.claudeFehler || []).slice(-8).forEach((f) => zeilen.push(`Aus einem früheren Gespräch: ${f.text}`));
+  return zeilen;
+}
+function fehlerBlock() {
+  const zeilen = fehlerFuerClaude();
+  if (!zeilen.length) return "";
+  return `\n\nMeine typischen Fehler zurzeit (aus meiner Lern-App):\n${zeilen.map((z) => "- " + z).join("\n")}\n` +
+    `Lenke das Gespräch nach und nach so, dass ich genau diese Dinge benutzen muss: Stell mir passende Fragen und bring Situationen ins Spiel, in denen sie natürlich vorkommen – nicht alle auf einmal, verteilt über das Gespräch. Wenn ich so etwas richtig benutze, sag kurz „Bravo!“. Erwähne diese Liste nicht ausdrücklich.`;
+}
+// Fehlerliste aus einem Claude-Gespräch übernehmen (Zeilen nach „FEHLERLISTE“ bzw. Zeilen mit „→“)
+function claudeFehlerUebernehmen(text) {
+  const ab = text.indexOf("FEHLERLISTE");
+  const teil = ab >= 0 ? text.slice(ab + 11) : text;
+  const neue = teil.split("\n").map((z) => z.replace(/^[\s\-•*\d.)]+/, "").replace(/\*\*/g, "").trim())
+    .filter((z) => z.length > 3 && z.includes("→")).slice(0, 12);
+  S.claudeFehler = S.claudeFehler || [];
+  let n = 0;
+  neue.forEach((t) => { if (!S.claudeFehler.some((f) => f.text === t)) { S.claudeFehler.push({ text: t, zeit: heute(), genutzt: 0 }); n++; } });
+  speichern();
+  return n;
+}
+// Nach 5 Gesprächen, in die ein übernommener Fehler eingeflossen ist, fällt er heraus
+function claudeFehlerGenutzt() {
+  (S.claudeFehler || []).slice(-8).forEach((f) => (f.genutzt = (f.genutzt || 0) + 1));
+  S.claudeFehler = (S.claudeFehler || []).filter((f) => f.genutzt < 5);
+  speichern();
+}
 function woerterListe(liste) { return liste.map((k) => `${k.it} = ${k.de}`).join("; "); }
 function fehlerWoerter() {
   const gesehen = new Set();
@@ -1617,12 +1668,13 @@ function claudeAnweisungen(werte) {
   const sz = SZENEN.find((s) => s.id === werte.szene) || SZENEN[0];
   const fehler = fehlerWoerter(), gelernt = gelernteWoerter();
   const uebungsWoerter = fehler.length ? fehler : gelernt.length ? gelernt : kartenDerThemen(S.einstellungen.themen).slice(0, 20);
+  const fb = fehlerBlock();
   return [
     { id: "rolle", sym: "🎭", titel: "Rollenspiel", text: "Claude spielt eine Person in einer Alltagssituation, du antwortest auf Italienisch – mit Korrektur.",
       feld: `<select id="szene">${SZENEN.map((s) => `<option value="${s.id}" ${s.id === sz.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`,
-      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${regeln(werte.niveau)}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit deinem ersten Satz in der Rolle, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Lass uns ein Rollenspiel machen. Du spielst ${sz.du}, ich spiele ${sz.ich}.\n\n${regeln(werte.niveau)}${fb}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit deinem ersten Satz in der Rolle, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "frei", sym: "💬", titel: "Freies Gespräch über mich", text: "Claude stellt dir einfache Fragen über dich (Familie, Arbeit, Hobbys, Urlaub) und plaudert mit dir.",
-      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${regeln(werte.niveau)}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit einer kurzen Begrüßung und deiner ersten Frage, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
+      prompt: `Ich lerne Italienisch. Unterhalte dich mit mir wie ein freundlicher italienischer Gesprächspartner. Stell mir einfache Fragen über mich – Familie, Wohnort, Arbeit, Hobbys, Essen, Urlaub – und erzähl auch kurz etwas von dir.\n\n${regeln(werte.niveau)}${fb}\n\nSchalte jetzt auf Italienisch um – auch bei der Aussprache, wie ein Italiener – und beginne direkt mit einer kurzen Begrüßung und deiner ersten Frage, ohne Einleitung und ohne diese Regeln zu wiederholen.` },
     { id: "korrektur", sym: "✏️", titel: "Meine Sätze korrigieren", text: "Du schreibst oder sprichst eigene italienische Sätze, Claude korrigiert und erklärt.",
       prompt: `Ich lerne Italienisch (Anfänger, Niveau A1). Ich schreibe dir gleich eigene italienische Sätze.\nFür jeden Satz:\n1. Ist er richtig? Wenn nicht, schreib die korrigierte Fassung.\n2. Erkläre jeden Fehler kurz und einfach auf Deutsch.\n3. Gib mir eine natürlichere Variante, wie ein Italiener es sagen würde.\nHalte die Antworten kurz. Antworte jetzt nur mit "Pronto! Scrivi una frase." und warte auf meinen ersten Satz.` },
     { id: "grammatik", sym: "📘", titel: "Grammatikfrage stellen", text: "Claude erklärt eine Grammatikfrage einfach, mit Beispielen und einer Mini-Übung.",
@@ -1631,7 +1683,7 @@ function claudeAnweisungen(werte) {
     { id: "geschichte", sym: "📖", titel: fehler.length ? "Geschichte mit meinen Fehler-Wörtern" : "Geschichte mit meinen Wörtern", text: fehler.length ? `Eine kurze Geschichte mit ${fehler.length} Wörtern, die du oft falsch hattest.` : "Eine kurze Geschichte mit Wörtern, die du schon gelernt hast.",
       prompt: `Ich lerne Italienisch. Schreib mir eine kurze, einfache Geschichte auf Italienisch (8–10 Sätze; ${(CLAUDE_NIVEAUS[werte.niveau] || CLAUDE_NIVEAUS.a1).grenzen}), in der möglichst viele dieser Wörter vorkommen:\n${woerterListe(uebungsWoerter)}\n\nDanach:\n1. Die Geschichte noch einmal Satz für Satz mit deutscher Übersetzung.\n2. 4 Verständnisfragen auf Italienisch. Ich antworte auf Italienisch, du korrigierst meine Antworten.` },
     { id: "uebersetzen", sym: "🔁", titel: "Übersetzungs-Training", text: "Claude gibt dir deutsche Sätze, du übersetzt ins Italienische – mit deinen Wörtern.",
-      prompt: `Ich lerne Italienisch. Gib mir nacheinander 10 kurze, alltägliche deutsche Sätze zum Übersetzen ins Italienische (die italienische Lösung soll diese Grenzen einhalten: ${(CLAUDE_NIVEAUS[werte.niveau] || CLAUDE_NIVEAUS.a1).grenzen}). Verwende dabei möglichst diese Wörter:\n${woerterListe(uebungsWoerter)}\n\nImmer nur ein Satz, dann wartest du auf meine Übersetzung. Danach: richtig/falsch, die korrekte Fassung und eine kurze Erklärung auf Deutsch. Zum Schluss eine kurze Auswertung.` }
+      prompt: `Ich lerne Italienisch. Gib mir nacheinander 10 kurze, alltägliche deutsche Sätze zum Übersetzen ins Italienische (die italienische Lösung soll diese Grenzen einhalten: ${(CLAUDE_NIVEAUS[werte.niveau] || CLAUDE_NIVEAUS.a1).grenzen}). Verwende dabei möglichst diese Wörter:\n${woerterListe(uebungsWoerter)}\n\nImmer nur ein Satz, dann wartest du auf meine Übersetzung. Danach: richtig/falsch, die korrekte Fassung und eine kurze Erklärung auf Deutsch.${fb ? " Baue in die Sätze auch die folgenden Schwachstellen von mir ein." + fb.replace("Lenke das Gespräch", "Lenke die Sätze") : ""}\n\nZum Schluss eine kurze Auswertung und danach genau in diesem Format:\nFEHLERLISTE\n- falsch: … → richtig: … (Erklärung in wenigen Wörtern)\n(eine Zeile pro Fehler, höchstens 8)` }
   ];
 }
 let claudeWerte = { szene: "bar", frage: "" };
@@ -1648,6 +1700,20 @@ function claudeMenue() {
     <p class="leise">Gilt für Rollenspiel, Gespräch, Geschichte und Übersetzen. <b>Im Gespräch</b> kannst du jederzeit sagen:
       <b>„più semplice“</b> (einfacher) · <b>„più difficile“</b> (schwerer) · <b>„aiuto“</b> (Hilfe) · <b>„basta“</b> (Schluss mit Fehler-Zusammenfassung).
       Wird es trotzdem langsam schwerer: einfach einen neuen Chat beginnen (etwa alle 15–20 Wechsel).</p>
+    <h2>🎯 Deine Fehler – Claude übt sie mit dir</h2>
+    ${(() => {
+      const zeilen = fehlerFuerClaude(), cf = S.claudeFehler || [];
+      return `<div class="einstellung">
+        <p style="margin-top:0">${zeilen.length ? `Claude bekommt im Rollenspiel, im Gespräch und beim Übersetzen <b>${zeilen.length} deiner Schwachstellen</b> mit und baut sie nach und nach ein.` : "Noch keine Fehler gesammelt – sobald dir in der App etwas öfter schwerfällt, übt Claude es automatisch mit."}</p>
+        ${zeilen.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${zeilen.map(esc).join("<br>")}</p></details>` : ""}
+        <label style="margin-top:10px">Fehler aus dem Gespräch übernehmen</label>
+        <p class="leise" style="margin-top:0">Am Ende des Gesprächs „basta“ sagen. Claude schreibt dann eine <b>FEHLERLISTE</b>. Die kopieren (oder gleich die ganze Antwort) und hier einfügen:</p>
+        <textarea id="cfText" placeholder="FEHLERLISTE&#10;- falsch: … → richtig: …" style="width:100%;min-height:90px;font:inherit;font-size:15px;padding:10px;border-radius:12px;border:1px solid var(--rand);background:var(--karte);color:var(--text)"></textarea>
+        <button class="btn voll" id="cfUebernehmen" style="margin-top:8px">➕ Übernehmen</button>
+        ${cf.length ? `<p class="leise" style="margin-bottom:4px">Aus Gesprächen übernommen (fallen nach 5 weiteren Gesprächen von selbst heraus):</p>
+          <div class="liste">${cf.map((f, i) => `<div class="eintrag" style="padding:6px 10px"><div class="mitte" style="font-size:15px">${esc(f.text)}</div><button class="mini" data-cfweg="${i}" title="Entfernen" style="border:0;background:none;font-size:18px;cursor:pointer">🗑</button></div>`).join("")}</div>` : ""}
+      </div>`;
+    })()}
     ${liste.map((a) => `<div class="einstellung">
       <label>${a.sym} ${esc(a.titel)}</label>
       <p class="leise" style="margin-top:0">${esc(a.text)}</p>
@@ -1657,6 +1723,14 @@ function claudeMenue() {
     </div>`).join("")}
     <div id="kopierFeld"></div>`);
   $app.querySelectorAll("#cniveau button").forEach((b) => (b.onclick = () => { S.einstellungen.claudeNiveau = b.dataset.w; speichern(); ohneSprung(claudeMenue); }));
+  document.getElementById("cfUebernehmen").onclick = () => {
+    const t = document.getElementById("cfText").value;
+    if (!t.trim()) return toast("Bitte erst die Fehlerliste von Claude einfügen.");
+    const n = claudeFehlerUebernehmen(t);
+    toast(n ? `${n} Fehler übernommen ✓ – Claude übt sie ab dem nächsten Gespräch mit dir.` : "Keine neuen Fehler gefunden. Es braucht Zeilen mit „→“ (falsch → richtig).", 5000);
+    if (n) ohneSprung(claudeMenue);
+  };
+  $app.querySelectorAll("[data-cfweg]").forEach((b) => (b.onclick = () => { S.claudeFehler.splice(+b.dataset.cfweg, 1); speichern(); ohneSprung(claudeMenue); }));
   const sz = document.getElementById("szene");
   if (sz) sz.onchange = () => { claudeWerte.szene = sz.value; ohneSprung(claudeMenue); };
   const gf = document.getElementById("gfrage");
@@ -1667,6 +1741,7 @@ function claudeMenue() {
     if (a.id === "grammatik" && !claudeWerte.frage) { toast("Bitte erst deine Grammatikfrage eintippen."); gf && gf.focus(); return; }
     let kopiert = false;
     try { await navigator.clipboard.writeText(a.prompt); kopiert = true; } catch (e) {}
+    if (a.prompt.includes("Meine typischen Fehler zurzeit")) claudeFehlerGenutzt();
     if (kopiert) {
       toast("Kopiert! In Claude: lange ins Eingabefeld drücken → Einfügen → senden.", 6000);
       window.open("https://claude.ai/new", "_blank");

@@ -272,6 +272,23 @@ function zahlwort(n) {
   if (n < 10000) { const t = Math.floor(n / 1000), r = n % 1000, vorn = t === 1 ? "mille" : EINER[t] + "mila"; return r ? vorn + zahlwort(r) : vorn; }
   return String(n);
 }
+// wie zahlwort, aber mit Akzent am Ende (ventitré), damit es nicht als Akzentfehler gilt
+const zahlMitAkzent = (n) => { const w = zahlwort(n); return n > 20 && /tre$/.test(w) ? w.slice(0, -1) + "é" : w; };
+// Deutsche Zahlwörter (für Antworten auf Deutsch: das Handy schreibt „50“ statt „fünfzig“)
+const EINER_DE = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf", "dreizehn",
+  "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"];
+const ZEHNER_DE = ["", "", "zwanzig", "dreißig", "vierzig", "fünfzig", "sechzig", "siebzig", "achtzig", "neunzig"];
+function zahlwortDe(n) {
+  if (n < 20) return EINER_DE[n];
+  if (n < 100) { const e = n % 10, z = ZEHNER_DE[Math.floor(n / 10)]; return e ? (e === 1 ? "ein" : EINER_DE[e]) + "und" + z : z; }
+  if (n < 1000) { const h = Math.floor(n / 100), r = n % 100; return (h === 1 ? "" : EINER_DE[h]) + "hundert" + (r ? zahlwortDe(r) : ""); }
+  if (n < 10000) { const t = Math.floor(n / 1000), r = n % 1000; return (t === 1 ? "" : EINER_DE[t]) + "tausend" + (r ? zahlwortDe(r) : ""); }
+  return String(n);
+}
+// Ersetzt alle Ziffern in einem Text durch Zahlwörter ("Ho 54 anni" → "Ho cinquantaquattro anni"); 1.000 → 1000
+function zahlenAlsWorte(text, deutsch) {
+  return String(text).replace(/(\d)[.'’ ](?=\d{3}\b)/g, "$1").replace(/\d+/g, (z) => (deutsch ? zahlwortDe(+z) : zahlMitAkzent(+z)));
+}
 function normWort(w) {
   let s = w.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
   if (/^\d+$/.test(s)) s = zahlwort(+s);
@@ -280,7 +297,7 @@ function normWort(w) {
 // Zerlegt einen Satz in Wörter; "l'acqua" → "l'" + "acqua"
 function woerterVon(text) {
   const teile = [];
-  text.replace(/[’`´]/g, "'").replace(/(\d)[:.,](\d)/g, "$1 $2").split(/\s+/).forEach((w) => {
+  text.replace(/[’`´]/g, "'").replace(/(\d)\.(?=\d{3}\b)/g, "$1").replace(/(\d)[:.,](\d)/g, "$1 $2").split(/\s+/).forEach((w) => {
     const m = w.match(/^([^']+')(.+)$/);
     (m ? [m[1], m[2]] : [w]).forEach((x) => { const n = normWort(x); if (n) teile.push({ zeigen: x.replace(/^[¿¡«"(]+|[.,!?;:»")]+$/g, ""), n }); });
   });
@@ -326,7 +343,7 @@ function vergleiche(ziel, gesagt) {
 
 // ---------- Eingetippte Antwort prüfen (Deutsch → Italienisch) ----------
 const ohneAkzente = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
-const saeubern = (s) => s.toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, " ").replace(/'\s*/g, "'").replace(/\s+/g, " ").trim();
+const saeubern = (s) => zahlenAlsWorte(s).toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, " ").replace(/'\s*/g, "'").replace(/\s+/g, " ").trim();
 const ARTIKEL_RE = /^(il |lo |la |i |gli |le |l')/;
 function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
@@ -359,7 +376,7 @@ const VORSCHLAG = { richtig: 2, akzent: 2, artikel: 1, fast: 1, falsch: 0 };
 
 // Gesprochene deutsche Antwort prüfen (Italienisch → Deutsch): tolerant bei Artikeln, Klammern und „/“-Varianten
 function pruefeDeutsch(gesagt, karte) {
-  const norm = (s) => ohneAkzente(String(s).toLowerCase()).replace(/\([^)]*\)/g, " ").replace(/[^a-z0-9ß ]/g, " ")
+  const norm = (s) => ohneAkzente(zahlenAlsWorte(s, true).toLowerCase()).replace(/\([^)]*\)/g, " ").replace(/[^a-z0-9ß ]/g, " ")
     .replace(/\b(der|die|das|den|dem|ein|eine|einen|einem)\b/g, " ").replace(/\s+/g, " ").trim();
   const g = norm(gesagt);
   if (!g) return { stufe: "falsch", text: "Nichts verstanden." };
@@ -1382,7 +1399,6 @@ function lueckeAufgabe(setId, x) {
     beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
   };
 }
-const zahlMitAkzent = (n) => { const w = zahlwort(n); return n > 20 && /tre$/.test(w) ? w.slice(0, -1) + "é" : w; }; // ventitré
 const ZAHLEN_POOL = Array.from({ length: 101 }, (_, i) => i).concat([200, 500, 1000]);
 function zahlAufgabe(n) {
   const key = "zahl:" + n;

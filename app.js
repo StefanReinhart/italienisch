@@ -425,6 +425,82 @@ function umschalter(id, wert, optionen) {
   return `<div class="umschalter" id="${id}">${optionen.map(([w, t]) => `<button data-w="${w}" class="${w === wert ? "an" : ""}">${t}</button>`).join("")}</div>`;
 }
 
+// ---------- Lernstand: die vier Zahlen oben auf der Startseite ----------
+const standGemerkt = {}; // Karten, deren Haken gerade weggenommen wurde – damit man ihn wieder setzen kann
+function standSeite(art) {
+  if (art === "faellig") return standFaellig();
+  if (art === "serie") return standSerie();
+  const r = art === "sagen" ? "de-it" : "it-de";
+  setzeKopf(art === "sagen" ? "Kann ich selbst sagen" : "Verstehe ich", "start");
+  zeige(`
+    <p>Hier stehen alle Karten, die du schon gut kannst (${r === "de-it" ? "Deutsch → Italienisch" : "Italienisch → Deutsch"}).</p>
+    <div class="meldung info">ℹ️ Diese Karten sind <b>nicht aus den Übungen heraus</b>. Sie kommen nur seltener dran: immer dann, wenn sie wieder „fällig“ sind – erst nach ein paar Tagen, dann nach Wochen. So festigt sich das Wissen.<br><br>
+    <b>Haken wegnehmen</b> = „das kann ich doch noch nicht“: Die Karte fängt wieder von vorn an und kommt gleich bei der nächsten Wiederholung dran. Haken wieder setzen macht das rückgängig.</div>
+    <input type="search" id="ssuche" placeholder="Suchen …" autocomplete="off">
+    <div class="liste" id="sliste"></div>`);
+  const feld = document.getElementById("ssuche"), aus = document.getElementById("sliste");
+  const n = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const zeichnen = () => {
+    const q = n(feld.value.trim());
+    const liste = ALLE_KARTEN.filter((k) => istGelernt(k.id, r) || standGemerkt[schluessel(k.id, r)])
+      .filter((k) => !q || n(k.it).includes(q) || n(k.de).includes(q))
+      .sort((a, b) => a.it.localeCompare(b.it, "it"));
+    aus.innerHTML = liste.length ? liste.map((k) => {
+      const z = zustand(k.id, r), an = !standGemerkt[schluessel(k.id, r)];
+      const tage = Math.max(0, Math.round((z.faellig - Date.now()) / TAG));
+      return `<button class="zeile${an ? " aktiv" : ""}" data-skarte="${esc(k.id)}"><span class="mitte">${esc(k.it)}<small>${esc(k.de)} · ${an ? (tage === 0 ? "ist heute wieder dran" : tage === 1 ? "kommt morgen wieder" : "kommt in " + (tage < 60 ? tage + " Tagen" : Math.round(tage / 30) + " Monaten") + " wieder") : "<b>wird wieder geübt</b>"}</small></span><span class="haken haken-gross" role="checkbox" aria-checked="${an}">${an ? "✓" : ""}</span></button>`;
+    }).join("") : `<p class="leise">${q ? "Nichts gefunden." : "Noch keine Karte. Eine Karte zählt hier, sobald sie erst nach 3 oder mehr Tagen wiederkommen muss."}</p>`;
+    aus.querySelectorAll("[data-skarte]").forEach((b) => (b.onclick = () => {
+      const key = schluessel(b.dataset.skarte, r);
+      if (standGemerkt[key]) { S.karten[key] = standGemerkt[key]; delete standGemerkt[key]; }
+      else {
+        standGemerkt[key] = { ...S.karten[key] };
+        S.karten[key] = { ...S.karten[key], intervall: 0, wdh: 0, faellig: Date.now() };
+      }
+      speichern(); ohneSprung(zeichnen);
+    }));
+  };
+  feld.oninput = zeichnen; zeichnen();
+}
+function faelligeKarten() {
+  const jetzt = Date.now();
+  return Object.entries(S.karten).filter(([key, z]) => z.faellig <= jetzt && KARTE_NACH_ID[key.split("|")[0]])
+    .sort((a, b) => a[1].faellig - b[1].faellig)
+    .map(([key]) => { const [id, r] = key.split("|"); return { k: KARTE_NACH_ID[id], r }; });
+}
+function standFaellig() {
+  setzeKopf("Heute wiederholen", "start");
+  const liste = faelligeKarten();
+  zeige(`
+    <p>Diese Karten sind heute wieder dran. Wiederholen im richtigen Moment – kurz bevor man etwas vergisst – bringt am meisten.</p>
+    ${liste.length ? `<button class="btn voll" id="sWdh" style="min-height:56px;font-size:18px">▶ Jetzt ${liste.length > 30 ? "30 davon" : "alle " + liste.length} wiederholen</button>` : `<div class="meldung gut">🎉 Heute ist nichts mehr zu wiederholen.</div>`}
+    <div class="liste" style="margin-top:12px">${liste.map((x) => `<div class="zeile"><span class="mitte">${esc(x.r === "de-it" ? x.k.de : x.k.it)}<small>${x.r === "de-it" ? "🇩🇪 → 🇮🇹 selbst sagen" : "🇮🇹 → 🇩🇪 verstehen"} · ${esc(x.r === "de-it" ? x.k.it : x.k.de)}</small></span></div>`).join("")}</div>`);
+  const b = document.getElementById("sWdh");
+  if (b) b.onclick = () => {
+    const l = liste.slice(0, 30);
+    sitzung = { liste: l, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: l.length, fertig: 0, zurueck: "start" };
+    geheZu("karte");
+  };
+}
+function standSerie() {
+  setzeKopf("Tage am Stück", "start");
+  const tag = (d) => d.toISOString().slice(0, 10);
+  // Raster: 5 Wochen, beginnend mit einem Montag
+  const start = new Date(); start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - 28);
+  const zellen = [];
+  for (let i = 0; i < 35; i++) {
+    const t = new Date(start); t.setDate(start.getDate() + i);
+    const k = tag(t), zukunft = k > heute();
+    zellen.push(`<span class="ktag${S.tage[k] ? " geuebt" : ""}${k === heute() ? " heute" : ""}${zukunft ? " zukunft" : ""}" title="${k}">${t.getDate()}</span>`);
+  }
+  const gesamt = Object.keys(S.tage).length;
+  zeige(`
+    <p>Du hast <b>${serie()} Tage am Stück</b> geübt${S.tage[heute()] ? ", heute schon mit dabei" : " – heute fehlt noch"}. Insgesamt an <b>${gesamt} Tagen</b>.</p>
+    <div class="kalender"><b>Mo</b><b>Di</b><b>Mi</b><b>Do</b><b>Fr</b><b>Sa</b><b>So</b>${zellen.join("")}</div>
+    <p class="leise">Grün = an diesem Tag geübt. Schon ein paar Minuten am Tag zählen – lieber täglich kurz als selten lang.</p>
+    ${S.tage[heute()] ? "" : `<button class="btn voll" data-gehe="heute">▶ Heute üben</button>`}`);
+}
+
 // ---------- Startseite ----------
 function startseite() {
   setzeKopf("Italienisch lernen", null);
@@ -439,10 +515,10 @@ function startseite() {
   const fehlerZahl = anzahlFehler();
   zeige(`
     <div class="statistik">
-      <div><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></div>
-      <div><b>${serie()}</b><span>Tage am Stück geübt</span></div>
-      <div><b>${verstanden}</b><span>verstehe ich (von ${ALLE_KARTEN.length})</span></div>
-      <div><b>${sagen}</b><span>kann ich selbst sagen</span></div>
+      <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
+      <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
+      <button data-gehe="stand/verstehe"><b>${verstanden}</b><span>verstehe ich (von ${ALLE_KARTEN.length})</span></button>
+      <button data-gehe="stand/sagen"><b>${sagen}</b><span>kann ich selbst sagen</span></button>
     </div>
     <div class="kacheln">
       <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
@@ -1414,9 +1490,14 @@ function lektionZeigen(id) {
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
       const erledigt = st.schritte.includes(s.id) || (s.id === "check" && st.bestanden);
-      const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : s.id === "check" && st.best ? ` · bestes Ergebnis ${st.best} %` : "";
+      const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : "";
+      // Abschluss-Check: nach dem ersten Versuch das letzte Ergebnis statt „ab 80 %“ zeigen
+      const zul = st.zuletzt != null ? st.zuletzt : (st.best || null); // ältere Stände kennen nur das beste Ergebnis
+      const text = s.id === "check" && zul != null
+        ? `10 gemischte Aufgaben · <b>zuletzt ${zul} %</b>${st.best && st.best !== zul ? ` · bestes ${st.best} %` : ""}`
+        : s.text + extra;
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
-        <span class="mitte">${i + 1}. ${s.name}<small>${s.text}${extra}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
+        <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
     <button class="btn zweit voll" id="lClaude" style="margin-top:12px">🤖 Passendes Rollenspiel mit Claude</button>
     <div class="reihe">
@@ -1493,6 +1574,7 @@ function lektionStarten(L, schritt) {
       beimEnde: (p, n) => {
         const st = lStand(L.id), prozent = Math.round((100 * p) / n);
         st.best = Math.max(st.best || 0, prozent);
+        st.zuletzt = prozent;
         if (prozent >= 80) st.bestanden = true;
         speichern();
       },
@@ -2079,7 +2161,7 @@ function route() {
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
-    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen
+    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg)
   };
   (seiten[teil] || startseite)();
 }

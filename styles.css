@@ -71,7 +71,15 @@ p { margin: 8px 0; }
 .kachel.breit { grid-column: 1 / -1; min-height: auto; flex-direction: row; align-items: center; gap: 14px; }
 
 .statistik { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.statistik div { background: var(--karte); border: 1px solid var(--rand); border-radius: 14px; padding: 10px; text-align: center; }
+.statistik > * { background: var(--karte); border: 1px solid var(--rand); border-radius: 14px; padding: 10px; text-align: center; font: inherit; color: inherit; cursor: pointer; }
+.statistik > button:active { transform: scale(.97); }
+/* Übungskalender (Tage am Stück) */
+.kalender { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin: 10px 0; }
+.kalender b { font-size: 13px; color: var(--grau); }
+.ktag { padding: 8px 0; border-radius: 10px; background: var(--karte); border: 1px solid var(--rand); font-size: 15px; }
+.ktag.geuebt { background: var(--gruen); border-color: var(--gruen); color: #fff; font-weight: bold; }
+.ktag.heute { outline: 2px solid var(--gruen); outline-offset: 1px; }
+.ktag.zukunft { opacity: .35; }
 .statistik b { display: block; font-size: 26px; color: var(--gruen); }
 .statistik span { font-size: 13px; color: var(--grau); }
 

@@ -1,6 +1,26 @@
 // Weitere Lückensätze für das volle A1-Niveau (ergänzt LUECKEN aus grammatik.js).
 // optionen = Auswahl für alle Sätze des Sets · o = eigene Auswahl für einen Satz · a = richtige Antwort
 Object.assign(window.LUECKEN, {
+  vergangenheit: { titel: "Vergangenheit: ho mangiato / sono andato", saetze: [
+    { s: "Ieri ___ lavorato tutto il giorno.", o: ["ho", "sono", "ha"], a: "ho", de: "Gestern habe ich den ganzen Tag gearbeitet." },
+    { s: "Sabato ___ andato al cinema.", o: ["sono", "ho", "è"], a: "sono", de: "Am Samstag bin ich ins Kino gegangen." },
+    { s: "Ho ___ un caffè. (comprare)", o: ["comprato", "compro", "comprare"], a: "comprato", de: "Ich habe einen Kaffee gekauft." },
+    { s: "Abbiamo ___ la televisione. (guardare)", o: ["guardato", "guardiamo", "guardare"], a: "guardato", de: "Wir haben ferngesehen." },
+    { s: "Hai ___ bene? (dormire)", o: ["dormito", "dormi", "dormuto"], a: "dormito", de: "Hast du gut geschlafen?" },
+    { s: "Ho ___ il libro. (leggere)", o: ["letto", "leggiuto", "leggo"], a: "letto", de: "Ich habe das Buch gelesen." },
+    { s: "Che cosa hai ___ ieri? (fare)", o: ["fatto", "faciuto", "fai"], a: "fatto", de: "Was hast du gestern gemacht?" },
+    { s: "Maria è ___ a Roma. (andare)", o: ["andata", "andato", "andati"], a: "andata", de: "Maria ist nach Rom gefahren." },
+    { s: "Siamo ___ alle otto. (arrivare)", o: ["arrivati", "arrivato", "arriviamo"], a: "arrivati", de: "Wir sind um acht angekommen." },
+    { s: "Ho ___ il treno. (perdere)", o: ["perso", "perdo", "perde"], a: "perso", de: "Ich habe den Zug verpasst." },
+    { s: "Il film è ___ molto bello. (essere)", o: ["stato", "stata", "essere"], a: "stato", de: "Der Film war sehr schön." },
+    { s: "Ieri ___ uscita con un'amica. (ich, Frau)", o: ["sono", "ho", "è"], a: "sono", de: "Gestern bin ich mit einer Freundin ausgegangen." },
+    { s: "Ho ___ una mail a Marco. (scrivere)", o: ["scritto", "scrivuto", "scrivo"], a: "scritto", de: "Ich habe Marco eine Mail geschrieben." },
+    { s: "Avete ___ i biglietti? (prendere)", o: ["preso", "prenduto", "prendete"], a: "preso", de: "Habt ihr die Fahrkarten genommen?" },
+    { s: "Non ho ___. (capire)", o: ["capito", "capisco", "capiuto"], a: "capito", de: "Ich habe nicht verstanden." },
+    { s: "Ieri ___ stato a casa.", o: ["sono", "ho", "sei"], a: "sono", de: "Gestern war ich zu Hause." },
+    { s: "Ho ___ un bel film. (vedere)", o: ["visto", "veduto", "vedo"], a: "visto", de: "Ich habe einen schönen Film gesehen." },
+    { s: "Le ragazze sono ___ alle dieci. (partire)", o: ["partite", "partiti", "partita"], a: "partite", de: "Die Mädchen sind um zehn abgefahren." }
+  ]},
   aufforderung: { titel: "Aufforderung: du oder Sie?", saetze: [
     { s: "___ a destra! (Sie)", o: ["Giri", "Gira", "Girate"], a: "Giri", de: "Biegen Sie rechts ab!" },
     { s: "___ a destra! (du)", o: ["Gira", "Giri", "Girate"], a: "Gira", de: "Bieg rechts ab!" },

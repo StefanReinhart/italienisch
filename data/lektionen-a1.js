@@ -469,7 +469,7 @@ Noi parliamo italiano. | Wir sprechen Italienisch.
 l9: {
   kern: ["verkehr:il treno", "verkehr:l'autobus", "verkehr:la macchina", "verkehr:la bicicletta", "verkehr:l'aereo", "verkehr:il taxi", "verkehr:la metropolitana", "verkehr:il biglietto", "verkehr:il binario", "verkehr:la fermata", "verkehr:la partenza", "verkehr:l'arrivo", "verkehr:il ritardo", "verkehr:la valigia", "verkehr:il passaporto", "verkehr:il viaggio", "verkehr:le vacanze",
     "p_reisen:Un biglietto per Roma, per favore.", "p_reisen:Solo andata.", "p_reisen:Andata e ritorno.", "p_reisen:A che ora parte il treno?", "p_reisen:Da quale binario parte?", "p_reisen:Il treno è in ritardo.",
-    "verkehr:la nave", "stadt:il porto", "verben:partire", "verben:aspettare", "verben:andare", "verben:venire"],
+    "verkehr:la nave", "stadt:il porto", "verben:partire", "verben:aspettare", "verben:andare", "verben:venire", "verben:uscire"],
   neu: `
 il volo | der Flug
 la biglietteria | der Fahrkartenschalter
@@ -501,7 +501,6 @@ Dove posso noleggiare una macchina? | Wo kann ich ein Auto mieten?
 Viaggio spesso in treno. | Ich reise oft mit dem Zug.
 Ho solo un bagaglio a mano. | Ich habe nur Handgepäck.
 Buon viaggio! | Gute Reise!
-uscire | hinausgehen
 prossimo | nächster
 cambiare | umsteigen, wechseln
 in orario | pünktlich
@@ -522,8 +521,36 @@ Dov'è la fermata dell'autobus? | Wo ist die Bushaltestelle?
 },
 l10: {
   kern: ["stadt:l'albergo", "verkehr:la camera", "verkehr:la chiave", "restaurant:la prenotazione", "essen:la colazione", "haus:il bagno", "haus:la doccia", "haus:il letto", "haus:la finestra", "verben:volere", "verben:potere", "verben:dovere",
-    "p_reisen:Ho prenotato una camera.", "p_reisen:Avete una camera libera?", "p_reisen:A che ora è la colazione?", "p_reisen:La chiave, per favore.", "p_restaurant:Posso pagare con la carta?"],
+    "p_reisen:Ho prenotato una camera.", "p_reisen:Avete una camera libera?", "p_reisen:A che ora è la colazione?", "p_reisen:La chiave, per favore.", "p_restaurant:Posso pagare con la carta?",
+    "haus:la porta", "haus:la luce", "haus:l'appartamento", "haus:la camera da letto", "haus:il telefono", "verkehr:la valigia", "verkehr:il passaporto", "p_esgibt:wifi"],
   neu: `
+la reception | die Rezeption
+il documento | der Ausweis
+l'asciugamano | das Handtuch
+il cuscino | das Kopfkissen
+l'aria condizionata | die Klimaanlage
+il riscaldamento | die Heizung
+la piscina | das Schwimmbad, der Pool
+il piano | das Stockwerk
+la password | das Passwort
+Buonasera, ho una prenotazione a nome Weber. | Guten Abend, ich habe eine Reservierung auf den Namen Weber.
+Per quante notti? | Für wie viele Nächte?
+Per due notti, fino a venerdì. | Für zwei Nächte, bis Freitag.
+Un documento, per favore. | Einen Ausweis, bitte.
+Ecco il mio passaporto. | Hier ist mein Reisepass.
+La camera è al terzo piano. | Das Zimmer ist im dritten Stock.
+Qual è la password del wifi? | Wie lautet das WLAN-Passwort?
+A che ora devo lasciare la camera? | Um wie viel Uhr muss ich das Zimmer räumen?
+C'è un parcheggio? | Gibt es einen Parkplatz?
+Avete una camera più tranquilla? | Haben Sie ein ruhigeres Zimmer?
+Potrei avere un altro asciugamano? | Könnte ich noch ein Handtuch bekommen?
+L'aria condizionata non funziona. | Die Klimaanlage funktioniert nicht.
+Manca la carta igienica. | Es fehlt Toilettenpapier.
+Vorrei pagare il conto. | Ich möchte die Rechnung bezahlen.
+Posso lasciare qui i bagagli? | Kann ich das Gepäck hier lassen?
+Mi può svegliare alle sei? | Können Sie mich um sechs wecken?
+La camera è molto bella. | Das Zimmer ist sehr schön.
+Grazie di tutto, arrivederci! | Danke für alles, auf Wiedersehen!
 la camera singola | das Einzelzimmer
 la camera doppia | das Doppelzimmer
 la colazione inclusa | Frühstück inklusive
@@ -545,8 +572,33 @@ Non posso dormire, c'è rumore. | Ich kann nicht schlafen, es ist laut.
 },
 l11: {
   kern: ["freizeit:la musica", "freizeit:il film", "freizeit:il cinema", "freizeit:il teatro", "freizeit:lo sport", "freizeit:il calcio", "freizeit:la partita", "freizeit:la festa", "wetter:il tempo", "wetter:il sole", "wetter:la pioggia", "wetter:la neve", "wetter:il vento", "wetter:la primavera", "wetter:l'estate", "wetter:l'autunno", "wetter:l'inverno", "verben:fare", "verben:leggere", "verben:scrivere", "verben:dormire", "verben:vedere",
-    "p_alltag:Che tempo fa?", "p_alltag:Fa caldo.", "p_alltag:Fa freddo."],
+    "p_alltag:Che tempo fa?", "p_alltag:Fa caldo.", "p_alltag:Fa freddo.",
+    "wetter:la nuvola", "wetter:il cielo", "freizeit:la canzone", "freizeit:la foto", "freizeit:il lavoro", "grundwoerter:ieri"],
   neu: `
+il tempo libero | die Freizeit
+l'hobby | das Hobby
+la spesa | der Einkauf (fare la spesa = einkaufen)
+il concerto | das Konzert
+la mostra | die Ausstellung
+nuvoloso | bewölkt
+scorso | letzter, vergangener
+Che cosa hai fatto ieri? | Was hast du gestern gemacht?
+Ieri ho lavorato in giardino. | Gestern habe ich im Garten gearbeitet.
+Sabato sono andato al cinema. | Am Samstag bin ich ins Kino gegangen.
+Ho visto un bel film. | Ich habe einen schönen Film gesehen.
+Domenica siamo andati al mare. | Am Sonntag sind wir ans Meer gefahren.
+Ieri sera ho cucinato per gli amici. | Gestern Abend habe ich für Freunde gekocht.
+La settimana scorsa ho letto un libro. | Letzte Woche habe ich ein Buch gelesen.
+Com'è stato il fine settimana? | Wie war das Wochenende?
+È stato bellissimo! | Es war wunderschön!
+Che cosa fai il fine settimana? | Was machst du am Wochenende?
+Mi piace fare sport. | Ich treibe gern Sport.
+Faccio una passeggiata nel parco. | Ich mache einen Spaziergang im Park.
+Andiamo a un concerto? | Gehen wir zu einem Konzert?
+Volentieri! | Gern!
+Oggi è nuvoloso. | Heute ist es bewölkt.
+Che bella giornata! | Was für ein schöner Tag!
+Fa troppo caldo per me. | Es ist mir zu heiß.
 giocare | spielen (Sport, Spiel)
 nuotare | schwimmen
 camminare | gehen, wandern
@@ -568,13 +620,45 @@ Che cosa fai stasera? | Was machst du heute Abend?
 Preferisco il mare. | Ich bevorzuge das Meer.
 La domenica dormo fino alle nove. | Sonntags schlafe ich bis neun.
 `,
-  grammatikPlus: [{ luecke: "haeufigkeit" }],
-  erklaerungPlus: `<p><b>Wie oft?</b> <i>sempre</i> (immer) · <i>spesso</i> (oft) · <i>qualche volta</i> (manchmal) · <i>non … mai</i> (nie): <i>Non bevo <b>mai</b> birra.</i> – das <i>non</i> steht vor dem Verb, <i>mai</i> dahinter.</p>`
+  grammatikPlus: [{ luecke: "haeufigkeit" }, { luecke: "vergangenheit" }],
+  fragenPlus: ["Che cosa hai fatto ieri?"],
+  erklaerungPlus: `<p><b>Wie oft?</b> <i>sempre</i> (immer) · <i>spesso</i> (oft) · <i>qualche volta</i> (manchmal) · <i>non … mai</i> (nie): <i>Non bevo <b>mai</b> birra.</i> – das <i>non</i> steht vor dem Verb, <i>mai</i> dahinter.</p>
+<p><b>Vergangenheit</b> (<i>passato prossimo</i>) – wie im Deutschen „ich habe … gemacht“: <b>avere</b> + Mittelwort: <i>ho mangiato, hai dormito, abbiamo lavorato</i>.</p>
+<table class="tab"><tr><td>-are</td><td>→ <b>-ato</b></td><td>mangiare → mangi<b>ato</b></td></tr><tr><td>-ere</td><td>→ <b>-uto</b></td><td>avere → av<b>uto</b></td></tr><tr><td>-ire</td><td>→ <b>-ito</b></td><td>dormire → dorm<b>ito</b></td></tr></table>
+<p>Häufige unregelmäßige: <i>fare → fatto · vedere → visto · leggere → letto · scrivere → scritto · prendere → preso · perdere → perso · dire → detto · essere → stato</i>.</p>
+<p>Bei <b>Bewegung und Veränderung</b> mit <b>essere</b>: <i>andare, venire, arrivare, partire, uscire, tornare, stare, essere</i>. Dann passt sich die Endung an wie ein Eigenschaftswort: <i>sono andat<b>o</b></i> (Mann) · <i>sono andat<b>a</b></i> (Frau) · <i>siamo andat<b>i</b></i>.</p>
+<p>Zeitangaben: <i>ieri</i> (gestern) · <i>ieri sera</i> (gestern Abend) · <i>sabato scorso</i> (letzten Samstag) · <i>la settimana scorsa</i> (letzte Woche).</p>`
 },
 l12: {
   kern: ["koerper:la testa", "koerper:gli occhi", "koerper:il naso", "koerper:la bocca", "koerper:l'orecchio", "koerper:i denti", "koerper:il braccio", "koerper:la mano", "koerper:la gamba", "koerper:il piede", "koerper:la schiena", "koerper:lo stomaco", "koerper:il medico", "koerper:la medicina", "koerper:il dolore", "koerper:la febbre", "koerper:malato", "koerper:sano", "farben:stanco",
     "p_alltag:Mi sento male.", "p_alltag:Mi fa male la testa.", "p_alltag:Chiami un medico!", "p_alltag:Aiuto!", "p_alltag:Ho fame.", "p_alltag:Ho sete.", "p_alltag:Sono stanco."],
   neu: `
+la farmacia di turno | die Notdienst-Apotheke
+il farmacista | der Apotheker
+la pastiglia | die Tablette
+lo sciroppo | der Hustensaft, der Sirup
+l'allergia | die Allergie
+il dentista | der Zahnarzt
+la gola | der Hals (innen)
+la pancia | der Bauch
+la pressione | der Blutdruck
+grave | schlimm, ernst
+Ho mal di gola. | Ich habe Halsschmerzen.
+Ho mal di pancia. | Ich habe Bauchschmerzen.
+Mi fa male qui. | Hier tut es mir weh.
+Da quanto tempo? | Seit wann?
+Da tre giorni. | Seit drei Tagen.
+Sono allergico alla penicillina. | Ich bin allergisch gegen Penicillin.
+Ha qualcosa per il raffreddore? | Haben Sie etwas gegen Schnupfen?
+Quante volte al giorno? | Wie oft am Tag?
+Due volte al giorno, dopo i pasti. | Zweimal am Tag, nach dem Essen.
+Ho bisogno di una ricetta? | Brauche ich ein Rezept?
+Mi gira la testa. | Mir ist schwindlig.
+Mi sono fatto male al piede. | Ich habe mir am Fuß wehgetan.
+Non è grave. | Es ist nicht schlimm.
+Devo andare dal dentista. | Ich muss zum Zahnarzt.
+Chiamate un'ambulanza! | Ruft einen Krankenwagen!
+Guarisci presto! | Gute Besserung!
 la tosse | der Husten
 il raffreddore | der Schnupfen, die Erkältung
 il mal di testa | die Kopfschmerzen

@@ -89,6 +89,7 @@ function umstellen(roh) {
 }
 function speichern() {
   try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(S)); } catch (e) { toast("Speichern hat nicht geklappt."); }
+  if (typeof syncVormerken === "function") syncVormerken(); // Lernstand in ~1 Minute online sichern (falls GitHub-Schlüssel da)
 }
 function geuebt() {
   S.tage[heute()] = (S.tage[heute()] || 0) + 1;
@@ -160,6 +161,7 @@ function rueckmeldung(id, r, ok) {
   const key = schluessel(id, r), k = S.karten[key];
   if (!k) return; // neue Wörter werden nur über die Karteikarten eingeführt
   if (ok && k.faellig <= Date.now()) { bewerte(id, r, 2); return; } // fällige Karte richtig = zählt als Wiederholung
+  k.zuletzt = Date.now(); // für den Abgleich zwischen Geräten: der zuletzt geübte Stand gewinnt
   if (ok) k.richtig++;
   else {
     k.falsch++; delete k.sicher;
@@ -211,6 +213,7 @@ function rundePlanen(karten, modus) {
 // ---------- Lernplan für Grammatik ----------
 function gBewerte(key, ok) {
   const g = S.grammatik[key] || { intervall: 0, faellig: 0, richtig: 0, falsch: 0 };
+  g.zuletzt = Date.now(); // für den Abgleich zwischen Geräten
   if (ok) { g.richtig++; g.intervall = g.intervall ? Math.min(120, Math.round(g.intervall * 2.5)) : 1; g.faellig = startDesTages(Date.now() + g.intervall * TAG); }
   else { g.falsch++; g.intervall = 0; g.faellig = Date.now(); }
   S.grammatik[key] = g; geuebt();
@@ -567,7 +570,7 @@ function startseite() {
   const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:") + gFaellig("lk:") + gFaellig("zahl:");
   const gespr = gFaellig("dialog:");
   const fehlerZahl = anzahlFehler();
-  zeige(`${schluesselWarnung()}
+  zeige(`${schluesselWarnung()}${sicherungsHinweis()}
     <div class="statistik">
       <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
       <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
@@ -897,7 +900,7 @@ function quizZeigen() {
   }
   const a = quiz.aufgaben[quiz.pos];
   const antwortHtml = a.tippen
-    ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1">${SR ? `<button class="btn zweit" id="qsprechen" title="Antwort sprechen" style="flex:none">🎤</button>` : ""}<button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div><div id="qstatus" class="leise"></div>`
+    ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1">${SR && !a.keinMikro ? `<button class="btn zweit" id="qsprechen" title="Antwort sprechen" style="flex:none">🎤</button>` : ""}<button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div><div id="qstatus" class="leise"></div>`
     : `<div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
   zeige(`${fortschrittsLeiste(quiz.pos + 1, quiz.aufgaben.length)}
     <div class="frage">${a.frage}</div>
@@ -1005,18 +1008,39 @@ function hoerenMenue() {
     <p>Du hörst ein italienisches Wort oder einen Satz und wählst die richtige Übersetzung. Tipp: 🐢 spielt es langsam ab.</p>
     <p class="leise">Wörter, die gerade fällig sind oder dir schwerfallen, kommen bevorzugt dran. Deine Antworten zählen für den Lernstand „verstehen“.</p>
     <button class="btn voll" id="los" ${kartenDerThemen(S.einstellungen.themen).length >= 4 ? "" : "disabled"}>10 Aufgaben starten</button>
+    <button class="btn zweit voll" id="diktat" style="margin-top:8px" ${kartenDerThemen(S.einstellungen.themen).length ? "" : "disabled"}>✍️ Diktat: hören und eintippen (10)</button>
+    <p class="leise">Beim Diktat hörst du Italienisch und schreibst es auf – deutlich schwerer als Auswählen, aber es schult Hören und Rechtschreibung zugleich. Akzente dürfen fehlen.</p>
     <h2>Themen</h2>
     <p class="leise">Dieselbe Auswahl wie bei den Karteikarten.</p>
     ${themenAuswahl(THEMEN, S.einstellungen.themen)}
     <h2>Phrasen</h2>${themenAuswahl(PHRASEN_GRUPPEN, S.einstellungen.themen)}`);
   themenKlickbar(hoerenMenue);
   document.getElementById("los").onclick = hoerenStart;
+  document.getElementById("diktat").onclick = diktatStart;
 }
 function hoerenStart() {
   const pool = kartenDerThemen(S.einstellungen.themen);
   if (pool.length < 4) return geheZu("hoeren");
   const aufgaben = gewichtetZiehen(pool, (k) => gewicht(k.id, "it-de"), 10).map((k) => hoerAufgabe(k, pool));
   quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "hoeren", titel: "Hören", nochmal: "hoeren-neu" });
+}
+function diktatStart() {
+  const pool = kartenDerThemen(S.einstellungen.themen);
+  if (!pool.length) return geheZu("hoeren");
+  // bekannte Karten bevorzugt – Diktat von ganz neuen Wörtern ist eher Raten
+  const aufgaben = gewichtetZiehen(pool, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), 10).map(diktatAufgabe);
+  quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "hoeren", titel: "Diktat", nochmal: "hoeren" });
+}
+// Diktat: hören und auf Italienisch eintippen (Akzente dürfen fehlen)
+function diktatAufgabe(k) {
+  return {
+    tippen: true, keinMikro: true, richtig: k.it, erklaerung: `${k.it} = ${k.de}`,
+    frage: `<div class="leise">Hör zu und schreib auf Italienisch:</div>
+      <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
+    beimStart: () => setTimeout(() => sprich(k.it), 250),
+    beiAntwort: (ok) => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", ok); geuebt(); },
+    nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); }
+  };
 }
 function hoerAufgabe(k, pool) {
   const falsche = mischen([...new Set(pool.filter((x) => x.de !== k.de).map((x) => x.de))]).slice(0, 3);
@@ -1164,17 +1188,43 @@ function sprechenZeigen() {
 function musterBauen(text) {
   return (text.match(/\[[^\]]+\]|\{\w+\}|\S+/g) || []).map((tok) => {
     const frei = tok.match(/^\{(\w+)\}$/);
-    if (frei) return { frei: true, min: frei[1] === "rest" ? 0 : 1, max: frei[1] === "zahl" || frei[1] === "name" ? 3 : frei[1] === "rest" ? 5 : 4 };
+    if (frei) return { frei: true, art: frei[1], min: frei[1] === "rest" ? 0 : 1, max: frei[1] === "zahl" || frei[1] === "name" ? 3 : frei[1] === "rest" ? 8 : 4 }; // {rest} wird auf echtes Italienisch geprüft, darf daher länger sein
     const opt = /^\[.*\]$/.test(tok), inner = opt ? tok.slice(1, -1) : tok;
     const seq = inner.includes("|") ? [inner.split("|").map(normWort).filter(Boolean)] : woerterVon(inner).map((t) => [t.n]);
     return { opt, seq };
   }).filter((m) => m.frei || m.seq.length);
 }
+// Alle italienischen Wörter, die die App kennt (aus Karten, Sätzen, Antworten, Wörterbuch, Verbformen) – für die
+// Prüfung freier Stellen: {rest} muss Italienisch sein (nicht Deutsch oder Unsinn), {zahl} muss eine Zahl sein.
+let BEKANNTE_WOERTER = null, ZAHL_WOERTER = null;
+function bekannteWoerter() {
+  if (BEKANNTE_WOERTER) return BEKANNTE_WOERTER;
+  const s = new Set(), add = (t) => t && woerterVon(String(t)).forEach((w) => s.add(w.n));
+  ALLE_KARTEN.forEach((k) => add(k.it)); SAETZE_LISTE.forEach((x) => add(x.it));
+  GESPRAECH.forEach((t) => t.fragen.forEach((q) => { add(q.f); add(q.b); q.m.forEach((m) => add(m.replace(/[\[\]{}|]/g, " "))); }));
+  WOERTERBUCH_LISTE.forEach((e) => { add(e.it); const vf = verbFormen(e); if (vf) vf.formen.forEach(add); });
+  ALLE_VERBEN.forEach((v) => konjugiere(v).forEach(add));
+  DIALOGE.forEach((d) => add(String(d.text).split("\n").map((z) => z.split("|")[1] || "").join(" ")));
+  Object.values(LUECKEN).forEach((set) => set.saetze.forEach((x) => add(x.s.replace("___", x.a))));
+  return (BEKANNTE_WOERTER = s);
+}
+function istZahlwort(w) {
+  if (!ZAHL_WOERTER) { ZAHL_WOERTER = new Set(); for (let n = 0; n <= 2100; n++) ZAHL_WOERTER.add(normWort(zahlwort(n))); }
+  return ZAHL_WOERTER.has(w);
+}
+function freiOk(m, woerter) {
+  if (m.art === "zahl") return woerter.every((w) => istZahlwort(w) || w === "anni" || w === "e");
+  if (m.art === "rest") {
+    const unbekannt = woerter.filter((w) => !bekannteWoerter().has(w) && !istZahlwort(w)).length;
+    return unbekannt === 0 || (woerter.length >= 3 && unbekannt === 1); // ein unbekanntes Wort (z. B. ein Name) in längeren Antworten ist ok
+  }
+  return true; // {x} und {name}: Namen, Orte usw. – alles erlaubt
+}
 function musterPasst(M, T, i = 0, j = 0) {
   if (i === M.length) return j === T.length;
   const m = M[i];
   if (m.frei) {
-    for (let n = m.min; n <= m.max && j + n <= T.length; n++) if (musterPasst(M, T, i + 1, j + n)) return true;
+    for (let n = m.min; n <= m.max && j + n <= T.length; n++) if (freiOk(m, T.slice(j, j + n)) && musterPasst(M, T, i + 1, j + n)) return true;
     return false;
   }
   if (m.opt && musterPasst(M, T, i + 1, j)) return true;
@@ -1519,24 +1569,39 @@ function lektionWoerterStand(L) {
   const karten = lektionKarten(L);
   return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length };
 }
-// Wie viel einer Lektion sitzt wirklich? = Anteil der Karten (je geübte Richtung), die erst in einem halben Jahr
-// oder später wiederkommen. Dazu: wie viele schon „im Lernen“ sind (mindestens einmal gewusst).
+// Wie viel einer Lektion sitzt wirklich? Drei Teile, gewichtet:
+//  - Karten (60 %): kommen erst in einem halben Jahr oder später wieder
+//  - Grammatik-Aufgaben (25 %) und Fragen (15 %): ganz oben im Wiederholungsplan (120 Tage = sechsmal hintereinander richtig)
+// Dazu „im Lernen“: schon einmal gewusst, aber noch nicht fest.
+const GRAMMATIK_FEST = 120;
+function festTeil(eintraege, istFest, istLernen) {
+  let fest = 0, lernen = 0;
+  eintraege.forEach((x) => { if (istFest(x)) fest++; else if (istLernen(x)) lernen++; });
+  return { gesamt: eintraege.length, fest, lernen };
+}
 function lektionGefestigt(L) {
   const richt = richtungenFuer(S.einstellungen.richtung);
-  let gesamt = 0, fest = 0, lernen = 0;
-  (L._karten || lektionKarten(L)).forEach((k) => richt.forEach((r) => {
-    gesamt++;
-    const z = zustand(k.id, r);
-    if (z && z.intervall >= SICHER_TAGE) fest++;
-    else if (z && z.wdh > 0) lernen++;
-  }));
-  const p = (n) => (gesamt ? Math.floor((100 * n) / gesamt) : 0);
-  return { gesamt, fest, lernen, prozent: p(fest), lernenProzent: p(lernen) };
+  const paare = (L._karten || lektionKarten(L)).flatMap((k) => richt.map((r) => zustand(k.id, r)));
+  const karten = festTeil(paare, (z) => z && z.intervall >= SICHER_TAGE, (z) => z && z.wdh > 0);
+  const gFest = (g) => g && g.intervall >= GRAMMATIK_FEST, gLernen = (g) => g && g.richtig > 0;
+  const gram = festTeil((L._gram || grammatikTopf(L.grammatik, L.themen).map((x) => x.key)).map((k) => S.grammatik[k]), gFest, gLernen);
+  const fragen = festTeil((L._fragen || lektionFragen(L).map((q) => q.key)).map((k) => S.grammatik[k]), gFest, gLernen);
+  // gewichteter Mittelwert (Teile ohne Einträge zählen nicht)
+  const teile = [[karten, 0.6], [gram, 0.25], [fragen, 0.15]].filter(([t]) => t.gesamt);
+  const summe = teile.reduce((s, [, w]) => s + w, 0) || 1;
+  const anteil = (feld) => Math.floor(100 * teile.reduce((s, [t, w]) => s + (w * t[feld]) / t.gesamt, 0) / summe);
+  const pz = (t) => (t.gesamt ? Math.floor((100 * t.fest) / t.gesamt) : 0);
+  return { karten, gram, fragen, gesamt: karten.gesamt, fest: karten.fest, prozent: anteil("fest"), lernenProzent: anteil("lernen"),
+    teile: `Karten ${pz(karten)} % · Grammatik ${pz(gram)} % · Fragen ${pz(fragen)} %` };
 }
-// über alle Lektionen (jede Karte nur einmal gezählt)
+// über alle Lektionen (jede Karte, Aufgabe und Frage nur einmal gezählt)
 function gesamtGefestigt() {
-  const karten = [...new Map(LEKTION_LISTE.flatMap(lektionKarten).map((k) => [k.id, k])).values()];
-  return lektionGefestigt({ _karten: karten });
+  const eins = (liste) => [...new Set(liste)];
+  return lektionGefestigt({
+    _karten: [...new Map(LEKTION_LISTE.flatMap(lektionKarten).map((k) => [k.id, k])).values()],
+    _gram: eins(LEKTION_LISTE.flatMap((L) => grammatikTopf(L.grammatik, L.themen).map((x) => x.key))),
+    _fragen: eins(LEKTION_LISTE.flatMap((L) => lektionFragen(L).map((q) => q.key)))
+  });
 }
 const festBalken = (g) => `<div class="balken" title="${g.prozent} % sitzen fest"><i style="width:${g.prozent}%"></i><i class="lernen" style="width:${g.lernenProzent}%"></i></div>`;
 function lektionenMenue() {
@@ -1546,7 +1611,7 @@ function lektionenMenue() {
   zeige(`
     <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du sie kannst, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
     <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog und Sprechen – dazu „Gemischt üben“ zum Wiederholen. Alle sind offen: Du kannst jederzeit springen.</p>
-    <p class="leise">„% sitzen fest“ = Anteil der Karten, die erst in einem halben Jahr oder später wieder drankommen – das zeigt, was du wirklich kannst. Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
+    <p class="leise">„% sitzen fest“ zeigt, was du wirklich kannst: Karten, die erst in einem halben Jahr wiederkommen, und Grammatik-Aufgaben und Fragen, die du sechsmal hintereinander richtig hattest (Karten zählen am meisten). Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
     <div class="fortschritt"><span>Alle 12: ${gs.prozent} % sitzen fest · ${durch} / ${LEKTION_LISTE.length} durchgearbeitet</span>${festBalken(gs)}</div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
       const st = lStand(L.id), fertig = LEKTION_SCHRITTE.filter((s) => st.schritte.includes(s.id)).length, d = durchgearbeitet(L);
@@ -1568,9 +1633,9 @@ function lektionZeigen(id) {
       <div style="font-size:24px;font-weight:700">${L.icon} ${esc(L.titel)}</div>
       <p style="margin-bottom:0">🎯 ${esc(L.ziel)}</p>
       ${(() => { const g = lektionGefestigt(L); return `<div style="margin-top:10px"><b>📊 ${g.prozent} % sitzen fest</b> <span class="leise">· ${g.lernenProzent} % im Lernen</span>${festBalken(g)}
-        <div class="leise" style="font-size:13px;margin-top:4px">${g.fest} von ${g.gesamt} Karten kommen erst in einem halben Jahr oder später wieder${durchgearbeitet(L) ? " · Lektion durchgearbeitet" : ""}.</div></div>`; })()}
+        <div class="leise" style="font-size:13px;margin-top:4px">${g.teile}${durchgearbeitet(L) ? " · Lektion durchgearbeitet" : ""}<br>Fest = Karte kommt erst in ½ Jahr wieder · Grammatik/Frage sechsmal hintereinander richtig.</div></div>`; })()}
     </div>
-    <button class="zeile" id="lGemischt" style="margin-bottom:12px"><span class="sym">🔀</span><span class="mitte"><b>Gemischt üben</b><small>${GEMISCHT_ANZAHL} gemischte Aufgaben aus der ganzen Lektion – Hören und Grammatik. Beliebig oft, am besten immer wieder.</small></span><span class="pfeil">›</span></button>
+    <button class="zeile" id="lGemischt" style="margin-bottom:12px"><span class="sym">🔀</span><span class="mitte"><b>Gemischt üben</b><small>${GEMISCHT_ANZAHL} gemischte Aufgaben aus der ganzen Lektion – Hören, Diktat und Grammatik. Beliebig oft, am besten immer wieder.</small></span><span class="pfeil">›</span></button>
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
       const erledigt = st.schritte.includes(s.id) || !!st.bestanden;
@@ -1626,7 +1691,10 @@ function lektionStarten(L, schritt) {
   if (schritt === "erkl") return geheZu("lerkl/" + L.id);
   if (schritt === "woerter") {
     const plan = rundePlanen(lektionKarten(L), S.einstellungen.richtung);
-    const neue = plan.neue.slice(0, 12), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
+    // Neue Karten nur bis zur Tagesgrenze („Neue Karten pro Tag“) – sonst wächst der Berg an Wiederholungen zu schnell
+    const frei0 = neueHeuteUebrig();
+    const neue = plan.neue.slice(0, Math.min(12, frei0)), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
+    if (plan.neue.length && !frei0) toast(`Für heute sind die neuen Karten aufgebraucht (${S.einstellungen.neueProTag} pro Tag – änderbar in den Einstellungen). Jetzt nur Wiederholung; morgen geht es weiter.`, 6000);
     let d = 0, n = 0;
     while (d < fa.length || n < neue.length) { if (n < neue.length && (d >= fa.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(fa[d++]); }
     let frei = false;
@@ -1646,10 +1714,15 @@ function lektionStarten(L, schritt) {
     neueFrage(); return geheZu("gespraech-ueben");
   }
   if (schritt === "gemischt") {
-    // Gemischt üben: etwa halb Grammatik, halb Hören – Wörter, die gerade fällig sind oder schwerfallen, kommen bevorzugt
+    // Gemischt üben: Grammatik, Hören (auswählen) und Diktat (eintippen) – Fälliges und Schwieriges kommt bevorzugt
     const karten = lektionKarten(L);
-    const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), Math.round(GEMISCHT_ANZAHL / 2));
-    const hoeren = gewichtetZiehen(karten, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), GEMISCHT_ANZAHL - gram.length).map((k) => hoerAufgabe(k, karten));
+    const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), Math.round(GEMISCHT_ANZAHL * 0.4));
+    const gew = (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de"));
+    const nDiktat = Math.round(GEMISCHT_ANZAHL * 0.2);
+    const gezogen = gewichtetZiehen(karten, gew, GEMISCHT_ANZAHL - gram.length);
+    // Diktat nur mit bekannten Karten (sonst ist es Raten)
+    const fuerDiktat = gezogen.filter((k) => !istNeu(k.id, "it-de")).slice(0, nDiktat);
+    const hoeren = gezogen.filter((k) => !fuerDiktat.includes(k)).map((k) => hoerAufgabe(k, karten)).concat(fuerDiktat.map(diktatAufgabe));
     // merken, was falsch war (für die Liste am Ende)
     const falsch = [];
     const aufgaben = mischen(hoeren.concat(gram)).map((a) => {
@@ -2199,6 +2272,100 @@ function schluesselWarnung() {
   }
   return "";
 }
+// ---------- Lernstand sichern und zwischen Geräten abgleichen (über GitHub) ----------
+// Mit GitHub-Schlüssel legt die App den Lernstand als lernstand.json auf einem eigenen Zweig „lernstand“ ab
+// (gehört nicht zur Webseite). Jedes Gerät holt beim Öffnen den Stand und führt ihn mit dem eigenen zusammen:
+// pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
+const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
+let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute"];
+// Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
+const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
+const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
+function syncAnfrage(pfad, opt = {}) {
+  return fetch(SYNC_API + pfad, { ...opt, cache: "no-store", headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + githubSchluessel(), ...(opt.body ? { "Content-Type": "application/json" } : {}) } });
+}
+function zusammenfuehren(lokal, fern) {
+  const mische = (a = {}, b = {}, fn) => { const out = { ...a }; Object.keys(b).forEach((k) => { out[k] = k in a ? fn(a[k], b[k]) : b[k]; }); return out; };
+  const juenger = (a, b) => ((b.zuletzt || 0) > (a.zuletzt || 0) ? b : a);
+  lokal.karten = mische(lokal.karten, fern.karten, juenger);
+  lokal.grammatik = mische(lokal.grammatik, fern.grammatik, (a, b) => (a.zuletzt || b.zuletzt ? juenger(a, b) : (b.richtig + b.falsch > a.richtig + a.falsch ? b : a)));
+  lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
+  lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
+  lokal.lektionen = mische(lokal.lektionen, fern.lektionen, (a, b) => ({ ...a, ...b, schritte: [...new Set([...(a.schritte || []), ...(b.schritte || [])])], bestanden: a.bestanden || b.bestanden }));
+  lokal.eigeneAntworten = mische(lokal.eigeneAntworten, fern.eigeneAntworten, (a, b) => [...new Set([...(a || []), ...(b || [])])]);
+  const cf = new Map((lokal.claudeFehler || []).map((f) => [f.text, f])); (fern.claudeFehler || []).forEach((f) => cf.has(f.text) || cf.set(f.text, f)); lokal.claudeFehler = [...cf.values()];
+  const tag = (x) => (x && x.datum) || "";
+  if (fern.neueHeute && tag(fern.neueHeute) === tag(lokal.neueHeute)) lokal.neueHeute.anzahl = Math.max(lokal.neueHeute.anzahl, fern.neueHeute.anzahl);
+  else if (tag(fern.neueHeute) > tag(lokal.neueHeute)) lokal.neueHeute = fern.neueHeute;
+  if (fern.heute && lokal.heute && tag(fern.heute) === tag(lokal.heute)) lokal.heute.erledigt = [...new Set([...lokal.heute.erledigt, ...fern.heute.erledigt])];
+  else if (tag(fern.heute) > tag(lokal.heute)) lokal.heute = fern.heute;
+  return lokal;
+}
+// Stand von GitHub holen und einmischen
+async function syncHolen() {
+  const r = await syncAnfrage(`/contents/${SYNC_DATEI}?ref=${SYNC_ZWEIG}`);
+  if (r.status === 404) { syncSha = null; return false; }
+  if (r.status === 401) { S.schluesselInfo = { ...(S.schluesselInfo || {}), ungueltig: true }; throw new Error("GitHub-Schlüssel gilt nicht mehr"); }
+  if (!r.ok) throw new Error("GitHub antwortet mit Fehler " + r.status);
+  const j = await r.json(); syncSha = j.sha;
+  const fern = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), (c) => c.charCodeAt(0))));
+  const vorher = syncInhalt(S);
+  zusammenfuehren(S, fern);
+  syncLetzterInhalt = syncInhalt(fern);
+  const geaendert = syncInhalt(S) !== vorher;
+  if (geaendert) { try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(S)); } catch (e) {} }
+  return geaendert;
+}
+// Zweig „lernstand“ anlegen, falls es ihn noch nicht gibt
+async function syncZweigSicherstellen() {
+  const r = await syncAnfrage(`/git/ref/heads/${SYNC_ZWEIG}`);
+  if (r.ok) return;
+  const m = await syncAnfrage("/git/ref/heads/master");
+  if (!m.ok) throw new Error("GitHub antwortet mit Fehler " + m.status);
+  const sha = (await m.json()).object.sha;
+  const neu = await syncAnfrage("/git/refs", { method: "POST", body: JSON.stringify({ ref: `refs/heads/${SYNC_ZWEIG}`, sha }) });
+  if (!neu.ok && neu.status !== 422) throw new Error("Zweig anlegen ging nicht (Fehler " + neu.status + ")");
+}
+async function syncHochladen(versuch = 0) {
+  const inhalt = syncInhalt(S);
+  if (inhalt === syncLetzterInhalt) return; // nichts Neues
+  await syncZweigSicherstellen();
+  const autor = { name: "StefanReinhart", email: "154806245+StefanReinhart@users.noreply.github.com" };
+  const senden = () => syncAnfrage(`/contents/${SYNC_DATEI}`, { method: "PUT", body: JSON.stringify({ message: "Lernstand", content: btoa(unescape(encodeURIComponent(inhalt))), branch: SYNC_ZWEIG, ...(syncSha ? { sha: syncSha } : {}), author: autor, committer: autor }) });
+  let p = await senden();
+  if ((p.status === 409 || p.status === 422) && versuch < 2) { await syncHolen(); return syncHochladen(versuch + 1); } // anderes Gerät war schneller: erst zusammenführen
+  if (!p.ok) throw new Error("GitHub antwortet mit Fehler " + p.status);
+  syncSha = (await p.json()).content.sha; syncLetzterInhalt = inhalt;
+}
+// Kompletter Abgleich: holen, zusammenführen, hochladen
+async function abgleichen(still = true) {
+  if (!githubSchluessel() || !navigator.onLine || syncLaeuft) return;
+  syncLaeuft = true;
+  try {
+    const geaendert = await syncHolen();
+    await syncHochladen();
+    S.letzteSicherung = Date.now();
+    try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(S)); } catch (e) {}
+    syncStatus = `✓ Abgeglichen ${new Date().toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+    if (geaendert && (!location.hash || location.hash === "#start" || location.hash === "#heute" || location.hash === "#lektionen")) ohneSprung(route);
+    if (!still) toast(geaendert ? "Abgeglichen – Stand vom anderen Gerät übernommen ✓" : "Abgeglichen ✓");
+  } catch (e) { syncStatus = "Abgleich hat nicht geklappt: " + e.message; if (!still) toast(syncStatus, 5000); }
+  finally { syncLaeuft = false; }
+}
+// Nach jeder Änderung: in einer Minute hochladen (sammelt mehrere Änderungen)
+function syncVormerken() {
+  if (!githubSchluessel()) return;
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => abgleichen(), 60 * 1000);
+}
+// Erinnerung ans Sichern – nur ohne automatischen Abgleich und wenn schon etwas gelernt wurde
+function sicherungsHinweis() {
+  if (githubSchluessel() || Object.keys(S.karten).length < 20) return "";
+  const seit = S.letzteSicherung ? Math.floor((Date.now() - S.letzteSicherung) / TAG) : null;
+  if (seit !== null && seit < 7) return "";
+  return `<div class="meldung info">💾 ${seit === null ? "Dein Lernstand ist noch nie gesichert worden." : `Letzte Sicherung vor ${seit} Tagen.`} Er liegt nur auf diesem Gerät. <a href="#einstellungen">Jetzt sichern →</a></div>`;
+}
+
 // kurze Beschreibung eines Eintrags (Liste in den Einstellungen, Kopieren, Commit-Text)
 const wunschText = (w) => w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen (zu: ${w.frage})`
   : w.typ === "nachricht" ? `Nachricht: ${w.nachricht}`
@@ -2327,9 +2494,12 @@ function einstellungen() {
       <p class="leise">Gezählt wird jede Richtung einzeln.</p></div>
     <div class="einstellung schalter"><span><b>Automatisch vorlesen</b><br><small class="leise">bei Karteikarten</small></span><input type="checkbox" id="auto" ${E.automatischVorlesen ? "checked" : ""}></div>
     <div class="einstellung schalter"><span><b>Antwort eintippen</b><br><small class="leise">bei Deutsch → Italienisch (prägt sich besser ein)</small></span><input type="checkbox" id="tippen" ${E.eintippen ? "checked" : ""}></div>
-    <h2>Lernstand sichern</h2>
-    <p class="leise">Dein Lernstand ist nur auf diesem Handy gespeichert. Mit „Sichern“ bekommst du eine Datei, die du z. B. in Google Drive ablegen und später wieder einlesen kannst.</p>
-    <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
+    <h2>☁️ Lernstand sichern &amp; abgleichen</h2>
+    ${githubSchluessel()
+      ? `<p class="leise">Mit deinem GitHub-Schlüssel wird der Lernstand <b>automatisch online gesichert</b> und zwischen Handy und PC <b>abgeglichen</b> – beim Öffnen der App und etwa eine Minute nach dem Üben. Pro Karte gilt der zuletzt geübte Stand.<br>${esc(syncStatus || (S.letzteSicherung ? "Zuletzt gesichert: " + new Date(S.letzteSicherung).toLocaleString("de-DE") : "Noch nicht abgeglichen."))}</p>
+         <button class="btn voll" id="syncJetzt">🔄 Jetzt abgleichen</button>`
+      : `<p class="leise">Dein Lernstand liegt <b>nur auf diesem Gerät</b>. Trage unten den GitHub-Schlüssel ein – dann wird er automatisch gesichert und zwischen Handy und PC abgeglichen. Ohne Schlüssel: mit „Sichern“ eine Datei speichern (z. B. in Google Drive).${S.letzteSicherung ? " Zuletzt gesichert: " + new Date(S.letzteSicherung).toLocaleDateString("de-DE") + "." : ""}</p>`}
+    <div class="reihe"><button class="btn zweit" id="export">💾 Als Datei sichern</button><button class="btn zweit" id="import">📂 Datei einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
     <h2>✉️ Fragen &amp; Wünsche an Claude</h2>
@@ -2373,7 +2543,7 @@ function einstellungen() {
     try { localStorage.setItem("italienisch-github-schluessel", s); } catch (e) {}
     const datum = document.getElementById("ghAblauf").value;
     S.schluesselInfo = datum ? { ablauf: Date.parse(datum + "T12:00:00") } : {}; speichern(); // neuer Schlüssel: alten Stand vergessen
-    toast("Schlüssel gespeichert ✓"); schluesselPruefen(true).then(wuenscheSenden).then(() => ohneSprung(einstellungen));
+    toast("Schlüssel gespeichert ✓"); schluesselPruefen(true).then(wuenscheSenden).then(() => abgleichen()).then(() => ohneSprung(einstellungen));
   };
   document.getElementById("ghAblauf").onchange = (e) => {
     const d = e.target.value;
@@ -2397,7 +2567,10 @@ function einstellungen() {
     const text = "Fragen und Wünsche zur Italienisch-App:\n" + (S.wuensche || []).map((w) => `${w.id} – ${wunschText(w)}`).join("\n");
     try { await navigator.clipboard.writeText(text); toast("Liste kopiert ✓"); } catch (e) { toast("Kopieren ging nicht."); }
   };
+  const sj = document.getElementById("syncJetzt");
+  if (sj) sj.onclick = async () => { sj.disabled = true; sj.textContent = "Gleiche ab …"; await abgleichen(false); ohneSprung(einstellungen); };
   document.getElementById("export").onclick = () => {
+    S.letzteSicherung = Date.now(); speichern();
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `italienisch-lernstand-${heute()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -2442,8 +2615,11 @@ function route() {
 window.addEventListener("hashchange", route);
 speichern(); // übernommenen Lernstand (Version 1 → 2) gleich sichern
 route();
-setTimeout(() => { schluesselPruefen(); wuenscheSenden(); }, 3000); // GitHub-Schlüssel prüfen, liegengebliebene Wünsche nachsenden
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") schluesselPruefen(); });
+setTimeout(() => { schluesselPruefen(); wuenscheSenden(); abgleichen(); }, 3000); // Schlüssel prüfen, Wünsche nachsenden, Lernstand abgleichen
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { schluesselPruefen(); abgleichen(); } // anderes Gerät hat vielleicht geübt
+  else if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; abgleichen(); } // beim Verlassen noch schnell sichern
+});
 
 // ---------- Offline-Funktion ----------
 if ("serviceWorker" in navigator && location.protocol !== "file:") {

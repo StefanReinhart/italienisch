@@ -29,6 +29,13 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
 `veroeffentlichen.ps1 -Nachricht "…" -OhnePause` (erhöht die Version in `sw.js`, committet mit der
 anonymen GitHub-Adresse, pusht und wartet, bis die Version online ist).
 
+## Lernstand-Abgleich
+
+Die App sichert den Lernstand (mit GitHub-Schlüssel) als `lernstand.json` auf dem Zweig **`lernstand`**
+(nicht master, gehört nicht zur Webseite) und gleicht so Handy und PC ab. Diesen Zweig nie löschen oder
+zurücksetzen. Neue Felder im Lernstand, die zwischen Geräten wandern sollen, in `SYNC_FELDER` und
+`zusammenfuehren()` in app.js aufnehmen.
+
 ## Wichtige Regeln
 
 - Verknüpfungen immer über feste Kennungen (IDs), nie über Texte.

@@ -131,6 +131,19 @@ tenere | halten, behalten
 rimanere | bleiben
 scegliere | auswählen
 salire | einsteigen, hinaufgehen
+potrei | ich könnte (von potere)
+mancare | fehlen
+svegliare | wecken
+guarire | gesund werden
+farsi male | sich wehtun
+tranquillo | ruhig
+bellissimo | wunderschön
+il parcheggio | der Parkplatz
+la carta igienica | das Toilettenpapier
+il pasto | die Mahlzeit
+l'ambulanza | der Krankenwagen
+la penicillina | das Penicillin
+allergico | allergisch
 distare | entfernt sein
 volerci | brauchen (Zeit: ci vuole, ci vogliono)
 indicare | zeigen, hinweisen
@@ -162,5 +175,6 @@ window.VERBEN_FORMEN_EXTRA = {
   "rimanere": ["rimango", "rimani", "rimane", "rimaniamo", "rimanete", "rimangono"],
   "scegliere":["scelgo", "scegli", "sceglie", "scegliamo", "scegliete", "scelgono"],
   "salire":   ["salgo", "sali", "sale", "saliamo", "salite", "salgono"],
+  "guarire":  ["guarisco", "guarisci", "guarisce", "guariamo", "guarite", "guariscono"],
   "sedersi":  ["mi siedo", "ti siedi", "si siede", "ci sediamo", "vi sedete", "si siedono"]
 };

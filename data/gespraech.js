@@ -5,7 +5,7 @@
 // m  = Antwortmuster, die als richtig gelten. Schreibweise:
 //      wort|wort    eines der Wörter        [wort]   darf fehlen       [a|b] eines davon oder keins
 //      {x}          1–4 beliebige Wörter     {zahl}   eine Zahl (Ziffern oder Wort)
-//      {rest}       0–5 beliebige Wörter
+//      {rest}       0–8 weitere italienische Wörter (die App prüft, ob es Italienisch ist; ein unbekanntes Wort ist erlaubt)
 //      Groß-/Kleinschreibung, Akzente und Satzzeichen spielen keine Rolle.
 window.GESPRAECH = [
 { thema: "Über mich", fragen: [
@@ -162,6 +162,8 @@ window.GESPRAECH = [
   { f: "Posso pagare con la carta? (Antworte als Hotel)", de: "Kann ich mit Karte zahlen? (Du arbeitest an der Rezeption)", b: "Sì, certo.", bde: "Ja, natürlich.",
     m: ["sì [certo] {rest}", "certo {rest}", "no [mi] [dispiace] {rest}"] },
   { f: "Che cosa ti fa male?", de: "Was tut dir weh?", b: "Mi fa male la testa.", bde: "Mir tut der Kopf weh.",
-    m: ["mi fa male [il|la|lo|l'] {x}", "mi fanno male [i|le|gli] {x}", "ho mal di {x}", "[non] [mi] [fa] [male] niente {rest}"] }
+    m: ["mi fa male [il|la|lo|l'] {x}", "mi fanno male [i|le|gli] {x}", "ho mal di {x}", "[non] [mi] [fa] [male] niente {rest}"] },
+  { f: "Che cosa hai fatto ieri?", de: "Was hast du gestern gemacht?", b: "Ieri ho lavorato e la sera ho guardato un film.", bde: "Gestern habe ich gearbeitet und abends einen Film geschaut.",
+    m: ["[ieri] [sera] ho {rest}", "[ieri] [sera] sono andato|andata|stato|stata|uscito|uscita|rimasto|rimasta {rest}", "[ieri] [sera] [non] ho fatto niente {rest}"] }
 ]}
 ];

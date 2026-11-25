@@ -1,1 +1,56 @@
-[]
+[
+ {
+  "id": "lk_l1:Che fai stasera?",
+  "it": "Che fai stasera?",
+  "de": "Was machst du heute Abend?",
+  "zeit": "2026-11-23"
+ },
+ {
+  "id": "p_einkaufen:Nient'altro, grazie.",
+  "it": "Nient'altro, grazie.",
+  "de": "Sonst nichts, danke.",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "lk_l1:Anch'io sono tedesco.",
+  "it": "Anch'io sono tedesco.",
+  "de": "Ich bin auch Deutscher.",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "lk_l1:Come va?",
+  "it": "Come va?",
+  "de": "Wie geht's?",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "lk_l1:È la prima volta in Italia.",
+  "it": "È la prima volta in Italia.",
+  "de": "Es ist das erste Mal in Italien.",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "lk_l1:Che cosa vuol dire?",
+  "it": "Che cosa vuol dire?",
+  "de": "Was bedeutet das?",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "lk_l1:Può parlare più lentamente?",
+  "it": "Può parlare più lentamente?",
+  "de": "Können Sie langsamer sprechen?",
+  "zeit": "2026-11-24"
+ },
+ {
+  "id": "p_restaurant:Che cosa ci consiglia?",
+  "it": "Che cosa ci consiglia?",
+  "de": "Was empfehlen Sie uns?",
+  "zeit": "2026-11-25"
+ },
+ {
+  "id": "p_verstaendigung:Parlo un po' di italiano.",
+  "it": "Parlo un po' di italiano.",
+  "de": "Ich spreche ein bisschen Italienisch.",
+  "zeit": "2026-11-25"
+ }
+]

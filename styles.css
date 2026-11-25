@@ -109,6 +109,9 @@ p { margin: 8px 0; }
 .balken { height: 6px; background: var(--rand); border-radius: 3px; overflow: hidden; margin-top: 6px; display: flex; }
 .balken i { display: block; height: 100%; background: var(--gruen); flex: none; }
 .balken i.lernen { opacity: .4; } /* zweiter Abschnitt: „im Lernen“ */
+/* Lernstand-Punkte auf der Karteikarte */
+.lernstand { font-size: 13px; color: var(--gruen); letter-spacing: 2px; margin-top: 2px; }
+.lernstand span { color: var(--rand); }
 
 /* Knöpfe */
 .btn {

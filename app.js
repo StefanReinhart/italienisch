@@ -54,7 +54,7 @@ const STANDARD = {
   karten: {},          // "id|richtung" → { ease, intervall, wdh, faellig, richtig, falsch, vergessen }
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
-  lektionen: {},       // Lektions-ID → { schritte, bestanden, best }
+  lektionen: {},       // Lektions-ID → { schritte }  (alte Stände: bestanden = früherer Abschluss-Check)
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
   eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
   claudeFehler: [],    // Fehler, die Claude in Gesprächen gefunden hat: { text, zeit, genutzt }
@@ -117,6 +117,15 @@ function startDesTages(ms) { const d = new Date(ms); d.setHours(3, 0, 0, 0); ret
 const tageText = (t) => (t === 0 ? "gleich wieder" : t === 1 ? "1 Tag" : t < 60 ? t + " Tage" : Math.round(t / 30) + " Monate");
 
 const SICHER_TAGE = 180; // "Kann ich sicher": direkt auf etwa ein halbes Jahr
+// Lernstand einer Karte als 6 Punkte: je weiter der Abstand, desto mehr Punkte; ab ½ Jahr „sitzt fest“
+const LERN_STUFEN = [1, 3, 8, 20, 50, 125]; // Tage – entspricht ungefähr den Wiederholungen mit „Gut“
+function lernstandHtml(id, r) {
+  const z = zustand(id, r);
+  if (!z || !z.wdh) return "";
+  if (z.intervall >= SICHER_TAGE) return `<div class="lernstand" title="kommt erst in einem halben Jahr oder später wieder">🏆 sitzt fest</div>`;
+  const n = LERN_STUFEN.filter((t) => z.intervall >= t).length;
+  return `<div class="lernstand" title="Lernstand dieser Karte">${"●".repeat(n)}<span>${"○".repeat(LERN_STUFEN.length - n)}</span> 🏆</div>`;
+}
 function naechsterAbstand(k, note) { // note: 0 nochmal, 1 schwer, 2 gut, 3 leicht, 4 kann ich sicher
   if (note === 0) return 0;
   if (note === 4) return Math.max(SICHER_TAGE, naechsterAbstand(k, 2));
@@ -567,7 +576,7 @@ function startseite() {
     </div>
     <div class="kacheln">
       <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
-      <button class="kachel breit" data-gehe="lektionen"><span class="sym">📚</span><span><b>Alle Lektionen</b><br><small>${LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length} von 12 geschafft${akt ? ` · als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : ""}</small></span></button>
+      <button class="kachel breit" data-gehe="lektionen"><span class="sym">📚</span><span><b>Alle Lektionen</b><br><small>${gesamtGefestigt().prozent} % sitzen fest · ${LEKTION_LISTE.filter(durchgearbeitet).length} von 12 durchgearbeitet${akt ? ` · als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : ""}</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
       <button class="kachel" data-gehe="dialoge"><span class="sym">🎧</span><b>Hör-Dialoge</b><small>Kurze Gespräche verstehen</small></button>
@@ -672,6 +681,7 @@ function karteZeigen() {
     ${fortschrittsLeiste(Math.min(sitzung.fertig + 1, sitzung.gesamt), sitzung.gesamt)}
     <div class="karte" id="karte">
       <span class="leise">${neu ? "✨ Neu · " : ""}${itDe ? "Was heißt das?" : "Wie sagt man auf Italienisch?"}</span>
+      ${lernstandHtml(k.id, r)}
       <div class="wort">${esc(vorne)}</div>
       ${itDe ? lautBtn(k.it) : ""}
       ${sitzung.aufgedeckt
@@ -1483,13 +1493,16 @@ const LEKTION_SCHRITTE = [
   { id: "woerter", sym: "🗂️", name: "Neue Wörter", text: "Wörter und Sätze der Lektion als Karteikarten" },
   { id: "grammatik", sym: "📘", name: "Grammatik", text: "Übungen zum Grammatik-Schwerpunkt" },
   { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: "Ein kurzes Gespräch zum Thema" },
-  { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Fragen zum Thema auf Italienisch beantworten" },
-  { id: "check", sym: "🏁", name: "Abschluss-Check", text: "10 gemischte Aufgaben – ab 80 % geschafft" }
+  { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Fragen zum Thema auf Italienisch beantworten" }
 ];
+// „Gemischt üben“ ist kein Schritt zum Abhaken, sondern eine Wiederholung, die man beliebig oft machen kann
+const GEMISCHT_ANZAHL = 30;
 let lektionAktiv = null, lektionTiefe = null;
-function lStand(id) { S.lektionen = S.lektionen || {}; return (S.lektionen[id] = S.lektionen[id] || { schritte: [], bestanden: false, best: 0 }); }
-const aktuelleLektion = () => LEKTION_LISTE.find((l) => !lStand(l.id).bestanden) || null;
-const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id) && !(s.id === "check" && lStand(L.id).bestanden));
+function lStand(id) { S.lektionen = S.lektionen || {}; return (S.lektionen[id] = S.lektionen[id] || { schritte: [] }); }
+// Durchgearbeitet = alle Schritte abgehakt (ältere Stände: früher bestandener Abschluss-Check zählt auch)
+const durchgearbeitet = (L) => { const st = lStand(L.id); return !!st.bestanden || LEKTION_SCHRITTE.every((s) => st.schritte.includes(s.id)); };
+const aktuelleLektion = () => LEKTION_LISTE.find((l) => !durchgearbeitet(l)) || null;
+const offeneSchritte = (L) => (lStand(L.id).bestanden ? [] : LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id)));
 // Karten einer Lektion = Kernwortschatz (vorhandene Wörter/Sätze, über den italienischen Text gefunden) + eigene Lektions-Gruppe
 const KARTE_NACH_TEXT = {};
 ALLE_KARTEN.forEach((k) => { if (!k.thema.startsWith("lk_") && !KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k; });
@@ -1511,7 +1524,7 @@ function lektionWoerterStand(L) {
 function lektionGefestigt(L) {
   const richt = richtungenFuer(S.einstellungen.richtung);
   let gesamt = 0, fest = 0, lernen = 0;
-  lektionKarten(L).forEach((k) => richt.forEach((r) => {
+  (L._karten || lektionKarten(L)).forEach((k) => richt.forEach((r) => {
     gesamt++;
     const z = zustand(k.id, r);
     if (z && z.intervall >= SICHER_TAGE) fest++;
@@ -1520,22 +1533,27 @@ function lektionGefestigt(L) {
   const p = (n) => (gesamt ? Math.floor((100 * n) / gesamt) : 0);
   return { gesamt, fest, lernen, prozent: p(fest), lernenProzent: p(lernen) };
 }
+// über alle Lektionen (jede Karte nur einmal gezählt)
+function gesamtGefestigt() {
+  const karten = [...new Map(LEKTION_LISTE.flatMap(lektionKarten).map((k) => [k.id, k])).values()];
+  return lektionGefestigt({ _karten: karten });
+}
 const festBalken = (g) => `<div class="balken" title="${g.prozent} % sitzen fest"><i style="width:${g.prozent}%"></i><i class="lernen" style="width:${g.lernenProzent}%"></i></div>`;
 function lektionenMenue() {
   setzeKopf("Lektionen", "start");
   lektionAktiv = null;
-  const akt = aktuelleLektion(), geschafft = LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length;
+  const akt = aktuelleLektion(), durch = LEKTION_LISTE.filter(durchgearbeitet).length, gs = gesamtGefestigt();
   zeige(`
-    <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du alle geschafft hast, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
-    <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog, Sprechen und einen kleinen Abschluss-Check. Alle sind offen: Du kannst jederzeit springen.</p>
-    <p class="leise">„% sitzen fest“ = Anteil der Karten einer Lektion, die erst in einem halben Jahr oder später wieder drankommen. Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
-    <div class="fortschritt"><span>${geschafft} / ${LEKTION_LISTE.length} geschafft</span><div class="balken"><i style="width:${(100 * geschafft) / LEKTION_LISTE.length}%"></i></div></div>
+    <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du sie kannst, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
+    <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog und Sprechen – dazu „Gemischt üben“ zum Wiederholen. Alle sind offen: Du kannst jederzeit springen.</p>
+    <p class="leise">„% sitzen fest“ = Anteil der Karten, die erst in einem halben Jahr oder später wieder drankommen – das zeigt, was du wirklich kannst. Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
+    <div class="fortschritt"><span>Alle 12: ${gs.prozent} % sitzen fest · ${durch} / ${LEKTION_LISTE.length} durchgearbeitet</span>${festBalken(gs)}</div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
-      const st = lStand(L.id), fertig = st.schritte.filter((s) => s !== "check").length;
+      const st = lStand(L.id), fertig = LEKTION_SCHRITTE.filter((s) => st.schritte.includes(s.id)).length, d = durchgearbeitet(L);
       const g = lektionGefestigt(L);
-      const status = st.bestanden ? `✓ Check bestanden` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von 5 Schritten` : fertig ? `${fertig} von 5 Schritten` : "noch nicht begonnen";
-      const fest = st.bestanden || fertig || g.fest || g.lernen ? ` · <b>${g.prozent} % sitzen fest</b>${festBalken(g)}` : "";
-      return `<button class="zeile${st.bestanden ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
+      const status = d ? `✓ durchgearbeitet` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : fertig ? `${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : "noch nicht begonnen";
+      const fest = d || fertig || g.fest || g.lernen ? ` · <b>${g.prozent} % sitzen fest</b>${festBalken(g)}` : "";
+      return `<button class="zeile${d ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
         <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}${fest}</small></span><span class="pfeil">›</span></button>`;
     }).join("")}</div>
     <p class="leise" style="margin-top:14px">Danach kommt <b>A2</b>: die Vergangenheit (ho mangiato, sono andato), „mir/dir/ihm“-Wörter (mi, ti, gli …), mehr reflexive Verben, Vergleiche (più grande di …) und die Zukunft – sag Bescheid, wenn du so weit bist.</p>`);
@@ -1550,17 +1568,14 @@ function lektionZeigen(id) {
       <div style="font-size:24px;font-weight:700">${L.icon} ${esc(L.titel)}</div>
       <p style="margin-bottom:0">🎯 ${esc(L.ziel)}</p>
       ${(() => { const g = lektionGefestigt(L); return `<div style="margin-top:10px"><b>📊 ${g.prozent} % sitzen fest</b> <span class="leise">· ${g.lernenProzent} % im Lernen</span>${festBalken(g)}
-        <div class="leise" style="font-size:13px;margin-top:4px">${g.fest} von ${g.gesamt} Karten kommen erst in einem halben Jahr oder später wieder${st.bestanden ? ` · Abschluss-Check bestanden (${st.best} %)` : ""}.</div></div>`; })()}
+        <div class="leise" style="font-size:13px;margin-top:4px">${g.fest} von ${g.gesamt} Karten kommen erst in einem halben Jahr oder später wieder${durchgearbeitet(L) ? " · Lektion durchgearbeitet" : ""}.</div></div>`; })()}
     </div>
+    <button class="zeile" id="lGemischt" style="margin-bottom:12px"><span class="sym">🔀</span><span class="mitte"><b>Gemischt üben</b><small>${GEMISCHT_ANZAHL} gemischte Aufgaben aus der ganzen Lektion – Hören und Grammatik. Beliebig oft, am besten immer wieder.</small></span><span class="pfeil">›</span></button>
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
-      const erledigt = st.schritte.includes(s.id) || (s.id === "check" && st.bestanden);
+      const erledigt = st.schritte.includes(s.id) || !!st.bestanden;
       const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : "";
-      // Abschluss-Check: nach dem ersten Versuch das letzte Ergebnis statt „ab 80 %“ zeigen
-      const zul = st.zuletzt != null ? st.zuletzt : (st.best || null); // ältere Stände kennen nur das beste Ergebnis
-      const text = s.id === "check" && zul != null
-        ? `10 gemischte Aufgaben · <b>zuletzt ${zul} %</b>${st.best && st.best !== zul ? ` · bestes ${st.best} %` : ""}`
-        : s.text + extra;
+      const text = s.text + extra;
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
         <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
@@ -1577,15 +1592,13 @@ function lektionZeigen(id) {
   $app.querySelectorAll("[data-lhaken]").forEach((h) => (h.onclick = (ev) => {
     ev.stopPropagation();
     const id = h.dataset.lhaken;
-    if (id === "check") {
-      if (st.bestanden && confirm("Die Lektion wieder als „nicht geschafft“ markieren?")) { st.bestanden = false; speichern(); ohneSprung(() => lektionZeigen(L.id)); }
-      else if (!st.bestanden) toast("Der Abschluss-Check wird erst mit 80 % abgehakt – tippe auf die Zeile, um ihn zu machen.", 4000);
-      return;
-    }
+    // alter Stand „Check bestanden“: beim ersten Antippen in einzelne Haken umwandeln
+    if (st.bestanden) { st.schritte = LEKTION_SCHRITTE.map((s) => s.id); delete st.bestanden; }
     st.schritte = st.schritte.includes(id) ? st.schritte.filter((x) => x !== id) : st.schritte.concat(id);
     speichern(); ohneSprung(() => lektionZeigen(L.id));
   }));
   document.getElementById("lClaude").onclick = () => { claudeWerte.szene = L.szene; geheZu("claude"); };
+  document.getElementById("lGemischt").onclick = () => lektionStarten(L, "gemischt");
 }
 function zurueckZuLektion() {
   const id = letzteLektion;
@@ -1632,11 +1645,12 @@ function lektionStarten(L, schritt) {
     gespraech = { liste: mischen(lektionFragen(L)), pos: 0 };
     neueFrage(); return geheZu("gespraech-ueben");
   }
-  if (schritt === "check") {
+  if (schritt === "gemischt") {
+    // Gemischt üben: etwa halb Grammatik, halb Hören – Wörter, die gerade fällig sind oder schwerfallen, kommen bevorzugt
     const karten = lektionKarten(L);
-    const hoeren = gewichtetZiehen(karten, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), 4).map((k) => hoerAufgabe(k, karten));
-    const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), 6);
-    // merken, was in diesem Check falsch war (für die Liste am Ende)
+    const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), Math.round(GEMISCHT_ANZAHL / 2));
+    const hoeren = gewichtetZiehen(karten, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), GEMISCHT_ANZAHL - gram.length).map((k) => hoerAufgabe(k, karten));
+    // merken, was falsch war (für die Liste am Ende)
     const falsch = [];
     const aufgaben = mischen(hoeren.concat(gram)).map((a) => {
       const merk = () => { if (a.erklaerung && !falsch.includes(a.erklaerung)) falsch.push(a.erklaerung); };
@@ -1644,18 +1658,8 @@ function lektionStarten(L, schritt) {
       return { ...a, beiAntwort: (ok) => { if (!ok) merk(); if (bA) bA(ok); else geuebt(); }, nichtGewusst: nG ? () => { merk(); nG(); } : undefined };
     });
     const falschListe = () => falsch.length ? `<div class="frage" style="text-align:left"><b>Das war falsch:</b><ul style="margin:6px 0 0;padding-left:20px">${falsch.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
-    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Abschluss-Check`, nochmal: zurueck,
-      beimEnde: (p, n) => {
-        const st = lStand(L.id), prozent = Math.round((100 * p) / n);
-        st.best = Math.max(st.best || 0, prozent);
-        st.zuletzt = prozent;
-        if (prozent >= 80) st.bestanden = true;
-        speichern();
-      },
-      endeHinweis: (p, n) => (Math.round((100 * p) / n) >= 80
-        ? `<div class="meldung gut">🎉 <b>Lektion ${L.nr} geschafft!</b> ${aktuelleLektion() ? `Als Nächstes empfohlen: Lektion ${aktuelleLektion().nr} – ${esc(aktuelleLektion().titel)}.` : "Damit hast du alle 12 Lektionen geschafft – Bravissimo!"}</div>`
-        : `<div class="meldung info">Für „geschafft“ braucht es 80 %. Üb am besten gezielt die Fehler dieser Lektion – dann den Check erneut.</div>`)
-        + falschListe()
+    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Gemischt üben`, nochmal: zurueck,
+      endeHinweis: () => falschListe()
         + (falsch.length ? `<button class="btn zweit voll" data-gehe="lfehler/${L.id}" style="margin-bottom:12px">🎯 Fehler dieser Lektion üben</button>` : "") });
   }
 }
@@ -1682,7 +1686,7 @@ function heuteSchritte() {
   return [
     { id: "karten", sym: "🗂️", name: "Karteikarten", text: nKarten ? `${nKarten} Karten (fällige zuerst)` : "heute nichts fällig", leer: !nKarten },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
-    { id: "lektionA", sym: "📚", name: "Lektion – nächster Schritt", text: lA || "alle Lektionen geschafft", leer: !lA },
+    { id: "lektionA", sym: "📚", name: "Lektion – nächster Schritt", text: lA || "alle Lektionen durchgearbeitet", leer: !lA },
     { id: "lektionB", sym: "📚", name: "Lektion – noch ein Schritt", text: lB || "nichts mehr offen", leer: !lB },
     { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
   ];
@@ -1692,8 +1696,8 @@ function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heu
   let kam = false;
   if (lektionAktiv) {
     const ls = lStand(lektionAktiv.lid);
-    // der Abschluss-Check zählt nur über "bestanden" (ab 80 %), nicht als bloß erledigter Schritt
-    if (lektionAktiv.schritt !== "check" && !ls.schritte.includes(lektionAktiv.schritt)) ls.schritte.push(lektionAktiv.schritt);
+    // „Gemischt üben“ ist kein Schritt zum Abhaken
+    if (LEKTION_SCHRITTE.some((s) => s.id === lektionAktiv.schritt) && !ls.schritte.includes(lektionAktiv.schritt)) ls.schritte.push(lektionAktiv.schritt);
     letzterKontext = "lektion"; letzteLektion = lektionAktiv.lid; lektionAktiv = null; kam = true;
   }
   if (heuteAktiv) {
@@ -2055,7 +2059,7 @@ function lektionFehlerSeite(id) {
   const zeile = (zid, sym, name, n, text) => `<button class="zeile" id="${zid}" ${n ? "" : "disabled style='opacity:.5'"}><span class="sym">${sym}</span><span class="mitte">${name}<small>${n ? `<b>${n}</b> ${text[n === 1 ? 0 : 1]}` : "nichts – sehr gut!"}</small></span><span class="pfeil">›</span></button>`;
   const gramTexte = f.gram.map((x) => x.bau().erklaerung).filter(Boolean);
   zeige(`
-    <p>Hier übst du nur, was in <b>dieser Lektion</b> oft falsch war – aus allen Übungen, auch aus „Heute üben“. Was du ein paar Mal richtig hast, verschwindet von selbst aus der Liste. Am besten vor dem Abschluss-Check.</p>
+    <p>Hier übst du nur, was in <b>dieser Lektion</b> oft falsch war – aus allen Übungen, auch aus „Heute üben“. Was du ein paar Mal richtig hast, verschwindet von selbst aus der Liste. Gut zusammen mit „Gemischt üben“.</p>
     ${f.anzahl ? "" : `<div class="meldung gut">🎉 In dieser Lektion gibt es zurzeit keine Fehler zu wiederholen.</div>`}
     <div class="liste">
       ${zeile("lfKarten", "🗂️", "Wörter & Sätze", f.karten.length, ["Karte", "Karten"])}

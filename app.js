@@ -558,7 +558,7 @@ function startseite() {
   const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:") + gFaellig("lk:") + gFaellig("zahl:");
   const gespr = gFaellig("dialog:");
   const fehlerZahl = anzahlFehler();
-  zeige(`
+  zeige(`${schluesselWarnung()}
     <div class="statistik">
       <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
       <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
@@ -2116,6 +2116,34 @@ function wunschHinzufuegen(id, nachricht) {
 function githubSchluessel() {
   try { const s = (localStorage.getItem("italienisch-github-schluessel") || "").replace(/[^\x21-\x7E]/g, ""); return s.length >= 30 ? s : ""; } catch (e) { return ""; }
 }
+// ---------- Gilt der GitHub-Schlüssel noch? ----------
+// Höchstens einmal am Tag bei GitHub nachfragen. Ungültig → rote Warnung auf der Startseite.
+// Das Ablaufdatum kommt aus der Antwort von GitHub (falls lesbar) oder aus dem Feld in den Einstellungen → 14 Tage vorher Hinweis.
+async function schluesselPruefen(sofort) {
+  const schl = githubSchluessel();
+  if (!schl || !navigator.onLine) return;
+  const info = S.schluesselInfo || {};
+  if (!sofort && info.geprueft === heute()) return;
+  try {
+    const r = await fetch("https://api.github.com/repos/StefanReinhart/italienisch", { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + schl }, cache: "no-store" });
+    if (r.status !== 401 && !r.ok) return; // GitHub gerade nicht erreichbar o. Ä. – später nochmal
+    const ab = r.headers.get("github-authentication-token-expiration"); // z. B. "2027-11-25 10:00:00 UTC"
+    const ablauf = ab ? Date.parse(ab.replace(" UTC", "Z").replace(" ", "T")) : NaN;
+    S.schluesselInfo = { ...info, geprueft: heute(), ungueltig: r.status === 401, ...(isNaN(ablauf) ? {} : { ablauf }) };
+    speichern();
+    if (!location.hash || location.hash === "#start") ohneSprung(startseite);
+  } catch (e) {}
+}
+function schluesselWarnung() {
+  if (!githubSchluessel()) return "";
+  const info = S.schluesselInfo || {};
+  if (info.ungueltig) return `<div class="meldung schlecht">🔑 <b>Dein GitHub-Schlüssel gilt nicht mehr</b> (abgelaufen oder gelöscht). Deine Fragen an Claude kommen deshalb nicht an. <a href="#einstellungen">So erneuerst du ihn →</a></div>`;
+  if (info.ablauf) {
+    const tage = Math.ceil((info.ablauf - Date.now()) / TAG);
+    if (tage <= 14) return `<div class="meldung info">🔑 Dein GitHub-Schlüssel läuft ${tage <= 0 ? "heute" : tage === 1 ? "morgen" : `in ${tage} Tagen`} ab (${new Date(info.ablauf).toLocaleDateString("de-DE")}). Danach kommen deine Fragen an Claude nicht mehr an. <a href="#einstellungen">So erneuerst du ihn →</a></div>`;
+  }
+  return "";
+}
 // kurze Beschreibung eines Eintrags (Liste in den Einstellungen, Kopieren, Commit-Text)
 const wunschText = (w) => w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen (zu: ${w.frage})`
   : w.typ === "nachricht" ? `Nachricht: ${w.nachricht}`
@@ -2131,6 +2159,7 @@ async function wuenscheSenden() {
       let liste = [], sha;
       const r = await fetch(url + "?ref=master", { headers: kopf, cache: "no-store" });
       if (r.ok) { const j = await r.json(); sha = j.sha; liste = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), (c) => c.charCodeAt(0))) || "[]"); }
+      else if (r.status === 401) { S.schluesselInfo = { ...(S.schluesselInfo || {}), geprueft: heute(), ungueltig: true }; speichern(); throw new Error("der GitHub-Schlüssel gilt nicht mehr (abgelaufen?)"); }
       else if (r.status !== 404) throw new Error("GitHub antwortet mit Fehler " + r.status);
       const vorhanden = new Set(liste.map(wunschSchluessel));
       offen.forEach((w) => {
@@ -2217,8 +2246,14 @@ function einstellungen() {
         <p style="margin-top:0">${alle.length ? `Auf der Liste: <b>${alle.length}</b>${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch nichts auf der Liste."}</p>
         ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => esc(wunschText(w)) + (w.gesendet ? " ✓" : "")).join("<br>")}</p></details>` : ""}
         ${wunschStatus ? `<p class="leise">${esc(wunschStatus)}</p>` : ""}
-        <p class="leise">Gesendete Wünsche liest Claude bei der nächsten Bearbeitung der App aus und schreibt die Erklärungen dazu. Damit die Wünsche automatisch ankommen, braucht dieses Gerät einmalig den <b>GitHub-Schlüssel</b> (derselbe wie für die Bearbeiten-Seite): ${githubSchluessel() ? "<b>✓ vorhanden</b>" : "<b>fehlt noch</b>"}</p>
+        <p class="leise">Gesendete Wünsche liest Claude bei der nächsten Bearbeitung der App aus und schreibt die Erklärungen dazu. Damit die Wünsche automatisch ankommen, braucht dieses Gerät einmalig den <b>GitHub-Schlüssel</b> (derselbe wie für die Bearbeiten-Seite): ${!githubSchluessel() ? "<b>fehlt noch</b>" : (S.schluesselInfo || {}).ungueltig ? "<b style='color:var(--rot)'>✗ gilt nicht mehr</b>" : "<b>✓ vorhanden</b>"}</p>
+        ${schluesselWarnung()}
+        <details${(S.schluesselInfo || {}).ungueltig ? " open" : ""}><summary class="leise">Schlüssel abgelaufen? So erneuerst du ihn</summary>
+          <p class="leise">Auf github.com (als StefanReinhart angemeldet): Profilbild → <b>Settings</b> → ganz unten <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → deinen Schlüssel antippen → <b>Regenerate token</b>. Den neuen Schlüssel kopieren und hier unten einfügen – auf jedem Gerät (Handy, beide PCs).
+          Ist keiner mehr da: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">neuen anlegen</a> – nur Projekt <b>italienisch</b>, Recht <b>Contents: Read and write</b>.</p></details>
         <input type="password" id="ghSchluessel" placeholder="github_pat_… einfügen" autocomplete="off" style="font-family:monospace">
+        <label for="ghAblauf" class="leise" style="font-weight:400">Läuft ab am (steht bei GitHub beim Schlüssel – für eine Erinnerung 14 Tage vorher):</label>
+        <input type="date" id="ghAblauf" value="${(S.schluesselInfo || {}).ablauf ? new Date(S.schluesselInfo.ablauf).toISOString().slice(0, 10) : ""}">
         <div class="reihe" style="margin-bottom:0"><button class="btn zweit" id="ghSpeichern">Schlüssel speichern</button>${offen.length ? `<button class="btn" id="wSenden">Jetzt senden</button>` : ""}${alle.length ? `<button class="btn zweit" id="wKopieren">📋 Liste kopieren</button>` : ""}</div>
       </div>`;
     })()}
@@ -2239,7 +2274,15 @@ function einstellungen() {
     const roh = document.getElementById("ghSchluessel").value.replace(/[^\x21-\x7E]/g, ""), m = roh.match(/(?:github_pat_|gh[pousr]_)[A-Za-z0-9_\-]+/), s = m ? m[0] : roh;
     if (s.length < 30) return toast("Das ist zu kurz für einen GitHub-Schlüssel – bitte vollständig kopieren.", 4000);
     try { localStorage.setItem("italienisch-github-schluessel", s); } catch (e) {}
-    toast("Schlüssel gespeichert ✓"); wuenscheSenden().then(() => ohneSprung(einstellungen));
+    const datum = document.getElementById("ghAblauf").value;
+    S.schluesselInfo = datum ? { ablauf: Date.parse(datum + "T12:00:00") } : {}; speichern(); // neuer Schlüssel: alten Stand vergessen
+    toast("Schlüssel gespeichert ✓"); schluesselPruefen(true).then(wuenscheSenden).then(() => ohneSprung(einstellungen));
+  };
+  document.getElementById("ghAblauf").onchange = (e) => {
+    const d = e.target.value;
+    S.schluesselInfo = { ...(S.schluesselInfo || {}) };
+    if (d) S.schluesselInfo.ablauf = Date.parse(d + "T12:00:00"); else delete S.schluesselInfo.ablauf;
+    speichern(); toast(d ? "Ablaufdatum gemerkt – 14 Tage vorher kommt eine Erinnerung." : "Ablaufdatum entfernt.");
   };
   document.getElementById("freiSenden").onclick = () => {
     const feld = document.getElementById("freiNachricht"), text = feld.value.trim();
@@ -2302,6 +2345,8 @@ function route() {
 window.addEventListener("hashchange", route);
 speichern(); // übernommenen Lernstand (Version 1 → 2) gleich sichern
 route();
+setTimeout(() => { schluesselPruefen(); wuenscheSenden(); }, 3000); // GitHub-Schlüssel prüfen, liegengebliebene Wünsche nachsenden
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") schluesselPruefen(); });
 
 // ---------- Offline-Funktion ----------
 if ("serviceWorker" in navigator && location.protocol !== "file:") {

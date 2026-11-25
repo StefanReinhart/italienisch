@@ -575,7 +575,7 @@ function startseite() {
       <button data-gehe="stand/sagen"><b>${sagen}</b><span>kann ich selbst sagen</span></button>
     </div>
     <div class="kacheln">
-      <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
+      <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15–20 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
       <button class="kachel breit" data-gehe="lektionen"><span class="sym">📚</span><span><b>Alle Lektionen</b><br><small>${gesamtGefestigt().prozent} % sitzen fest · ${LEKTION_LISTE.filter(durchgearbeitet).length} von 12 durchgearbeitet${akt ? ` · als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : ""}</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
@@ -1670,9 +1670,37 @@ function heuteStand() {
   if (!S.heute || S.heute.datum !== heute()) S.heute = { datum: heute(), erledigt: [] };
   return S.heute;
 }
+// Karteikarten für „Heute üben“: ALLE fälligen Wiederholungen – egal ob aus Lektion, Thema oder Phrasen –
+// plus bis zu 5 neue Karten aus der aktuellen Lektion (sind alle Lektionen durch: aus den gewählten Themen). Höchstens 20.
+function heuteKartenRunde() {
+  const richt = richtungenFuer(S.einstellungen.richtung);
+  const fa = faelligeKarten().filter((x) => richt.includes(x.r));
+  const L = aktuelleLektion();
+  const neue = rundePlanen(L ? lektionKarten(L) : kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung).neue.slice(0, Math.min(5, neueHeuteUebrig()));
+  const f = fa.slice(0, 20 - neue.length), liste = [];
+  let d = 0, n = 0;
+  while (d < f.length || n < neue.length) { if (n < neue.length && (d >= f.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(f[d++]); }
+  return { liste, neue, faellig: fa.length, lektion: L };
+}
+// Lektionen, mit denen man schon angefangen hat (für „Gemischt“ über alle Lektionen)
+const begonneneLektionen = () => LEKTION_LISTE.filter((L) => { const st = lStand(L.id); return st.bestanden || st.schritte.length; });
+const HEUTE_GEMISCHT = 10;
+function heuteGemischtAufgaben() {
+  const lek = begonneneLektionen(); if (!lek.length) return [];
+  // Grammatik: reihum aus jeder begonnenen Lektion (jede Lektion = eine Gruppe), Schwaches bevorzugt
+  const gesehen = new Set();
+  const topf = lek.flatMap((L, i) => grammatikTopf(L.grammatik, L.themen).map((x) => ({ ...x, gruppe: i }))).filter((x) => !gesehen.has(x.key) && gesehen.add(x.key));
+  const gram = ausTopf(topf, Math.ceil(HEUTE_GEMISCHT / 2));
+  // Hören: Wörter dieser Lektionen, die schon einmal dran waren – fällige und schwache bevorzugt
+  const karten = [...new Map(lek.flatMap(lektionKarten).map((k) => [k.id, k])).values()];
+  const bekannt = karten.filter((k) => !istNeu(k.id, "it-de"));
+  const hoeren = gewichtetZiehen(bekannt.length >= 4 ? bekannt : karten, (k) => gewicht(k.id, "it-de"), HEUTE_GEMISCHT - gram.length).map((k) => hoerAufgabe(k, karten));
+  return mischen(gram.concat(hoeren));
+}
 function heuteSchritte() {
-  const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
-  const nKarten = Math.min(20, plan.faellige.length + Math.min(5, plan.neue.length, neueHeuteUebrig()));
+  const runde = heuteKartenRunde(), nKarten = runde.liste.length;
+  const nNeu = runde.neue.length, nWdh = nKarten - nNeu;
+  const lek = begonneneLektionen();
   const nFehler = Math.min(8, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
   // Zwei Schritte der aktuellen Lektion (offene Schritte der Reihe nach)
   const L = aktuelleLektion(), offeneL = L ? offeneSchritte(L) : [];
@@ -1684,8 +1712,11 @@ function heuteSchritte() {
   };
   const lA = st.erledigt.includes("lektionA") ? "erledigt" : lName(0), lB = st.erledigt.includes("lektionB") ? "erledigt" : lName(1);
   return [
-    { id: "karten", sym: "🗂️", name: "Karteikarten", text: nKarten ? `${nKarten} Karten (fällige zuerst)` : "heute nichts fällig", leer: !nKarten },
+    { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
+      text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
+    { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
+      text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
     { id: "lektionA", sym: "📚", name: "Lektion – nächster Schritt", text: lA || "alle Lektionen durchgearbeitet", leer: !lA },
     { id: "lektionB", sym: "📚", name: "Lektion – noch ein Schritt", text: lB || "nichts mehr offen", leer: !lB },
     { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
@@ -1730,7 +1761,7 @@ function heuteMenue() {
   const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
   const fertig = schritte.length - offen.length;
   zeige(`
-    <p>Eine Runde von etwa <b>15 Minuten</b>, gut gemischt. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
+    <p>Eine Runde von etwa <b>15–20 Minuten</b>, gut gemischt: Wiederholungen aus allen Lektionen, Neues aus der aktuellen Lektion. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
     <div class="fortschritt"><span>${fertig} / ${schritte.length}</span><div class="balken"><i style="width:${(100 * fertig) / schritte.length}%"></i></div></div>
     <div class="liste">${schritte.map((s, i) => {
       const erledigt = st.erledigt.includes(s.id) || s.leer;
@@ -1763,12 +1794,14 @@ function heuteStarten(id) {
     return lektionStarten(L, s.id);
   }
   if (id === "karten") {
-    const plan = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung);
-    const neue = plan.neue.slice(0, Math.min(5, neueHeuteUebrig())), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
-    let d = 0, n = 0;
-    while (d < fa.length || n < neue.length) { if (n < neue.length && (d >= fa.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(fa[d++]); }
+    const { liste, neue } = heuteKartenRunde();
     sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
     return geheZu("karte");
+  }
+  if (id === "gemischt") {
+    const aufgaben = heuteGemischtAufgaben();
+    if (!aufgaben.length) { heuteAktiv = null; return heuteMenue(); }
+    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Gemischt – alle Lektionen", nochmal: "heute" });
   }
   if (id === "fehler") {
     const liste = schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).slice(0, 8);

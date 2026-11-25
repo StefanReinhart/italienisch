@@ -11,6 +11,7 @@ window.ABGELEHNTE_ANTWORTEN = {
 // KARTEN_ALTERNATIVEN: italienische Antworten (Deutsch → Italienisch), KARTEN_ALTERNATIVEN_DE: deutsche (Italienisch → Deutsch).
 // Format:  "kennung": ["andere richtige Antwort", …],
 window.KARTEN_ALTERNATIVEN = {
+  "lk_l1:Cos'è?": ["Cos'è questo?", "Che cos'è questo?", "Che cos'è?"]
 };
 window.KARTEN_ALTERNATIVEN_DE = {
 };
@@ -179,11 +180,11 @@ window.HINWEISE = {
   "p_verstaendigung:Sto imparando l'italiano.": "sto = ich bin (von stare) + imparando (lernend) = ich bin gerade dabei zu lernen. stare + -ando/-endo beschreibt, was gerade läuft: Sto mangiando (ich esse gerade). Einfach „Imparo l'italiano“ geht auch.",
   "p_weg:Mi sono perso.": "Als Frau: Mi sono persa.",
   // Lektions-Sätze
-  "lk_l1:Cos'è?": "Kurz für „Che cosa è?“ = Was ist das?",
+  "lk_l1:Cos'è?": "Kurz für „Che cosa è?“ = Was ist das? Auch richtig: Cos'è questo? (Was ist das hier?) – questo zeigt auf etwas in der Nähe.",
   "lk_l1:Anch'io sono tedesco.": "anche + io = anch'io (ich auch). Das „auch“ steht vor dem Wort, auf das es sich bezieht. Eine Frau sagt: Anch'io sono tedesca.",
   "lk_l1:Come va?": "Wörtlich: Wie geht's? – locker, für du und Sie. Antworten: Bene! · Tutto bene. · Così così. Förmlicher: Come sta?",
   "lk_l1:È la prima volta in Italia.": "È = es ist (das „es“ fällt im Italienischen weg). la prima volta = das erste Mal; volta = Mal, nicht Zeit (Zeit = tempo).",
-  "lk_l1:Che cosa vuol dire?": "volere dire = bedeuten (wörtlich: sagen wollen); vuol ist die Kurzform von vuole. Genauso: Cosa significa?",
+  "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole. Genauso: Cosa significa?",
   "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più lentamente = langsamer. Mit du: Puoi parlare più lentamente?",
   "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",

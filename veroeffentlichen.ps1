@@ -40,6 +40,13 @@ try {
   git status --short | ForEach-Object { Write-Host "      $_" }
 
   Write-Host "2/5 Prüfe die Datendateien ..."
+  # Kam beim Holen ein Konflikt heraus (z. B. neue Fragen aus der App während der Bearbeitung)? Dann NICHT hochladen.
+  $konflikt = git diff --name-only --diff-filter=U
+  if ($konflikt) { Fehler "Beim Holen von GitHub gab es einen Konflikt in: $konflikt`nBitte Claude Bescheid sagen - nichts wurde hochgeladen." }
+  foreach ($datei in Get-ChildItem "*.js","*.html","*.css","data\*.js","data\*.json") {
+    if ([IO.File]::ReadAllText($datei.FullName, $utf8) -match '(?m)^(<<<<<<<|>>>>>>>) ') { Fehler "In $($datei.Name) stehen Konfliktmarkierungen (<<<<<<<). Bitte Claude Bescheid sagen - nichts wurde hochgeladen." }
+  }
+  try { [IO.File]::ReadAllText("$PSScriptRoot\data\wuensche.json", $utf8) | ConvertFrom-Json | Out-Null } catch { Fehler "data\wuensche.json ist kein gültiges JSON." }
   foreach ($datei in Get-ChildItem "data\*.js") {
     $inhalt = [IO.File]::ReadAllText($datei.FullName, $utf8)
     $backticks = ([regex]::Matches($inhalt, '`')).Count

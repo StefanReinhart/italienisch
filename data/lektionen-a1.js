@@ -43,6 +43,8 @@ Abito vicino a Monaco. | Ich wohne in der Nähe von München.
 Sono qui in vacanza. | Ich bin hier im Urlaub.
 Sono qui per lavoro. | Ich bin beruflich hier.
 È la prima volta in Italia. | Es ist das erste Mal in Italien.
+la prima volta | das erste Mal
+l'ultima volta | das letzte Mal
 Parlo solo un po' di italiano. | Ich spreche nur ein bisschen Italienisch.
 Può parlare più lentamente? | Können Sie langsamer sprechen?
 Scusi, non ho capito. | Entschuldigung, ich habe nicht verstanden.

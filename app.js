@@ -451,6 +451,9 @@ const langsamBtn = (text) => `<button class="lautsprecher" data-sprich="${esc(te
 $app.addEventListener("click", (e) => {
   const b = e.target.closest("[data-sprich]");
   if (b) { e.stopPropagation(); sprich(b.dataset.sprich, b.dataset.langsam === "1"); }
+  // Kachel eines Wortes / einer Phrase antippen (nicht den Lautsprecher) → Detailseite
+  const kw = e.target.closest("[data-wort]");
+  if (kw && !b) geheZu("wort/" + kw.dataset.wort);
   const g = e.target.closest("[data-gehe]");
   if (g) geheZu(g.dataset.gehe);
   if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
@@ -2412,8 +2415,8 @@ function phrasenGruppe(id) {
   setzeKopf(g.name, "phrasen");
   const verdeckt = !!S.einstellungen.phrasenVerdeckt;
   zeige(`${umschalter("pverdeckt", verdeckt ? "ja" : "nein", [["nein", "Alles zeigen"], ["ja", "Italienisch verdecken"]])}
-    <p class="leise">${verdeckt ? "Du siehst nur den deutschen Satz. Hör ihn dir mit 🔊 an oder überleg selbst – antippen zeigt das Italienische." : "Tippe auf 🔊 zum Anhören."}</p>
-    <div class="liste">${g.eintraege.map((e, i) => (verdeckt ? eintragVerdecktHtml(e, i) : eintragHtml(e))).join("")}</div>
+    <p class="leise">${verdeckt ? "Du siehst nur den deutschen Satz. Hör ihn dir mit 🔊 an oder überleg selbst – antippen zeigt das Italienische." : "🔊 zum Anhören · Satz antippen für Erklärung und Lernstand."}</p>
+    <div class="liste">${g.eintraege.map((e, i) => (verdeckt ? eintragVerdecktHtml(e, i) : kachelHtml(e))).join("")}</div>
     <div class="reihe"><button class="btn" id="ueben">🎤 Diese Sätze sprechen üben</button></div>`);
   $app.querySelectorAll("#pverdeckt button").forEach((b) => (b.onclick = () => { S.einstellungen.phrasenVerdeckt = b.dataset.w === "ja"; speichern(); ohneSprung(() => phrasenGruppe(id)); }));
   $app.querySelectorAll("[data-auf]").forEach((z) => (z.onclick = (ev) => {
@@ -2447,20 +2450,73 @@ function verbFormen(e) {
   const f = konjugiere(v);
   return { formen: refl ? f.map((x, i) => ["mi", "ti", "si", "ci", "vi", "si"][i] + " " + x) : f, unreg: !!VERBEN_UNREGELMAESSIG[inf] };
 }
-function wbEintragHtml(e, gesucht) {
-  const vf = verbFormen(e);
-  const form = vf && gesucht ? vf.formen.findIndex((f) => f.split(" ").pop() === gesucht) : -1;
-  const tabelle = vf ? `<details class="vformen"${form >= 0 ? " open" : ""}><summary>Formen${vf.unreg ? " · unregelmäßig" : ""}</summary>
-    <table class="tab">${vf.formen.map((f, i) => `<tr${i === form ? ' class="treffer"' : ""}><td class="leise">${PERSONEN[i]}</td><td><b>${esc(f)}</b></td><td class="leise">${PERSONEN_DE[i]}</td><td>${lautBtn(f, true)}</td></tr>`).join("")}</table></details>` : "";
-  return `<div class="eintrag">${lautBtn(e.it, true)}<div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div>${tabelle}${hinweisHtml(e, true)}</div></div>`;
+// ---------- Kachel für Wort/Phrase (Liste) und Detailseite mit allen Infos ----------
+// Kleiner Lernstand für die Liste: je Richtung 6 Punkte (oder 🏆), neue Karten ohne Anzeige
+function miniStand(id) {
+  if (!KARTE_NACH_ID[id]) return "";
+  const teil = (r, name) => {
+    const z = zustand(id, r);
+    if (!z || !z.wdh) return "";
+    if (z.intervall >= SICHER_TAGE) return `${name} 🏆`;
+    const n = LERN_STUFEN.filter((t) => z.intervall >= t).length;
+    return `${name} <span class="punkte">${"●".repeat(n)}<i>${"○".repeat(LERN_STUFEN.length - n)}</i></span>`;
+  };
+  const t = [teil("it-de", "verstehen"), teil("de-it", "sagen")].filter(Boolean);
+  return t.length ? `<div class="ministand">${t.join(" · ")}</div>` : "";
+}
+let letzteSuche = "";
+function kachelHtml(e, gesucht) {
+  const vf = gesucht ? verbFormen(e) : null;
+  const form = vf ? vf.formen.findIndex((f) => normWort(f.split(" ").pop()) === gesucht) : -1;
+  return `<div class="eintrag kachel-wort" data-wort="${encodeURIComponent(e.id)}" role="button" tabindex="0">${lautBtn(e.it, true)}
+    <div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div>
+      ${form >= 0 ? `<div class="ministand">Form: <b>${esc(vf.formen[form])}</b> (${PERSONEN[form]})</div>` : ""}${miniStand(e.id)}</div><span class="pfeil">›</span></div>`;
+}
+const wbEintragHtml = kachelHtml;
+function lernstandZeile(id, r) {
+  const z = zustand(id, r), name = r === "it-de" ? "🇮🇹 → 🇩🇪 verstehen" : "🇩🇪 → 🇮🇹 selbst sagen";
+  if (!z || !z.wdh) return `<tr><td>${name}</td><td colspan="2" class="leise">${z ? "noch nicht gewusst" : "noch nicht gelernt"}</td></tr>`;
+  const tage = Math.round((z.faellig - Date.now()) / TAG);
+  const wann = tage <= 0 ? "heute dran" : tage === 1 ? "morgen wieder" : `in ${tage < 60 ? tage + " Tagen" : Math.round(tage / 30) + " Monaten"} wieder`;
+  return `<tr><td>${name}</td><td>${lernstandHtml(id, r)}</td><td class="leise">${wann}<br>${z.richtig} × richtig · ${z.falsch} × falsch</td></tr>`;
+}
+function wortSeite(arg) {
+  const id = decodeURIComponent(arg || ""), e = KARTE_NACH_ID[id] || WB_NACH_ID[id];
+  if (!e) return geheZu("nachschlagen");
+  const gruppe = GRUPPE_NACH_ID[e.thema], istKarte = !!KARTE_NACH_ID[id];
+  setzeKopf(istEinzelwort(e) ? "Wort" : "Phrase", gruppe && /^p_|^lk_/.test(gruppe.id) && !istEinzelwort(e) ? "phrasen/" + gruppe.id : "nachschlagen");
+  const vf = verbFormen(e), gesucht = letzteSuche;
+  const tabelle = vf ? `<h2>Formen (Gegenwart)${vf.unreg ? " · unregelmäßig" : ""}</h2>
+    <table class="tab vformen-tab">${vf.formen.map((f, i) => `<tr${normWort(f.split(" ").pop()) === gesucht ? ' class="treffer"' : ""}><td class="leise">${PERSONEN[i]}</td><td><b>${esc(f)}</b></td><td class="leise">${PERSONEN_DE[i]}</td><td>${lautBtn(f, true)}</td></tr>`).join("")}</table>` : "";
+  zeige(`
+    <div class="karte" style="text-align:center">
+      <div class="wort">${esc(e.it)}</div>
+      <div class="mitte-zentriert" style="flex-direction:row;justify-content:center">${lautBtn(e.it)}${langsamBtn(e.it)}</div>
+      <div class="loesung" style="font-size:22px">${esc(e.de)}</div>
+      ${gruppe ? `<div class="leise" style="margin-top:6px">${gruppe.icon || ""} ${esc(gruppe.name)}</div>` : ""}
+      ${hinweisHtml(e)}
+    </div>
+    ${tabelle}
+    <h2>Lernstand</h2>
+    ${istKarte ? `<table class="tab lernstand-tab">${lernstandZeile(id, "it-de")}${lernstandZeile(id, "de-it")}</table>
+      <button class="btn voll" id="wUeben" style="margin-top:10px">🗂️ Diese Karte jetzt üben</button>`
+      : `<p class="leise">Dieses Wort steht nur im Wörterbuch (es kommt in Phrasen oder Sätzen vor) und ist keine eigene Karteikarte.</p>`}`);
+  const u = document.getElementById("wUeben");
+  if (u) u.onclick = () => {
+    const liste = richtungenFuer(S.einstellungen.richtung).map((r) => ({ k: e, r }));
+    sitzung = { liste, pos: 0, neuKeys: new Set(liste.filter((x) => istNeu(e.id, x.r)).map((x) => schluessel(e.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "wort/" + arg };
+    geheZu("karte");
+  };
 }
 function nachschlagen() {
   setzeKopf("Wörterbuch", "start");
   zeige(`<input type="search" id="suche" placeholder="Italienisch oder Deutsch suchen …" autocomplete="off"><div class="liste" id="treffer"></div>`);
   const feld = document.getElementById("suche"), aus = document.getElementById("treffer");
+  feld.value = nachschlagen.text || ""; // Suchtext bleibt erhalten, wenn man von einem Wort zurückkommt
   const n = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const zeichnen = () => {
     const q = n(feld.value.trim());
+    nachschlagen.text = feld.value; letzteSuche = normWort(q);
     if (!q) {
       // ohne Suchtext: alle Wörter alphabetisch (ohne Artikel sortiert), mit Buchstaben-Überschriften und Sprungleiste
       const buchstabe = (e) => n(e.it.replace(/^(il |lo |la |i |gli |le |l')/i, "")).charAt(0).toUpperCase();
@@ -2618,7 +2674,7 @@ function route() {
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
-    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg)
+    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg)
   };
   (seiten[teil] || startseite)();
 }

@@ -205,6 +205,15 @@ p { margin: 8px 0; }
 .eintrag .mitte { flex: 1; min-width: 0; }
 .eintrag .it { font-weight: 650; }
 .eintrag .de { color: var(--grau); font-size: 16px; }
+/* Kachel eines Wortes / einer Phrase: antippbar, führt zur Detailseite */
+.kachel-wort { cursor: pointer; }
+.kachel-wort:active { transform: scale(.99); }
+.kachel-wort .pfeil { color: var(--grau); font-size: 22px; }
+.ministand { font-size: 12px; color: var(--grau); margin-top: 2px; }
+.ministand .punkte { color: var(--gruen); letter-spacing: 1px; }
+.ministand .punkte i { color: var(--rand); font-style: normal; }
+.lernstand-tab td, .vformen-tab td { vertical-align: middle; padding: 6px 8px 6px 0; }
+.vformen-tab tr.treffer td, .lernstand-tab tr.treffer td { background: var(--gruen-hell); }
 input[type=search], input[type=text], select {
   width: 100%; font: inherit; padding: 14px; border-radius: 14px; border: 1px solid var(--rand);
   background: var(--karte); color: var(--text); margin-bottom: 12px;

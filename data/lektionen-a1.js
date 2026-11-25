@@ -350,7 +350,8 @@ Pago con la carta. | Ich zahle mit Karte.
 },
 l7: {
   kern: ["stadt:la città", "stadt:la strada", "stadt:la via", "stadt:la piazza", "stadt:il centro", "stadt:la chiesa", "stadt:il museo", "stadt:la banca", "stadt:la posta", "stadt:l'ospedale", "stadt:la stazione", "stadt:il parco", "weg:a destra", "weg:a sinistra", "weg:dritto", "weg:vicino", "weg:lontano", "weg:davanti", "weg:dietro", "weg:accanto", "weg:di fronte", "weg:l'angolo", "weg:il semaforo", "weg:l'incrocio",
-    "p_weg:Scusi, dov'è la stazione?", "p_weg:Come arrivo al centro?", "p_weg:È lontano?", "p_weg:È vicino.", "p_weg:Vada sempre dritto.", "p_weg:Giri a destra.", "p_weg:Giri a sinistra.", "p_weg:È dietro l'angolo.", "p_weg:Mi sono perso.", "p_weg:C'è una farmacia qui vicino?"],
+    "p_weg:Scusi, dov'è la stazione?", "p_weg:Come arrivo al centro?", "p_weg:È lontano?", "p_weg:È vicino.", "p_weg:Vada sempre dritto.", "p_weg:Giri a destra.", "p_weg:Giri a sinistra.", "p_weg:È dietro l'angolo.", "p_weg:Mi sono perso.", "p_weg:C'è una farmacia qui vicino?",
+    "p_aufforderung:gira", "p_aufforderung:prendi", "p_aufforderung:prenda", "p_aufforderung:va", "p_aufforderung:senta", "p_aufforderung:scusami"],
   neu: `
 fino a | bis (zu)
 poi | dann
@@ -366,9 +367,11 @@ Vado in centro con un amico. | Ich gehe mit einem Freund ins Zentrum.
 È la chiave di Marco. | Das ist Marcos Schlüssel.
 Questo autobus va in centro? | Fährt dieser Bus ins Zentrum?
 `,
-  grammatikPlus: [{ luecke: "praep" }],
+  grammatikPlus: [{ luecke: "praep" }, { luecke: "aufforderung" }],
   fragenPlus: ["C'è una farmacia vicino a casa tua?"],
-  erklaerungPlus: `<p><b>Vier wichtige kleine Wörter:</b> <i>di</i> (von, aus – Herkunft und Besitz: <i>sono di Monaco, la chiave di Marco</i>) · <i>da</i> (von … her: <i>vengo da Roma</i>) · <i>con</i> (mit) · <i>per</i> (für, nach: <i>un biglietto per Firenze</i>).</p>`
+  erklaerungPlus: `<p><b>Vier wichtige kleine Wörter:</b> <i>di</i> (von, aus – Herkunft und Besitz: <i>sono di Monaco, la chiave di Marco</i>) · <i>da</i> (von … her: <i>vengo da Roma</i>) · <i>con</i> (mit) · <i>per</i> (für, nach: <i>un biglietto per Firenze</i>).</p>
+<p><b>Aufforderungen – du oder Sie?</b> Bei <i>-are</i>-Verben tauschen die Endungen: du → <b>-a</b>, Sie → <b>-i</b>: <i>Gira a destra!</i> (bieg ab) · <i>Giri a destra!</i> (biegen Sie ab). Bei <i>-ere/-ire</i>-Verben umgekehrt: du → <b>-i</b>, Sie → <b>-a</b>: <i>Prendi!</i> · <i>Prenda!</i>
+Unregelmäßig (Sie): <i>vada</i> (andare), <i>venga</i> (venire), <i>tenga</i> (tenere), <i>dica</i> (dire).</p>`
 },
 l8: {
   kern: ["zeit:il giorno", "zeit:la settimana", "zeit:il mese", "zeit:l'ora", "zeit:la mattina", "zeit:il pomeriggio", "zeit:la sera", "zeit:la notte", "zeit:lunedì", "zeit:martedì", "zeit:mercoledì", "zeit:giovedì", "zeit:venerdì", "zeit:sabato", "zeit:domenica", "zeit:il fine settimana", "zeit:presto", "zeit:tardi", "zeit:dopo", "zeit:prima",

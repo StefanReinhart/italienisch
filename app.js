@@ -1423,7 +1423,7 @@ function lueckeAufgabe(setId, x) {
   const amAnfang = x.s.startsWith("___");
   const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   const optionen = x.o ? mischen(x.o) : set.optionen.map((o) => (amAnfang ? gross(o) : o));
-  const ganz = x.s.replace("___", x.a).replace(" → ", ", ");
+  const ganz = x.s.replace("___", x.a).replace(" → ", ", ").replace(/\s*\((du|Sie)\)/g, ""); // „(Sie)“ nicht mitvorlesen
   return {
     frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
     optionen, richtig: x.a, zwei: optionen.length !== 3, sprechen: ganz, erklaerung: x.s.replace("___", x.a),

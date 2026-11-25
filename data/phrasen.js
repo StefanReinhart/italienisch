@@ -118,6 +118,32 @@ Che c'è? | Was ist los? | p_esgibt:checce
 Non c'è nessuno. | Es ist niemand da. | p_esgibt:nessuno
 Non è male. | Das ist nicht schlecht. | p_esgibt:nonemale
 Non male! | Nicht übel! | p_esgibt:nonmale
+` },
+{ id: "p_aufforderung", name: "Aufforderungen: du oder Sie?", icon: "👉", liste: `
+Gira a destra! | Bieg rechts ab! | p_aufforderung:gira
+Prendi la seconda strada! | Nimm die zweite Straße! | p_aufforderung:prendi
+Prenda la seconda strada! | Nehmen Sie die zweite Straße! | p_aufforderung:prenda
+Va' sempre dritto! | Geh immer geradeaus! | p_aufforderung:va
+Accomodati! | Setz dich! / Komm rein! | p_aufforderung:accomodati
+Si accomodi! | Setzen Sie sich! / Kommen Sie herein! | p_aufforderung:siaccomodi
+Entra, prego! | Komm bitte rein! | p_aufforderung:entra
+Entri, prego! | Kommen Sie bitte herein! | p_aufforderung:entri
+Scusami! | Entschuldige (mich)! | p_aufforderung:scusami
+Tieni il resto! | Behalte den Rest! | p_aufforderung:tieni
+Dimmi! | Sag (mal)! / Was gibt's? | p_aufforderung:dimmi
+Chiama un medico! | Ruf einen Arzt! | p_aufforderung:chiama
+Senti! | Hör mal! | p_aufforderung:senti
+Senta! | Hören Sie! / Entschuldigung … (um jemanden anzusprechen) | p_aufforderung:senta
+Guarda! | Schau mal! | p_aufforderung:guarda
+Guardi! | Schauen Sie! | p_aufforderung:guardi
+Aspetta un momento! | Warte einen Moment! | p_aufforderung:aspetta
+Aspetti un momento! | Warten Sie einen Moment! | p_aufforderung:aspetti
+Vieni qui! | Komm her! | p_aufforderung:vieni
+Venga qui! | Kommen Sie her! | p_aufforderung:venga
+Parla più piano! | Sprich langsamer! | p_aufforderung:parla
+Parli più piano! | Sprechen Sie langsamer! | p_aufforderung:parli
+Ripeti, per favore! | Wiederhol bitte! | p_aufforderung:ripeti
+Ripeta, per favore! | Wiederholen Sie bitte! | p_aufforderung:ripeta
 ` }
 ];
 

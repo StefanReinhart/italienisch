@@ -1,6 +1,26 @@
 // Weitere Lückensätze für das volle A1-Niveau (ergänzt LUECKEN aus grammatik.js).
 // optionen = Auswahl für alle Sätze des Sets · o = eigene Auswahl für einen Satz · a = richtige Antwort
 Object.assign(window.LUECKEN, {
+  aufforderung: { titel: "Aufforderung: du oder Sie?", saetze: [
+    { s: "___ a destra! (Sie)", o: ["Giri", "Gira", "Girate"], a: "Giri", de: "Biegen Sie rechts ab!" },
+    { s: "___ a destra! (du)", o: ["Gira", "Giri", "Girate"], a: "Gira", de: "Bieg rechts ab!" },
+    { s: "Prego, si ___! (Sie)", o: ["accomodi", "accomoda", "accomodati"], a: "accomodi", de: "Bitte, setzen Sie sich!" },
+    { s: "___! (du)", o: ["Accomodati", "Si accomodi", "Si accomoda"], a: "Accomodati", de: "Setz dich! / Komm rein!" },
+    { s: "___ la seconda strada! (Sie)", o: ["Prenda", "Prendi", "Prende"], a: "Prenda", de: "Nehmen Sie die zweite Straße!" },
+    { s: "___ la seconda strada! (du)", o: ["Prendi", "Prenda", "Prende"], a: "Prendi", de: "Nimm die zweite Straße!" },
+    { s: "Mi ___! (Sie)", o: ["scusi", "scusa", "scusate"], a: "scusi", de: "Entschuldigen Sie!" },
+    { s: "___ un medico! (Sie)", o: ["Chiami", "Chiama", "Chiamate"], a: "Chiami", de: "Rufen Sie einen Arzt!" },
+    { s: "___ un medico! (du)", o: ["Chiama", "Chiami", "Chiamate"], a: "Chiama", de: "Ruf einen Arzt!" },
+    { s: "___ il resto! (Sie)", o: ["Tenga", "Tieni", "Tiene"], a: "Tenga", de: "Behalten Sie den Rest!" },
+    { s: "___ il resto! (du)", o: ["Tieni", "Tenga", "Tiene"], a: "Tieni", de: "Behalte den Rest!" },
+    { s: "___ sempre dritto! (Sie)", o: ["Vada", "Va'", "Va"], a: "Vada", de: "Gehen Sie immer geradeaus!" },
+    { s: "___ un momento! (Sie)", o: ["Aspetti", "Aspetta", "Aspettate"], a: "Aspetti", de: "Warten Sie einen Moment!" },
+    { s: "___ un momento! (du)", o: ["Aspetta", "Aspetti", "Aspettate"], a: "Aspetta", de: "Warte einen Moment!" },
+    { s: "___ qui! (Sie)", o: ["Venga", "Vieni", "Viene"], a: "Venga", de: "Kommen Sie her!" },
+    { s: "___ più piano! (Sie)", o: ["Parli", "Parla", "Parlate"], a: "Parli", de: "Sprechen Sie langsamer!" },
+    { s: "___, per favore! (Sie)", o: ["Ripeta", "Ripeti", "Ripete"], a: "Ripeta", de: "Wiederholen Sie bitte!" },
+    { s: "Mi ___! (Sie)", o: ["dica", "dice", "dici"], a: "dica", de: "Sagen Sie (mir)! – Was darf es sein?" }
+  ]},
   fragewoerter: { titel: "Fragewörter", saetze: [
     { s: "___ ti chiami?", o: ["Come", "Dove", "Chi", "Quando"], a: "Come", de: "Wie heißt du?" },
     { s: "___ abiti?", o: ["Dove", "Come", "Quanto", "Chi"], a: "Dove", de: "Wo wohnst du?" },

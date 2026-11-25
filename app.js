@@ -66,7 +66,7 @@ const STANDARD = {
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
   eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
   claudeFehler: [],    // Fehler, die Claude in Gesprächen gefunden hat: { text, zeit, genutzt }
-  einstellungen: { tempo: 0.9, stimme: "", neueProTag: 10, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
+  einstellungen: { tempo: 0.9, stimme: "", neueProTag: 25, automatischVorlesen: true, richtung: "beide", eintippen: true, sprechenModus: "zeigen", gespraechText: true, themen: ["grundwoerter"] },
   tage: {},            // Datum → Anzahl geübter Aufgaben
   neueHeute: { datum: "", anzahl: 0 }
 };
@@ -93,6 +93,8 @@ function umstellen(roh) {
   }
   s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
+  // 25.11.2026: neuer Richtwert 25 neue Karten pro Tag (vorher 10) – einmalig umstellen, falls noch der alte Wert eingestellt ist
+  if (!s.einstellungen.neu25) { if (s.einstellungen.neueProTag === 10) s.einstellungen.neueProTag = 25; s.einstellungen.neu25 = true; }
   return s;
 }
 function speichern() {

@@ -133,13 +133,14 @@ function bewerte(id, r, note) {
   const t = naechsterAbstand(alt, note);
   if (note === 0) {
     if (k.wdh > 0) k.vergessen++;
-    k.wdh = 0; k.intervall = 0; k.falsch++;
+    k.wdh = 0; k.intervall = 0; k.falsch++; delete k.sicher;
     k.ease = Math.max(1.3, k.ease - 0.2);
     k.faellig = Date.now() + 60 * 1000;
   } else {
     if (note === 1) k.ease = Math.max(1.3, k.ease - 0.15);
     if (note >= 3) k.ease = Math.min(3.0, k.ease + 0.15);
     k.wdh++; k.intervall = t; k.richtig++;
+    if (note === 4) k.sicher = true; // mit "Kann ich sicher" markiert → steht in den Listen oben mit 🏆
     k.faellig = startDesTages(Date.now() + t * TAG);
   }
   k.zuletzt = Date.now();
@@ -152,7 +153,7 @@ function rueckmeldung(id, r, ok) {
   if (ok && k.faellig <= Date.now()) { bewerte(id, r, 2); return; } // fällige Karte richtig = zählt als Wiederholung
   if (ok) k.richtig++;
   else {
-    k.falsch++;
+    k.falsch++; delete k.sicher;
     k.ease = Math.max(1.3, k.ease - 0.1);
     k.intervall = Math.max(1, Math.round(k.intervall / 2));
     k.faellig = Math.min(k.faellig, Date.now()); // gleich wieder fällig
@@ -445,6 +446,8 @@ function umschalter(id, wert, optionen) {
 }
 
 // ---------- Lernstand: die vier Zahlen oben auf der Startseite ----------
+// "Kann ich sicher" gedrückt? (Ältere Markierungen ohne Kennzeichen: schon ½ Jahr Abstand nach höchstens 3 Wiederholungen)
+const istSicher = (id, r) => { const z = zustand(id, r); return !!z && (!!z.sicher || (z.intervall >= SICHER_TAGE && z.wdh <= 3)); };
 const standGemerkt = {}; // Karten, deren Haken gerade weggenommen wurde – damit man ihn wieder setzen kann
 function standSeite(art) {
   if (art === "faellig") return standFaellig();
@@ -463,18 +466,19 @@ function standSeite(art) {
     const q = n(feld.value.trim());
     const liste = ALLE_KARTEN.filter((k) => istGelernt(k.id, r) || standGemerkt[schluessel(k.id, r)])
       .filter((k) => !q || n(k.it).includes(q) || n(k.de).includes(q))
-      .sort((a, b) => a.it.localeCompare(b.it, "it"));
+      .sort((a, b) => istSicher(b.id, r) - istSicher(a.id, r) || a.it.localeCompare(b.it, "it"));
     aus.innerHTML = liste.length ? liste.map((k) => {
       const z = zustand(k.id, r), an = !standGemerkt[schluessel(k.id, r)];
+      const sicher = an && istSicher(k.id, r) ? "🏆 " : "";
       const tage = Math.max(0, Math.round((z.faellig - Date.now()) / TAG));
-      return `<button class="zeile${an ? " aktiv" : ""}" data-skarte="${esc(k.id)}"><span class="mitte">${esc(k.it)}<small>${esc(k.de)} · ${an ? (tage === 0 ? "ist heute wieder dran" : tage === 1 ? "kommt morgen wieder" : "kommt in " + (tage < 60 ? tage + " Tagen" : Math.round(tage / 30) + " Monaten") + " wieder") : "<b>wird wieder geübt</b>"}</small></span><span class="haken haken-gross" role="checkbox" aria-checked="${an}">${an ? "✓" : ""}</span></button>`;
+      return `<button class="zeile${an ? " aktiv" : ""}" data-skarte="${esc(k.id)}"><span class="mitte">${sicher}${esc(k.it)}<small>${esc(k.de)} · ${an ? (tage === 0 ? "ist heute wieder dran" : tage === 1 ? "kommt morgen wieder" : "kommt in " + (tage < 60 ? tage + " Tagen" : Math.round(tage / 30) + " Monaten") + " wieder") : "<b>wird wieder geübt</b>"}</small></span><span class="haken haken-gross" role="checkbox" aria-checked="${an}">${an ? "✓" : ""}</span></button>`;
     }).join("") : `<p class="leise">${q ? "Nichts gefunden." : "Noch keine Karte. Eine Karte zählt hier, sobald sie erst nach 3 oder mehr Tagen wiederkommen muss."}</p>`;
     aus.querySelectorAll("[data-skarte]").forEach((b) => (b.onclick = () => {
       const key = schluessel(b.dataset.skarte, r);
       if (standGemerkt[key]) { S.karten[key] = standGemerkt[key]; delete standGemerkt[key]; }
       else {
         standGemerkt[key] = { ...S.karten[key] };
-        S.karten[key] = { ...S.karten[key], intervall: 0, wdh: 0, faellig: Date.now() };
+        S.karten[key] = { ...S.karten[key], intervall: 0, wdh: 0, faellig: Date.now(), sicher: undefined };
       }
       speichern(); ohneSprung(zeichnen);
     }));

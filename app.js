@@ -1196,7 +1196,7 @@ function gespraechZeigen() {
   setzeKopf("Frage & Antwort", "gespraech");
   if (gespraech.pos >= gespraech.liste.length) {
     zeige(`<div class="karte"><div class="wort">🎉 Bravo!</div><p>Du hast ${gespraech.liste.length} Fragen beantwortet.</p></div>
-      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="gespraech">Zurück zu den Themen</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
+      ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${gespraech.zurueck || "gespraech"}">${gespraech.zurueck ? "Zurück" : "Zurück zu den Themen"}</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
     gespraech = null; return;
   }
   const q = gespraech.liste[gespraech.pos], g = gespraech, e = g.ergebnis;
@@ -1526,6 +1526,7 @@ function lektionZeigen(id) {
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
         <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
+    ${(() => { const n = lektionFehler(L).anzahl; return `<button class="zeile" data-gehe="lfehler/${L.id}" style="margin-top:8px${n ? "" : ";opacity:.6"}"><span class="sym">🎯</span><span class="mitte">Fehler dieser Lektion<small>${n ? `<b>${n} ${n === 1 ? "Sache" : "Dinge"}</b>, die oft falsch waren – gezielt üben` : "zurzeit nichts – sehr gut!"}</small></span><span class="pfeil">›</span></button>`; })()}
     <button class="btn zweit voll" id="lClaude" style="margin-top:12px">🤖 Passendes Rollenspiel mit Claude</button>
     <div class="reihe">
       ${L.nr > 1 ? `<button class="btn zweit" data-gehe="lektion/${LEKTION_LISTE[L.nr - 2].id}">‹ Lektion ${L.nr - 1}</button>` : ""}
@@ -1597,7 +1598,15 @@ function lektionStarten(L, schritt) {
     const karten = lektionKarten(L);
     const hoeren = gewichtetZiehen(karten, (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de")), 4).map((k) => hoerAufgabe(k, karten));
     const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), 6);
-    return quizStarten({ aufgaben: mischen(hoeren.concat(gram)), pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Abschluss-Check`, nochmal: zurueck,
+    // merken, was in diesem Check falsch war (für die Liste am Ende)
+    const falsch = [];
+    const aufgaben = mischen(hoeren.concat(gram)).map((a) => {
+      const merk = () => { if (a.erklaerung && !falsch.includes(a.erklaerung)) falsch.push(a.erklaerung); };
+      const bA = a.beiAntwort, nG = a.nichtGewusst;
+      return { ...a, beiAntwort: (ok) => { if (!ok) merk(); if (bA) bA(ok); else geuebt(); }, nichtGewusst: nG ? () => { merk(); nG(); } : undefined };
+    });
+    const falschListe = () => falsch.length ? `<div class="frage" style="text-align:left"><b>Das war falsch:</b><ul style="margin:6px 0 0;padding-left:20px">${falsch.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
+    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Abschluss-Check`, nochmal: zurueck,
       beimEnde: (p, n) => {
         const st = lStand(L.id), prozent = Math.round((100 * p) / n);
         st.best = Math.max(st.best || 0, prozent);
@@ -1605,9 +1614,11 @@ function lektionStarten(L, schritt) {
         if (prozent >= 80) st.bestanden = true;
         speichern();
       },
-      endeHinweis: (p, n) => Math.round((100 * p) / n) >= 80
+      endeHinweis: (p, n) => (Math.round((100 * p) / n) >= 80
         ? `<div class="meldung gut">🎉 <b>Lektion ${L.nr} geschafft!</b> ${aktuelleLektion() ? `Als Nächstes empfohlen: Lektion ${aktuelleLektion().nr} – ${esc(aktuelleLektion().titel)}.` : "Damit hast du alle 12 Lektionen geschafft – Bravissimo!"}</div>`
-        : `<div class="meldung info">Für „geschafft“ braucht es 80 %. Wiederhol am besten noch einmal die Schritte, die schwer waren – dann den Check erneut.</div>` });
+        : `<div class="meldung info">Für „geschafft“ braucht es 80 %. Üb am besten gezielt die Fehler dieser Lektion – dann den Check erneut.</div>`)
+        + falschListe()
+        + (falsch.length ? `<button class="btn zweit voll" data-gehe="lfehler/${L.id}" style="margin-bottom:12px">🎯 Fehler dieser Lektion üben</button>` : "") });
   }
 }
 
@@ -1990,6 +2001,45 @@ function fehlerMenue() {
   klick("fFragen", () => { gespraech = { liste: mischen(fragen), pos: 0 }; neueFrage(); geheZu("gespraech-ueben"); });
 }
 
+// ---------- Fehler einer Lektion: derselbe Lernstand, nur auf die Lektion gefiltert ----------
+function lektionFehler(L) {
+  const karten = [];
+  lektionKarten(L).forEach((k) => RICHTUNGEN.forEach((r) => { if (kartenSchwach(zustand(k.id, r))) karten.push({ k, r, w: schwaecheWert(zustand(k.id, r)) }); }));
+  karten.sort((a, b) => b.w - a.w);
+  const gram = grammatikTopf(L.grammatik, L.themen).filter((x) => gSchwach(S.grammatik[x.key]));
+  const fragen = lektionFragen(L).filter((q) => gSchwach(S.grammatik[q.key]));
+  return { karten, gram, fragen, anzahl: karten.length + gram.length + fragen.length };
+}
+function lektionFehlerSeite(id) {
+  const L = LEKTION_NACH_ID[id]; if (!L) return geheZu("lektionen");
+  setzeKopf(`Lektion ${L.nr}: Fehler`, "lektion/" + id);
+  const f = lektionFehler(L), zurueck = "lfehler/" + id;
+  const zeile = (zid, sym, name, n, text) => `<button class="zeile" id="${zid}" ${n ? "" : "disabled style='opacity:.5'"}><span class="sym">${sym}</span><span class="mitte">${name}<small>${n ? `<b>${n}</b> ${text[n === 1 ? 0 : 1]}` : "nichts – sehr gut!"}</small></span><span class="pfeil">›</span></button>`;
+  const gramTexte = f.gram.map((x) => x.bau().erklaerung).filter(Boolean);
+  zeige(`
+    <p>Hier übst du nur, was in <b>dieser Lektion</b> oft falsch war – aus allen Übungen, auch aus „Heute üben“. Was du ein paar Mal richtig hast, verschwindet von selbst aus der Liste. Am besten vor dem Abschluss-Check.</p>
+    ${f.anzahl ? "" : `<div class="meldung gut">🎉 In dieser Lektion gibt es zurzeit keine Fehler zu wiederholen.</div>`}
+    <div class="liste">
+      ${zeile("lfKarten", "🗂️", "Wörter & Sätze", f.karten.length, ["Karte", "Karten"])}
+      ${zeile("lfGram", "📘", "Grammatik", f.gram.length, ["Aufgabe", "Aufgaben"])}
+      ${zeile("lfFragen", "🗣️", "Fragen beantworten", f.fragen.length, ["Frage", "Fragen"])}
+    </div>
+    ${f.anzahl ? `<h2>Das ist zurzeit schwach</h2>
+    <div class="liste">
+      ${f.karten.map((x) => `<div class="eintrag"><div class="mitte"><div class="it">${esc(x.k.it)}</div><div class="de">${esc(x.k.de)} · <small>${x.r === "de-it" ? "selbst sagen" : "verstehen"}</small></div></div></div>`).join("")}
+      ${gramTexte.map((t) => `<div class="eintrag"><div class="mitte"><div class="it">📘 ${esc(t)}</div></div></div>`).join("")}
+      ${f.fragen.map((q) => `<div class="eintrag"><div class="mitte"><div class="it">🗣️ ${esc(q.f)}</div></div></div>`).join("")}
+    </div>` : ""}`);
+  const klick = (zid, fn) => { const el = document.getElementById(zid); if (el && !el.disabled) el.onclick = fn; };
+  klick("lfKarten", () => {
+    const liste = f.karten.slice(0, 20).map(({ k, r }) => ({ k, r }));
+    sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck };
+    geheZu("karte");
+  });
+  klick("lfGram", () => quizStarten({ aufgaben: mischen(f.gram.slice(0, 15).map((x) => x.bau())), pos: 0, punkte: 0, zurueck, titel: `Lektion ${L.nr}: Grammatik-Fehler`, nochmal: zurueck }));
+  klick("lfFragen", () => { gespraech = { liste: mischen(f.fragen), pos: 0, zurueck }; neueFrage(); geheZu("gespraech-ueben"); });
+}
+
 // ---------- Phrasen ansehen ----------
 function phrasenMenue() {
   setzeKopf("Phrasen", "start");
@@ -2188,7 +2238,7 @@ function route() {
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
-    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg)
+    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg)
   };
   (seiten[teil] || startseite)();
 }

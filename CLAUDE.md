@@ -32,5 +32,8 @@ anonymen GitHub-Adresse, pusht und wartet, bis die Version online ist).
 ## Wichtige Regeln
 
 - Verknüpfungen immer über feste Kennungen (IDs), nie über Texte.
+- Wörterbuch = nur Wörter (keine Sätze). Kommen neue Phrasen/Lektionssätze dazu, deren Wörter noch fehlen, die
+  **Grundform** (Verb im Infinitiv, Hauptwort mit Artikel) in `data/woerterbuch.js` ergänzen; unregelmäßige Verben
+  dort auch in `VERBEN_FORMEN_EXTRA`. Hinweise zu diesen Wörtern haben die Kennung `wb:<italienisch>`.
 - Neue Datendateien in `index.html` UND in die Liste in `sw.js` eintragen.
 - Vor dem Veröffentlichen lokal testen (`lokal-starten.ps1 -OhneBrowser`), auch mit leerem Lernstand.

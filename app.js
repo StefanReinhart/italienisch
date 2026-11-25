@@ -2077,7 +2077,7 @@ const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id && w.typ !
 const wunschSchluessel = (w) => `${w.typ || "erklaerung"}|${w.id}|${w.antwort || w.nachricht || ""}`;
 // Eingabefeld für eine Frage an Claude zu einer Karte (leer = nur Erklärung wünschen)
 function wunschFormular(knopf) {
-  const id = knopf.dataset.wunsch, k = KARTE_NACH_ID[id];
+  const id = knopf.dataset.wunsch, k = KARTE_NACH_ID[id] || WB_NACH_ID[id];
   const div = document.createElement("div");
   div.className = "wunschform"; div.dataset.vorher = knopf.outerHTML;
   div.innerHTML = `<div class="leise" style="font-size:13px;margin-bottom:4px">✉️ Frage an Claude zu „${esc(k ? k.it : id)}“</div>
@@ -2102,7 +2102,7 @@ function hinweisHtml(k, klein) {
   return frage;
 }
 function wunschHinzufuegen(id, nachricht) {
-  const k = KARTE_NACH_ID[id]; if (!k) return;
+  const k = KARTE_NACH_ID[id] || WB_NACH_ID[id]; if (!k) return;
   nachricht = (nachricht || "").trim();
   if (!nachricht && gewuenscht(id)) return;
   const w = { id, it: k.it, de: k.de, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
@@ -2201,6 +2201,37 @@ function phrasenGruppe(id) {
   }));
   document.getElementById("ueben").onclick = () => sprechenStarten(g.eintraege);
 }
+// ---------- Wörterbuch: nur Wörter (keine Sätze), Verben mit ihren Formen ----------
+// Quellen: Wortschatz-Themen, einzelne Wörter aus den Lektionen und data/woerterbuch.js (Grundformen aus Phrasen/Sätzen).
+const istEinzelwort = (e) => !/[.?!…]$/.test(e.it.trim()) && e.it.trim().split(/\s+/).length <= 4;
+const WB_NACH_ID = {};
+const WOERTERBUCH_LISTE = (() => {
+  const gesehen = new Set(), aus = [];
+  const nimm = (e) => { const k = e.it.toLowerCase().trim(); if (gesehen.has(k)) return; gesehen.add(k); aus.push(e); };
+  ALLE_WOERTER.forEach(nimm);
+  LEKTION_GRUPPEN.flatMap((g) => g.eintraege).filter(istEinzelwort).forEach(nimm);
+  zeilen(window.WOERTERBUCH || "").forEach((e) => { const x = { it: e.it, de: e.de, id: "wb:" + e.it, nurWb: true }; WB_NACH_ID[x.id] = x; nimm(x); });
+  return aus.sort((a, b) => a.it.replace(/^(il |lo |la |i |gli |le |l')/i, "").localeCompare(b.it.replace(/^(il |lo |la |i |gli |le |l')/i, ""), "it"));
+})();
+// Ist der Eintrag ein Verb? Grundform auf -are/-ere/-ire (oder -arsi …) und deutsch klein geschrieben (Hauptwörter sind groß)
+const VERB_RE = /^[a-zàèéìòù]+(are|ere|ire|rre|arsi|ersi|irsi)$/;
+function verbFormen(e) {
+  const it = e.it.trim().toLowerCase();
+  if (!VERB_RE.test(it) || !/^(sich )?[a-zäöüß]/.test(e.de.trim())) return null;
+  if ((window.VERBEN_FORMEN_EXTRA || {})[it]) return { formen: VERBEN_FORMEN_EXTRA[it], unreg: true };
+  const refl = /si$/.test(it), inf = refl ? it.slice(0, -2) + "e" : it;
+  const v = ALLE_VERBEN.find((x) => x.inf === inf) || { inf };
+  if (/rre$/.test(inf) && !VERBEN_UNREGELMAESSIG[inf]) return null; // tradurre & Co. – nicht automatisch
+  const f = konjugiere(v);
+  return { formen: refl ? f.map((x, i) => ["mi", "ti", "si", "ci", "vi", "si"][i] + " " + x) : f, unreg: !!VERBEN_UNREGELMAESSIG[inf] };
+}
+function wbEintragHtml(e, gesucht) {
+  const vf = verbFormen(e);
+  const form = vf && gesucht ? vf.formen.findIndex((f) => f.split(" ").pop() === gesucht) : -1;
+  const tabelle = vf ? `<details class="vformen"${form >= 0 ? " open" : ""}><summary>Formen${vf.unreg ? " · unregelmäßig" : ""}</summary>
+    <table class="tab">${vf.formen.map((f, i) => `<tr${i === form ? ' class="treffer"' : ""}><td class="leise">${PERSONEN[i]}</td><td><b>${esc(f)}</b></td><td class="leise">${PERSONEN_DE[i]}</td><td>${lautBtn(f, true)}</td></tr>`).join("")}</table></details>` : "";
+  return `<div class="eintrag">${lautBtn(e.it, true)}<div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div>${tabelle}${hinweisHtml(e, true)}</div></div>`;
+}
 function nachschlagen() {
   setzeKopf("Wörterbuch", "start");
   zeige(`<input type="search" id="suche" placeholder="Italienisch oder Deutsch suchen …" autocomplete="off"><div class="liste" id="treffer"></div>`);
@@ -2208,8 +2239,19 @@ function nachschlagen() {
   const n = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const zeichnen = () => {
     const q = n(feld.value.trim());
-    const liste = q ? ALLE_KARTEN.filter((k) => n(k.it).includes(q) || n(k.de).includes(q)).slice(0, 80) : [];
-    aus.innerHTML = q ? (liste.map(eintragHtml).join("") || `<p class="leise">Nichts gefunden.</p>`) : `<p class="leise">${ALLE_WOERTER.length} Wörter und ${ALLE_PHRASEN.length} Phrasen sind enthalten.</p>`;
+    if (!q) { aus.innerHTML = `<p class="leise">${WOERTERBUCH_LISTE.length} Wörter. Bei Verben siehst du unter „Formen“ alle Formen – und du findest ein Verb auch über eine Form (z. B. „consiglia“ → consigliare). Ganze Sätze stehen unter 💬 Phrasen.</p>`; return; }
+    // Treffer: im Wort, in der Übersetzung oder in einer Verbform; genaue Treffer zuerst
+    const treffer = [];
+    WOERTERBUCH_LISTE.forEach((e) => {
+      const it = n(e.it), de = n(e.de), vf = verbFormen(e), formen = vf ? vf.formen.map((f) => n(f.split(" ").pop())) : [];
+      let rang = -1;
+      if (it === q || it.replace(/^(il |lo |la |i |gli |le |l')/, "") === q || formen.includes(q)) rang = 0;
+      else if (it.startsWith(q) || it.replace(/^(il |lo |la |i |gli |le |l')/, "").startsWith(q) || de.split(/[ ,/;()]+/).includes(q)) rang = 1;
+      else if (it.includes(q) || de.includes(q) || formen.some((f) => f.startsWith(q))) rang = 2;
+      if (rang >= 0) treffer.push({ e, rang });
+    });
+    treffer.sort((a, b) => a.rang - b.rang);
+    aus.innerHTML = treffer.slice(0, 80).map((t) => wbEintragHtml(t.e, q)).join("") || `<p class="leise">Nichts gefunden. Steht es vielleicht in einem Satz? Schau unter 💬 Phrasen – oder frag Claude bei einer Karte.</p>`;
   };
   feld.oninput = zeichnen; zeichnen();
 }

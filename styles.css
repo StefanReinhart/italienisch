@@ -64,6 +64,11 @@ p { margin: 8px 0; }
 .hinweis { background: var(--orange-hell); border-radius: 10px; padding: 8px 10px; margin-top: 8px; font-size: 16px; text-align: left; line-height: 1.35; }
 .hinweis.klein { font-size: 14px; padding: 5px 8px; margin-top: 5px; }
 .wunsch { margin-top: 8px; border: 1px dashed var(--rand); background: none; color: var(--grau); border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 14px; cursor: pointer; }
+.vformen { margin-top: 6px; font-size: 15px; }
+.vformen summary { cursor: pointer; color: var(--gruen); font-weight: 600; }
+.vformen table { margin-top: 4px; }
+.vformen td { padding: 2px 8px 2px 0; vertical-align: middle; }
+.vformen tr.treffer td { background: var(--gruen-hell); }
 .wunschform { margin-top: 8px; text-align: left; }
 .wunschform textarea, #freiNachricht { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 8px; border-radius: 10px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); }
 .wunsch.klein { margin-top: 4px; padding: 3px 8px; font-size: 13px; }

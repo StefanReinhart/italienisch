@@ -37,6 +37,12 @@ Il piacere è mio. | Ganz meinerseits.
 Questo è mio marito. | Das ist mein Mann.
 Questa è mia moglie. | Das ist meine Frau.
 Ti presento Anna. | Ich stelle dir Anna vor.
+Le presento Anna. | Ich stelle Ihnen Anna vor.
+un po' | ein bisschen
+Puoi ripetere, per favore? | Kannst du das bitte wiederholen?
+Come si dice? | Wie sagt man?
+Sto mangiando. | Ich esse gerade.
+Dove sono i bagni? | Wo sind die Toiletten?
 Di dov'è Lei? | Woher kommen Sie?
 Sono di Monaco, in Germania. | Ich bin aus München, in Deutschland.
 Abito vicino a Monaco. | Ich wohne in der Nähe von München.

@@ -13,6 +13,10 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
    - Fragt der Nutzer „Ist … auch richtig?“ und es **stimmt**: die Antwort in `window.KARTEN_ALTERNATIVEN`
      (italienisch) bzw. `window.KARTEN_ALTERNATIVEN_DE` (deutsch) unter der Kennung eintragen – dann zählt sie
      beim Prüfen als richtig – und im Hinweis erwähnen. Stimmt es **nicht**: im Hinweis erklären, warum.
+   - **Immer auch in die Karten einbauen** (Wunsch des Nutzers): Taucht in der Antwort ein nützliches Wort oder
+     eine Wendung auf, die es noch nicht als Karte gibt (z. B. „la prima volta“ aus „È la prima volta …“), sie als
+     neue Karte in die passende Lektion (`neu` in `data/lektionen-a1.js`) aufnehmen – Karten gibt es automatisch in
+     beiden Richtungen – und die Grundform ins Wörterbuch. Nicht nur erklären, sondern lernbar machen.
    - Einträge mit `"typ": "nachricht"` (`id: "allgemein"`) sind freie Nachrichten aus den Einstellungen
      (Wünsche, Fragen, Fehlermeldungen): umsetzen bzw. beantworten; wenn unklar oder größer, den Nutzer erst fragen.
 4. Einträge mit `"typ": "antwort"` sind Antworten aus „Frage & Antwort“, die der Nutzer selbst als richtig

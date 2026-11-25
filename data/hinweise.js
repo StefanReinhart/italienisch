@@ -7,6 +7,14 @@
 window.ABGELEHNTE_ANTWORTEN = {
 };
 
+// Weitere richtige Antworten zu einer Karteikarte (z. B. nach einer Frage „Ist … auch richtig?“).
+// KARTEN_ALTERNATIVEN: italienische Antworten (Deutsch → Italienisch), KARTEN_ALTERNATIVEN_DE: deutsche (Italienisch → Deutsch).
+// Format:  "kennung": ["andere richtige Antwort", …],
+window.KARTEN_ALTERNATIVEN = {
+};
+window.KARTEN_ALTERNATIVEN_DE = {
+};
+
 window.HINWEISE = {
   // Erste Wörter
   "grundwoerter:prego": "Antwort auf „grazie“ (bitte sehr, gern geschehen). Zum Bitten sagt man „per favore“.",

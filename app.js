@@ -357,7 +357,8 @@ function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
   if (!e) return { stufe: "falsch", text: "Keine Antwort eingegeben." };
   // Alle italienischen Einträge mit derselben deutschen Bedeutung zählen als richtig
-  const ziele = [...new Set(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it).concat(karte.it))];
+  // … plus die von Claude bestätigten weiteren Antworten (data/hinweise.js)
+  const ziele = [...new Set(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it).concat(karte.it, (window.KARTEN_ALTERNATIVEN || {})[karte.id] || []))];
   let best = { stufe: "falsch", wert: 0 };
   ziele.forEach((z) => {
     const zs = saeubern(z);
@@ -392,7 +393,7 @@ function pruefeDeutsch(gesagt, karte) {
     .replace(/\b(der|die|das|den|dem|ein|eine|einen|einem)\b/g, " ").replace(/\s+/g, " ").trim();
   const g = norm(gesagt);
   if (!g) return { stufe: "falsch", text: "Nichts verstanden." };
-  const varianten = [karte.de].concat(karte.de.split(/\/|,|;| oder /)).map(norm).filter(Boolean);
+  const varianten = [karte.de].concat(karte.de.split(/\/|,|;| oder /), (window.KARTEN_ALTERNATIVEN_DE || {})[karte.id] || []).map(norm).filter(Boolean);
   if (varianten.includes(g)) return { stufe: "richtig", text: "✅ Richtig!" };
   const best = Math.max(...varianten.map((v) => aehnlich(v, g)));
   const enthalten = varianten.some((v) => v.length > 3 && (g.includes(v) || v.includes(g)) && g.length > 2);
@@ -443,7 +444,17 @@ $app.addEventListener("click", (e) => {
   if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
   if (e.target.closest("[data-lektion-weiter]")) zurueckZuLektion();
   const wb = e.target.closest("[data-wunsch]");
-  if (wb) { e.stopPropagation(); wunschHinzufuegen(wb.dataset.wunsch); wb.outerHTML = `<div class="leise" style="font-size:13px">✓ Erklärung gewünscht</div>`; }
+  // „Frage an Claude“: erst ein kleines Eingabefeld öffnen, dann senden
+  if (wb) { e.stopPropagation(); wunschFormular(wb); }
+  const ws = e.target.closest("[data-wsenden]");
+  if (ws) {
+    e.stopPropagation();
+    const form = ws.closest(".wunschform"), text = form.querySelector("textarea").value.trim();
+    wunschHinzufuegen(ws.dataset.wsenden, text);
+    form.outerHTML = `<div class="leise" style="font-size:13px">✓ ${text ? "Frage" : "Erklärungs-Wunsch"} an Claude gesendet – die Antwort steht nach der nächsten Bearbeitung hier als 💡.</div>`;
+  }
+  const wa = e.target.closest("[data-wabbruch]");
+  if (wa) { e.stopPropagation(); const f = wa.closest(".wunschform"); f.outerHTML = f.dataset.vorher; }
   // Ergebnis-Seiten: "Zurück" geht einen Schritt zurück, "Startseite" springt ganz an den Anfang – ohne neue Seiten anzuhängen
   const z = e.target.closest("[data-zurueck]");
   if (z) { if (tiefeJetzt() > 0) history.back(); else ersetzeDurch(z.dataset.zurueck); }
@@ -2061,9 +2072,20 @@ const eintragHtml = (e) => `<div class="eintrag">${lautBtn(e.it, true)}<div clas
 // und schickt die Wünsche (mit GitHub-Schlüssel) in die Datei data/wuensche.json – Claude liest sie
 // bei der nächsten Bearbeitung aus und trägt die Erklärungen ein.
 const hinweisZu = (id) => (window.HINWEISE || {})[id];
-const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id && w.typ !== "antwort");
-// Eintrag in der Wunschliste: Erklärung zu einer Karte – oder eine selbst als richtig markierte Antwort zur Prüfung
-const wunschSchluessel = (w) => `${w.typ || "erklaerung"}|${w.id}|${w.antwort || ""}`;
+const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id && w.typ !== "antwort" && !w.nachricht);
+// Eintrag in der Wunschliste: Erklärung/Frage zu einer Karte, eine freie Nachricht – oder eine selbst als richtig markierte Antwort zur Prüfung
+const wunschSchluessel = (w) => `${w.typ || "erklaerung"}|${w.id}|${w.antwort || w.nachricht || ""}`;
+// Eingabefeld für eine Frage an Claude zu einer Karte (leer = nur Erklärung wünschen)
+function wunschFormular(knopf) {
+  const id = knopf.dataset.wunsch, k = KARTE_NACH_ID[id];
+  const div = document.createElement("div");
+  div.className = "wunschform"; div.dataset.vorher = knopf.outerHTML;
+  div.innerHTML = `<div class="leise" style="font-size:13px;margin-bottom:4px">✉️ Frage an Claude zu „${esc(k ? k.it : id)}“</div>
+    <textarea rows="2" placeholder="z. B. Was heißt po'? · Ist „Cosa fai stasera?“ auch richtig? – leer lassen = einfach eine Erklärung wünschen"></textarea>
+    <div class="reihe" style="margin:6px 0 0"><button class="btn" data-wsenden="${esc(id)}">Senden</button><button class="btn zweit" data-wabbruch="1">Abbrechen</button></div>`;
+  knopf.replaceWith(div);
+  div.querySelector("textarea").focus();
+}
 function antwortZurPruefung(q, text) {
   const w = { typ: "antwort", id: q.key, frage: q.f, antwort: text, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
   if ((S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) return;
@@ -2073,20 +2095,31 @@ function antwortZurPruefung(q, text) {
 }
 function hinweisHtml(k, klein) {
   const h = hinweisZu(k.id);
-  if (h) return `<div class="hinweis${klein ? " klein" : ""}">💡 ${esc(h)}</div>`;
-  if (gewuenscht(k.id)) return `<div class="leise" style="font-size:13px">✓ Erklärung gewünscht</div>`;
-  return `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">❓ Erklärung wünschen</button>`;
+  const offen = (S.wuensche || []).filter((w) => w.id === k.id && w.typ !== "antwort" && !w.erledigt).length;
+  const frage = `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">${h ? "✉️ Frage an Claude" : "❓ Erklärung wünschen / Frage stellen"}</button>`;
+  if (h) return `<div class="hinweis${klein ? " klein" : ""}">💡 ${esc(h)}</div>${frage}`;
+  if (offen) return `<div class="leise" style="font-size:13px">✓ Schon an Claude geschickt</div>${frage}`;
+  return frage;
 }
-function wunschHinzufuegen(id) {
-  const k = KARTE_NACH_ID[id]; if (!k || gewuenscht(id)) return;
-  S.wuensche = (S.wuensche || []).concat({ id, it: k.it, de: k.de, zeit: new Date().toISOString().slice(0, 10), gesendet: false });
+function wunschHinzufuegen(id, nachricht) {
+  const k = KARTE_NACH_ID[id]; if (!k) return;
+  nachricht = (nachricht || "").trim();
+  if (!nachricht && gewuenscht(id)) return;
+  const w = { id, it: k.it, de: k.de, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
+  if (nachricht) w.nachricht = nachricht;
+  if ((S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) return;
+  S.wuensche = (S.wuensche || []).concat(w);
   speichern();
-  toast(githubSchluessel() ? "Gemerkt – die Erklärung kommt mit der nächsten Version." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät – siehe Einstellungen.)", 4000);
+  toast(githubSchluessel() ? "Gesendet – die Antwort kommt mit der nächsten Version." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät – siehe Einstellungen.)", 4000);
   clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 2000);
 }
 function githubSchluessel() {
   try { const s = (localStorage.getItem("italienisch-github-schluessel") || "").replace(/[^\x21-\x7E]/g, ""); return s.length >= 30 ? s : ""; } catch (e) { return ""; }
 }
+// kurze Beschreibung eines Eintrags (Liste in den Einstellungen, Kopieren, Commit-Text)
+const wunschText = (w) => w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen (zu: ${w.frage})`
+  : w.typ === "nachricht" ? `Nachricht: ${w.nachricht}`
+  : w.nachricht ? `Frage zu „${w.it}“: ${w.nachricht}` : `Erklärung zu „${w.it}“`;
 let wunschStatus = "";
 async function wuenscheSenden() {
   const offen = (S.wuensche || []).filter((w) => !w.gesendet), schl = githubSchluessel();
@@ -2102,12 +2135,14 @@ async function wuenscheSenden() {
       const vorhanden = new Set(liste.map(wunschSchluessel));
       offen.forEach((w) => {
         if (vorhanden.has(wunschSchluessel(w))) return;
-        liste.push(w.typ === "antwort" ? { typ: "antwort", id: w.id, frage: w.frage, antwort: w.antwort, zeit: w.zeit } : { id: w.id, it: w.it, de: w.de, zeit: w.zeit });
+        liste.push(w.typ === "antwort" ? { typ: "antwort", id: w.id, frage: w.frage, antwort: w.antwort, zeit: w.zeit }
+          : w.typ === "nachricht" ? { typ: "nachricht", id: w.id, nachricht: w.nachricht, zeit: w.zeit }
+          : { id: w.id, it: w.it, de: w.de, ...(w.nachricht ? { nachricht: w.nachricht } : {}), zeit: w.zeit });
       });
       const text = JSON.stringify(liste, null, 1);
       const autor = { name: "StefanReinhart", email: "154806245+StefanReinhart@users.noreply.github.com" };
       const p = await fetch(url, { method: "PUT", headers: { ...kopf, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `Wünsche: ${offen.map((w) => (w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen` : `Erklärung zu ${w.it}`)).join(", ")}`, content: btoa(unescape(encodeURIComponent(text))), sha, branch: "master", author: autor, committer: autor }) });
+        body: JSON.stringify({ message: `Wünsche: ${offen.map(wunschText).join(", ").slice(0, 300)}`, content: btoa(unescape(encodeURIComponent(text))), sha, branch: "master", author: autor, committer: autor }) });
       if (p.status === 409 || p.status === 422) continue; // Datei wurde gleichzeitig geändert – noch einmal versuchen
       if (!p.ok) throw new Error("GitHub antwortet mit Fehler " + p.status);
       offen.forEach((w) => (w.gesendet = true)); speichern();
@@ -2171,12 +2206,16 @@ function einstellungen() {
     <div class="reihe"><button class="btn zweit" id="export">💾 Sichern</button><button class="btn zweit" id="import">📂 Einlesen</button></div>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <button class="btn rot voll" id="reset" style="margin-top:20px">Lernstand löschen</button>
-    <h2>💡 Erklärungs-Wünsche</h2>
+    <h2>✉️ Fragen &amp; Wünsche an Claude</h2>
     ${(() => {
       const alle = S.wuensche || [], offen = alle.filter((w) => !w.gesendet);
       return `<div class="einstellung">
-        <p style="margin-top:0">${alle.length ? `Auf der Liste: <b>${alle.length}</b>${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch nichts auf der Liste. Tippe bei einer Karte ohne 💡 auf „❓ Erklärung wünschen“ – oder bei Frage &amp; Antwort auf „Meine Antwort war richtig“."}</p>
-        ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => (w.typ === "antwort" ? `Antwort „${esc(w.antwort)}“ (zu: ${esc(w.frage)})` : `Erklärung: ${esc(w.it)}`) + (w.gesendet ? " ✓" : "")).join("<br>")}</p></details>` : ""}
+        <label for="freiNachricht" style="margin-top:0">Nachricht an Claude</label>
+        <textarea id="freiNachricht" rows="3" placeholder="z. B. Ich möchte mehr Übungen zu den Zahlen. · Was ist der Unterschied zwischen sapere und conoscere?"></textarea>
+        <button class="btn voll" id="freiSenden" style="margin-bottom:10px">Senden</button>
+        <p class="leise">Zu einzelnen Karten fragst du am besten direkt bei der Karte: „❓ Erklärung wünschen / Frage stellen“ bzw. „✉️ Frage an Claude“.</p>
+        <p style="margin-top:0">${alle.length ? `Auf der Liste: <b>${alle.length}</b>${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch nichts auf der Liste."}</p>
+        ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => esc(wunschText(w)) + (w.gesendet ? " ✓" : "")).join("<br>")}</p></details>` : ""}
         ${wunschStatus ? `<p class="leise">${esc(wunschStatus)}</p>` : ""}
         <p class="leise">Gesendete Wünsche liest Claude bei der nächsten Bearbeitung der App aus und schreibt die Erklärungen dazu. Damit die Wünsche automatisch ankommen, braucht dieses Gerät einmalig den <b>GitHub-Schlüssel</b> (derselbe wie für die Bearbeiten-Seite): ${githubSchluessel() ? "<b>✓ vorhanden</b>" : "<b>fehlt noch</b>"}</p>
         <input type="password" id="ghSchluessel" placeholder="github_pat_… einfügen" autocomplete="off" style="font-family:monospace">
@@ -2202,11 +2241,20 @@ function einstellungen() {
     try { localStorage.setItem("italienisch-github-schluessel", s); } catch (e) {}
     toast("Schlüssel gespeichert ✓"); wuenscheSenden().then(() => ohneSprung(einstellungen));
   };
+  document.getElementById("freiSenden").onclick = () => {
+    const feld = document.getElementById("freiNachricht"), text = feld.value.trim();
+    if (!text) return toast("Bitte erst eine Nachricht eintippen.");
+    const w = { typ: "nachricht", id: "allgemein", nachricht: text, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
+    if (!(S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) S.wuensche = (S.wuensche || []).concat(w);
+    speichern();
+    toast(githubSchluessel() ? "Gesendet – Claude liest das bei der nächsten Bearbeitung." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät.)", 4000);
+    wuenscheSenden().then(() => ohneSprung(einstellungen));
+  };
   const ws = document.getElementById("wSenden");
   if (ws) ws.onclick = async () => { ws.disabled = true; ws.textContent = "Sende …"; await wuenscheSenden(); ohneSprung(einstellungen); };
   const wk = document.getElementById("wKopieren");
   if (wk) wk.onclick = async () => {
-    const text = "Bitte Erklärungen für diese Karten der Italienisch-App:\n" + (S.wuensche || []).map((w) => `${w.id} – ${w.it} = ${w.de}`).join("\n");
+    const text = "Fragen und Wünsche zur Italienisch-App:\n" + (S.wuensche || []).map((w) => `${w.id} – ${wunschText(w)}`).join("\n");
     try { await navigator.clipboard.writeText(text); toast("Liste kopiert ✓"); } catch (e) { toast("Kopieren ging nicht."); }
   };
   document.getElementById("export").onclick = () => {

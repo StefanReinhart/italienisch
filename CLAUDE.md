@@ -5,10 +5,16 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
 ## Bei JEDER Bearbeitung zuerst: Erklärungs-Wünsche abarbeiten
 
 1. `git pull` (die App und die Bearbeiten-Seite schreiben direkt zu GitHub).
-2. `data/wuensche.json` lesen. Jeder Eintrag ist eine Karte, zu der der Nutzer eine Erklärung möchte
-   (`id` = feste Kennung, `it`, `de`).
+2. `data/wuensche.json` lesen. Einträge ohne `typ` sind Karten, zu denen der Nutzer eine Erklärung möchte
+   (`id` = feste Kennung, `it`, `de`) – manchmal mit einer **Frage** im Feld `nachricht`.
 3. Für jede eine kurze, einfache Erklärung (1–2 Sätze, Deutsch) in `data/hinweise.js` eintragen:
-   `"kennung": "Hinweis",`
+   `"kennung": "Hinweis",` (gibt es schon einen Hinweis, ihn ergänzen). Mit `nachricht`: die Frage beantworten, und zwar
+   so, dass der Hinweis auch später allein verständlich ist.
+   - Fragt der Nutzer „Ist … auch richtig?“ und es **stimmt**: die Antwort in `window.KARTEN_ALTERNATIVEN`
+     (italienisch) bzw. `window.KARTEN_ALTERNATIVEN_DE` (deutsch) unter der Kennung eintragen – dann zählt sie
+     beim Prüfen als richtig – und im Hinweis erwähnen. Stimmt es **nicht**: im Hinweis erklären, warum.
+   - Einträge mit `"typ": "nachricht"` (`id: "allgemein"`) sind freie Nachrichten aus den Einstellungen
+     (Wünsche, Fragen, Fehlermeldungen): umsetzen bzw. beantworten; wenn unklar oder größer, den Nutzer erst fragen.
 4. Einträge mit `"typ": "antwort"` sind Antworten aus „Frage & Antwort“, die der Nutzer selbst als richtig
    markiert hat (`id` = Kennung der Frage, z. B. `dialog:Che cosa prendi?`, `frage`, `antwort`). Prüfen:
    - **Richtig:** in `data/gespraech.js` bei dieser Frage ein passendes, möglichst allgemeines Antwortmuster
@@ -16,7 +22,7 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
    - **Falsch:** in `data/hinweise.js` unter `window.ABGELEHNTE_ANTWORTEN` eintragen
      (`"dialog:…": ["falsche Antwort"]`) – dann zählt sie nicht mehr als richtig – und dem Nutzer den Fehler erklären.
 5. `data/wuensche.json` danach wieder auf `[]` setzen.
-6. Dem Nutzer kurz sagen, welche Erklärungen und Antwortmuster dazugekommen sind.
+6. Dem Nutzer kurz sagen, welche Erklärungen und Antwortmuster dazugekommen sind, und seine Fragen auch im Chat beantworten.
 
 ## Veröffentlichen
 

@@ -106,8 +106,9 @@ p { margin: 8px 0; }
 /* antippbares Kästchen: größere Fläche für den Finger */
 .haken-gross { width: 34px; height: 34px; font-size: 20px; cursor: pointer; margin: -4px -4px -4px 0; box-shadow: 0 0 0 6px transparent; }
 .zeile.aktiv .haken { background: var(--gruen); border-color: var(--gruen); color: #fff; }
-.balken { height: 6px; background: var(--rand); border-radius: 3px; overflow: hidden; margin-top: 6px; }
-.balken i { display: block; height: 100%; background: var(--gruen); }
+.balken { height: 6px; background: var(--rand); border-radius: 3px; overflow: hidden; margin-top: 6px; display: flex; }
+.balken i { display: block; height: 100%; background: var(--gruen); flex: none; }
+.balken i.lernen { opacity: .4; } /* zweiter Abschnitt: „im Lernen“ */
 
 /* Knöpfe */
 .btn {

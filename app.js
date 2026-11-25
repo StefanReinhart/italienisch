@@ -1507,6 +1507,21 @@ function lektionWoerterStand(L) {
   const karten = lektionKarten(L);
   return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length };
 }
+// Wie viel einer Lektion sitzt wirklich? = Anteil der Karten (je geübte Richtung), die erst in einem halben Jahr
+// oder später wiederkommen. Dazu: wie viele schon „im Lernen“ sind (mindestens einmal gewusst).
+function lektionGefestigt(L) {
+  const richt = richtungenFuer(S.einstellungen.richtung);
+  let gesamt = 0, fest = 0, lernen = 0;
+  lektionKarten(L).forEach((k) => richt.forEach((r) => {
+    gesamt++;
+    const z = zustand(k.id, r);
+    if (z && z.intervall >= SICHER_TAGE) fest++;
+    else if (z && z.wdh > 0) lernen++;
+  }));
+  const p = (n) => (gesamt ? Math.floor((100 * n) / gesamt) : 0);
+  return { gesamt, fest, lernen, prozent: p(fest), lernenProzent: p(lernen) };
+}
+const festBalken = (g) => `<div class="balken" title="${g.prozent} % sitzen fest"><i style="width:${g.prozent}%"></i><i class="lernen" style="width:${g.lernenProzent}%"></i></div>`;
 function lektionenMenue() {
   setzeKopf("Lektionen", "start");
   lektionAktiv = null;
@@ -1514,12 +1529,15 @@ function lektionenMenue() {
   zeige(`
     <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du alle geschafft hast, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
     <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog, Sprechen und einen kleinen Abschluss-Check. Alle sind offen: Du kannst jederzeit springen.</p>
+    <p class="leise">„% sitzen fest“ = Anteil der Karten einer Lektion, die erst in einem halben Jahr oder später wieder drankommen. Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
     <div class="fortschritt"><span>${geschafft} / ${LEKTION_LISTE.length} geschafft</span><div class="balken"><i style="width:${(100 * geschafft) / LEKTION_LISTE.length}%"></i></div></div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
       const st = lStand(L.id), fertig = st.schritte.filter((s) => s !== "check").length;
-      const status = st.bestanden ? `✓ geschafft (${st.best} %)` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von 5 Schritten` : fertig ? `${fertig} von 5 Schritten` : "noch nicht begonnen";
+      const g = lektionGefestigt(L);
+      const status = st.bestanden ? `✓ Check bestanden` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von 5 Schritten` : fertig ? `${fertig} von 5 Schritten` : "noch nicht begonnen";
+      const fest = st.bestanden || fertig || g.fest || g.lernen ? ` · <b>${g.prozent} % sitzen fest</b>${festBalken(g)}` : "";
       return `<button class="zeile${st.bestanden ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
-        <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}</small></span><span class="pfeil">›</span></button>`;
+        <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}${fest}</small></span><span class="pfeil">›</span></button>`;
     }).join("")}</div>
     <p class="leise" style="margin-top:14px">Danach kommt <b>A2</b>: die Vergangenheit (ho mangiato, sono andato), „mir/dir/ihm“-Wörter (mi, ti, gli …), mehr reflexive Verben, Vergleiche (più grande di …) und die Zukunft – sag Bescheid, wenn du so weit bist.</p>`);
 }
@@ -1532,7 +1550,8 @@ function lektionZeigen(id) {
     <div class="frage" style="text-align:left">
       <div style="font-size:24px;font-weight:700">${L.icon} ${esc(L.titel)}</div>
       <p style="margin-bottom:0">🎯 ${esc(L.ziel)}</p>
-      ${st.bestanden ? `<div class="meldung gut" style="margin-bottom:0">✓ Lektion geschafft – Abschluss-Check: ${st.best} %</div>` : ""}
+      ${(() => { const g = lektionGefestigt(L); return `<div style="margin-top:10px"><b>📊 ${g.prozent} % sitzen fest</b> <span class="leise">· ${g.lernenProzent} % im Lernen</span>${festBalken(g)}
+        <div class="leise" style="font-size:13px;margin-top:4px">${g.fest} von ${g.gesamt} Karten kommen erst in einem halben Jahr oder später wieder${st.bestanden ? ` · Abschluss-Check bestanden (${st.best} %)` : ""}.</div></div>`; })()}
     </div>
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {

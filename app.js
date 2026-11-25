@@ -458,6 +458,7 @@ function standSeite(art) {
     <p>Hier stehen alle Karten, die du schon gut kannst (${r === "de-it" ? "Deutsch → Italienisch" : "Italienisch → Deutsch"}).</p>
     <div class="meldung info">ℹ️ Diese Karten sind <b>nicht aus den Übungen heraus</b>. Sie kommen nur seltener dran: immer dann, wenn sie wieder „fällig“ sind – erst nach ein paar Tagen, dann nach Wochen. So festigt sich das Wissen.<br><br>
     <b>Haken wegnehmen</b> = „das kann ich doch noch nicht“: Die Karte fängt wieder von vorn an und kommt gleich bei der nächsten Wiederholung dran. Haken wieder setzen macht das rückgängig.</div>
+    <p class="leise">Sortiert danach, wann die Karte wiederkommt – die nächsten zuerst.</p>
     <input type="search" id="ssuche" placeholder="Suchen …" autocomplete="off">
     <div class="liste" id="sliste"></div>`);
   const feld = document.getElementById("ssuche"), aus = document.getElementById("sliste");
@@ -466,7 +467,8 @@ function standSeite(art) {
     const q = n(feld.value.trim());
     const liste = ALLE_KARTEN.filter((k) => istGelernt(k.id, r) || standGemerkt[schluessel(k.id, r)])
       .filter((k) => !q || n(k.it).includes(q) || n(k.de).includes(q))
-      .sort((a, b) => istSicher(b.id, r) - istSicher(a.id, r) || a.it.localeCompare(b.it, "it"));
+      // aufsteigend: was bald wiederkommt, steht oben; 🏆-Karten (½ Jahr) landen unten
+      .sort((a, b) => zustand(a.id, r).faellig - zustand(b.id, r).faellig || a.it.localeCompare(b.it, "it"));
     aus.innerHTML = liste.length ? liste.map((k) => {
       const z = zustand(k.id, r), an = !standGemerkt[schluessel(k.id, r)];
       const sicher = an && istSicher(k.id, r) ? "🏆 " : "";

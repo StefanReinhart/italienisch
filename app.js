@@ -567,8 +567,7 @@ function startseite() {
     </div>
     <div class="kacheln">
       <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
-      <button class="kachel breit" data-gehe="${akt ? "lektion/" + akt.id : "lektionen"}"><span class="sym">📚</span><span><b>Lektionen</b><br><small>${akt ? `Als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : "🎉 Alle 12 Lektionen geschafft!"}</small></span></button>
-      <button class="kachel breit" data-gehe="lektionen" style="min-height:auto;padding:10px 16px"><span class="sym" style="font-size:22px">🗺️</span><span><small>Alle Lektionen ansehen (${LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length} von 12 geschafft)</small></span></button>
+      <button class="kachel breit" data-gehe="lektionen"><span class="sym">📚</span><span><b>Alle Lektionen</b><br><small>${LEKTION_LISTE.filter((l) => lStand(l.id).bestanden).length} von 12 geschafft${akt ? ` · als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : ""}</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
       <button class="kachel" data-gehe="dialoge"><span class="sym">🎧</span><b>Hör-Dialoge</b><small>Kurze Gespräche verstehen</small></button>

@@ -116,8 +116,10 @@ const istGelernt = (id, r) => { const k = zustand(id, r); return !!k && k.interv
 function startDesTages(ms) { const d = new Date(ms); d.setHours(3, 0, 0, 0); return d.getTime(); }
 const tageText = (t) => (t === 0 ? "gleich wieder" : t === 1 ? "1 Tag" : t < 60 ? t + " Tage" : Math.round(t / 30) + " Monate");
 
-function naechsterAbstand(k, note) { // note: 0 nochmal, 1 schwer, 2 gut, 3 leicht
+const SICHER_TAGE = 180; // "Kann ich sicher": direkt auf etwa ein halbes Jahr
+function naechsterAbstand(k, note) { // note: 0 nochmal, 1 schwer, 2 gut, 3 leicht, 4 kann ich sicher
   if (note === 0) return 0;
+  if (note === 4) return Math.max(SICHER_TAGE, naechsterAbstand(k, 2));
   if (!k || k.wdh === 0 || k.intervall === 0) return [0, 1, 2, 4][note];
   const v = k.intervall;
   const t = note === 1 ? Math.max(v + 1, Math.round(v * 1.2))
@@ -136,7 +138,7 @@ function bewerte(id, r, note) {
     k.faellig = Date.now() + 60 * 1000;
   } else {
     if (note === 1) k.ease = Math.max(1.3, k.ease - 0.15);
-    if (note === 3) k.ease = Math.min(3.0, k.ease + 0.15);
+    if (note >= 3) k.ease = Math.min(3.0, k.ease + 0.15);
     k.wdh++; k.intervall = t; k.richtig++;
     k.faellig = startDesTages(Date.now() + t * TAG);
   }
@@ -661,6 +663,7 @@ function karteZeigen() {
       ? `<div class="bewertung">
           ${knopf(0, "b-nochmal", "Nochmal")}${knopf(1, "b-schwer", "Schwer")}${knopf(2, "b-gut", "Gut")}${knopf(3, "b-leicht", "Leicht")}
         </div>
+        ${!ein || ein.stufe !== "falsch" ? `<button class="btn zweit voll b-sicher" data-n="4" title="Für Karten, die du schon lange sicher kannst">🏆 Kann ich sicher <small>kommt erst in ${Math.round(naechsterAbstand(zustand(k.id, r), 4) / 30)} Monaten wieder</small></button>` : ""}
         ${ein ? `<p class="leise" style="text-align:center">Der umrandete Knopf ist der Vorschlag der App – du kannst auch anders bewerten.</p>` : ""}`
       : tippen
         ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button>${SR ? `<button class="btn zweit" id="ksprechen" title="Antwort sprechen" style="flex:0 0 64px">🎤</button>` : ""}<button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
@@ -696,9 +699,11 @@ function karteZeigen() {
   };
   $app.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => {
     const n = +b.dataset.n;
-    if (!sitzung.frei) {
-      if (sitzung.neuKeys.has(key) && istNeu(k.id, r)) { neueHeuteUebrig(); S.neueHeute.anzahl++; }
+    if (!sitzung.frei || n === 4) {
+      // "Kann ich sicher" bei einer neuen Karte verbraucht keinen Platz bei den neuen Karten des Tages
+      if (n !== 4 && sitzung.neuKeys.has(key) && istNeu(k.id, r)) { neueHeuteUebrig(); S.neueHeute.anzahl++; }
       bewerte(k.id, r, n);
+      if (n === 4) toast("🏆 Gemerkt – kommt erst in einem halben Jahr wieder.");
     } else geuebt();
     if (n === 0) sitzung.liste.push({ k, r }); else sitzung.fertig++;
     sitzung.pos++; sitzung.aufgedeckt = false; sitzung.eingabe = null; karteZeigen();

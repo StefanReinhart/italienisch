@@ -351,8 +351,38 @@ Pago con la carta. | Ich zahle mit Karte.
 l7: {
   kern: ["stadt:la città", "stadt:la strada", "stadt:la via", "stadt:la piazza", "stadt:il centro", "stadt:la chiesa", "stadt:il museo", "stadt:la banca", "stadt:la posta", "stadt:l'ospedale", "stadt:la stazione", "stadt:il parco", "weg:a destra", "weg:a sinistra", "weg:dritto", "weg:vicino", "weg:lontano", "weg:davanti", "weg:dietro", "weg:accanto", "weg:di fronte", "weg:l'angolo", "weg:il semaforo", "weg:l'incrocio",
     "p_weg:Scusi, dov'è la stazione?", "p_weg:Come arrivo al centro?", "p_weg:È lontano?", "p_weg:È vicino.", "p_weg:Vada sempre dritto.", "p_weg:Giri a destra.", "p_weg:Giri a sinistra.", "p_weg:È dietro l'angolo.", "p_weg:Mi sono perso.", "p_weg:C'è una farmacia qui vicino?",
-    "p_aufforderung:gira", "p_aufforderung:prendi", "p_aufforderung:prenda", "p_aufforderung:va", "p_aufforderung:senta", "p_aufforderung:scusami"],
+    "p_aufforderung:gira", "p_aufforderung:prendi", "p_aufforderung:prenda", "p_aufforderung:va", "p_aufforderung:senta", "p_aufforderung:scusami",
+    "stadt:il paese", "stadt:la scuola", "stadt:l'ufficio", "stadt:il ponte", "stadt:l'aeroporto", "weg:la mappa", "weg:girare", "weg:attraversare", "grundwoerter:qui"],
   neu: `
+il duomo | der Dom
+il castello | die Burg, das Schloss
+la torre | der Turm
+il municipio | das Rathaus
+il centro storico | die Altstadt
+l'ufficio turistico | die Touristeninformation
+il bancomat | der Geldautomat
+in fondo | am Ende, hinten
+la prima / la seconda / la terza | die erste / zweite / dritte
+Scusi, sa dov'è il duomo? | Entschuldigung, wissen Sie, wo der Dom ist?
+Mi può aiutare? | Können Sie mir helfen?
+Cerco l'ufficio turistico. | Ich suche die Touristeninformation.
+C'è un bancomat qui vicino? | Gibt es hier in der Nähe einen Geldautomaten?
+Quanto dista la stazione? | Wie weit ist es bis zum Bahnhof?
+Posso andarci a piedi? | Kann ich zu Fuß hingehen?
+Ci vogliono dieci minuti. | Man braucht zehn Minuten.
+Al primo incrocio giri a sinistra. | An der ersten Kreuzung biegen Sie links ab.
+Attraversi la piazza. | Überqueren Sie den Platz.
+Continui dritto fino alla chiesa. | Gehen Sie weiter geradeaus bis zur Kirche.
+È in fondo alla strada. | Es ist am Ende der Straße.
+È sulla destra. | Es ist auf der rechten Seite.
+Mi dispiace, non lo so. | Tut mir leid, ich weiß es nicht.
+Può indicarmi la strada? | Können Sie mir den Weg zeigen?
+Dove posso comprare un biglietto dell'autobus? | Wo kann ich eine Busfahrkarte kaufen?
+Il centro storico è molto bello. | Die Altstadt ist sehr schön.
+Grazie mille, molto gentile! | Vielen Dank, sehr freundlich!
+Abito in centro. | Ich wohne im Zentrum.
+La mia città è piccola. | Meine Stadt ist klein.
+Mi piace passeggiare in centro. | Ich gehe gern im Zentrum spazieren.
 fino a | bis (zu)
 poi | dann
 a piedi | zu Fuß
@@ -375,8 +405,40 @@ Unregelmäßig (Sie): <i>vada</i> (andare), <i>venga</i> (venire), <i>tenga</i> 
 },
 l8: {
   kern: ["zeit:il giorno", "zeit:la settimana", "zeit:il mese", "zeit:l'ora", "zeit:la mattina", "zeit:il pomeriggio", "zeit:la sera", "zeit:la notte", "zeit:lunedì", "zeit:martedì", "zeit:mercoledì", "zeit:giovedì", "zeit:venerdì", "zeit:sabato", "zeit:domenica", "zeit:il fine settimana", "zeit:presto", "zeit:tardi", "zeit:dopo", "zeit:prima",
-    "verben:parlare", "verben:lavorare", "verben:abitare", "verben:mangiare", "verben:guardare", "verben:comprare", "verben:ascoltare", "verben:arrivare", "p_alltag:Che ore sono?", "p_alltag:Sono le tre."],
+    "verben:parlare", "verben:lavorare", "verben:abitare", "verben:mangiare", "verben:guardare", "verben:comprare", "verben:ascoltare", "verben:arrivare", "p_alltag:Che ore sono?", "p_alltag:Sono le tre.",
+    "zeit:il minuto", "zeit:gennaio", "zeit:febbraio", "zeit:marzo", "zeit:aprile", "zeit:maggio", "zeit:giugno", "zeit:luglio", "zeit:agosto", "zeit:settembre", "zeit:ottobre", "zeit:novembre", "zeit:dicembre",
+    "verben:aspettare", "verben:imparare", "verben:chiamare", "verben:dormire"],
   neu: `
+la sveglia | der Wecker
+l'appuntamento | der Termin, die Verabredung
+la palestra | das Fitnessstudio
+un quarto d'ora | eine Viertelstunde
+svegliarsi | aufwachen
+vestirsi | sich anziehen
+riposarsi | sich ausruhen
+fare la doccia | duschen
+fare colazione | frühstücken
+andare a letto | ins Bett gehen
+A che ora ti alzi? | Wann stehst du auf?
+Mi sveglio alle sei e mezza. | Ich wache um halb sieben auf.
+Faccio la doccia e mi vesto. | Ich dusche und ziehe mich an.
+Pranzo all'una. | Ich esse um eins zu Mittag.
+Ceno alle otto di sera. | Ich esse um acht Uhr abends zu Abend.
+Vado a letto alle undici. | Ich gehe um elf ins Bett.
+Il fine settimana dormo a lungo. | Am Wochenende schlafe ich lange.
+Che giorno è oggi? | Welcher Tag ist heute?
+Oggi è lunedì. | Heute ist Montag.
+A che ora? | Um wie viel Uhr?
+Alle tre e venti. | Um zwanzig nach drei.
+Sono le due e dieci. | Es ist zehn nach zwei.
+Sono le sette meno dieci. | Es ist zehn vor sieben.
+È mezzogiorno. | Es ist Mittag.
+Ho un appuntamento alle quattro. | Ich habe um vier einen Termin.
+Lavoro dal lunedì al venerdì. | Ich arbeite von Montag bis Freitag.
+Il martedì vado in palestra. | Dienstags gehe ich ins Fitnessstudio.
+Sono in pensione. | Ich bin in Rente.
+Ci vediamo alle otto? | Sehen wir uns um acht?
+Va bene, a più tardi! | In Ordnung, bis später!
 mezzogiorno | zwölf Uhr mittags
 mezzanotte | Mitternacht
 e mezza | halb (… Uhr dreißig)
@@ -406,8 +468,39 @@ Noi parliamo italiano. | Wir sprechen Italienisch.
 },
 l9: {
   kern: ["verkehr:il treno", "verkehr:l'autobus", "verkehr:la macchina", "verkehr:la bicicletta", "verkehr:l'aereo", "verkehr:il taxi", "verkehr:la metropolitana", "verkehr:il biglietto", "verkehr:il binario", "verkehr:la fermata", "verkehr:la partenza", "verkehr:l'arrivo", "verkehr:il ritardo", "verkehr:la valigia", "verkehr:il passaporto", "verkehr:il viaggio", "verkehr:le vacanze",
-    "p_reisen:Un biglietto per Roma, per favore.", "p_reisen:Solo andata.", "p_reisen:Andata e ritorno.", "p_reisen:A che ora parte il treno?", "p_reisen:Da quale binario parte?", "p_reisen:Il treno è in ritardo."],
+    "p_reisen:Un biglietto per Roma, per favore.", "p_reisen:Solo andata.", "p_reisen:Andata e ritorno.", "p_reisen:A che ora parte il treno?", "p_reisen:Da quale binario parte?", "p_reisen:Il treno è in ritardo.",
+    "verkehr:la nave", "stadt:il porto", "verben:partire", "verben:aspettare", "verben:andare", "verben:venire"],
   neu: `
+il volo | der Flug
+la biglietteria | der Fahrkartenschalter
+l'orario | der Fahrplan; die Uhrzeit
+la coincidenza | der Anschluss (Zug)
+il bagaglio | das Gepäck
+lo sciopero | der Streik
+la classe | die Klasse
+convalidare | entwerten (Fahrkarte)
+scendere | aussteigen
+salire | einsteigen
+Quanto costa un biglietto per Firenze? | Was kostet eine Fahrkarte nach Florenz?
+Prima o seconda classe? | Erste oder zweite Klasse?
+Seconda classe, per favore. | Zweite Klasse, bitte.
+C'è un treno diretto? | Gibt es einen Direktzug?
+Quanto dura il viaggio? | Wie lange dauert die Fahrt?
+Dura due ore. | Sie dauert zwei Stunden.
+Il treno parte dal binario tre. | Der Zug fährt von Gleis drei ab.
+Devo convalidare il biglietto? | Muss ich die Fahrkarte entwerten?
+Questo posto è libero? | Ist dieser Platz frei?
+Scusi, questo è il mio posto. | Entschuldigung, das ist mein Platz.
+A quale fermata devo scendere? | An welcher Haltestelle muss ich aussteigen?
+Mi chiama un taxi, per favore? | Rufen Sie mir bitte ein Taxi?
+Alla stazione, per favore. | Zum Bahnhof, bitte.
+Il volo è cancellato. | Der Flug ist gestrichen.
+Oggi c'è sciopero. | Heute ist Streik.
+Ho perso il treno. | Ich habe den Zug verpasst.
+Dove posso noleggiare una macchina? | Wo kann ich ein Auto mieten?
+Viaggio spesso in treno. | Ich reise oft mit dem Zug.
+Ho solo un bagaglio a mano. | Ich habe nur Handgepäck.
+Buon viaggio! | Gute Reise!
 uscire | hinausgehen
 prossimo | nächster
 cambiare | umsteigen, wechseln

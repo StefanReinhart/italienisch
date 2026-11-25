@@ -131,6 +131,23 @@ tenere | halten, behalten
 rimanere | bleiben
 scegliere | auswählen
 salire | einsteigen, hinaufgehen
+distare | entfernt sein
+volerci | brauchen (Zeit: ci vuole, ci vogliono)
+indicare | zeigen, hinweisen
+mostrare | zeigen
+continuare | weitergehen, fortsetzen
+passeggiare | spazieren gehen
+pranzare | zu Mittag essen
+cenare | zu Abend essen
+durare | dauern
+noleggiare | mieten (Auto, Fahrrad)
+cancellare | streichen, absagen
+dispiacere | leidtun (mi dispiace = es tut mir leid)
+la pensione | die Rente; die Pension
+diretto | direkt
+la destra | die rechte Seite (sulla destra)
+la sinistra | die linke Seite (sulla sinistra)
+il chilometro | der Kilometer
 accomodarsi | hereinkommen, Platz nehmen (Si accomodi! = Bitte setzen Sie sich / Kommen Sie herein)
 sedersi | sich setzen
 lavarsi | sich waschen

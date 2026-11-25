@@ -11,6 +11,7 @@
   --karte: #ffffff;
   --rand: #dde1dc;
   --schatten: 0 2px 8px rgba(0,0,0,.07);
+  --blau: #2563a8;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -26,8 +27,27 @@
     --karte: #1d2220;
     --rand: #323936;
     --schatten: none;
+    --blau: #6ea8ff;
   }
 }
+/* Diagramme der Lernkurve: dünne Linien, zurückhaltendes Raster; verstehen = grün (durchgezogen), selbst sagen = blau (gestrichelt) */
+.diagramm { background: var(--karte); border: 1px solid var(--rand); border-radius: 14px; padding: 10px 10px 6px; margin-bottom: 6px; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .raster { stroke: var(--rand); stroke-width: 1; }
+.chart .achse { fill: var(--grau); font-size: 10px; }
+.chart .linie { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .linie.s1 { stroke: var(--gruen); } .chart .linie.s2 { stroke: var(--blau); stroke-dasharray: 5 3; }
+.chart .punkt { stroke: var(--karte); stroke-width: 2; cursor: pointer; }
+.chart .punkt.s1 { fill: var(--gruen); } .chart .punkt.s2 { fill: var(--blau); }
+.chart .punkt.hohl { fill: var(--karte); stroke-width: 2; } .chart .punkt.hohl.s1 { stroke: var(--gruen); } .chart .punkt.hohl.s2 { stroke: var(--blau); }
+.chart .punkt.aktiv { r: 6; }
+.chart .direkt { font-size: 11px; font-weight: 700; fill: var(--text); }
+.chart .saeule { fill: var(--gruen); cursor: pointer; } .chart .saeule.negativ { fill: var(--rot); }
+.chart .saeule.aktiv { opacity: .7; }
+.chart .ziellinie { stroke: var(--grau); stroke-width: 1; stroke-dasharray: 3 3; }
+.diagramm-tipp { min-height: 1.3em; font-size: 13px; padding: 2px 4px; }
+.legende { display: flex; gap: 14px; font-size: 13px; margin: 0 0 4px 4px; }
+.legende .s1 { color: var(--gruen); } .legende .s2 { color: var(--blau); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; }
 body {

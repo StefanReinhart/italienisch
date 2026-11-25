@@ -151,6 +151,8 @@ function bewerte(id, r, note) {
   const key = schluessel(id, r), alt = S.karten[key];
   const k = alt || { ease: 2.5, intervall: 0, wdh: 0, faellig: 0, richtig: 0, falsch: 0, vergessen: 0 };
   const t = naechsterAbstand(alt, note);
+  // Für die Lernkurve: neue Karte oder echte Wiederholung (Karte war schon einmal gekonnt)?
+  if (!alt) statZaehlen("neu"); else if (alt.wdh > 0) statZaehlen("wdh", note > 0);
   if (note === 0) {
     if (k.wdh > 0) k.vergessen++;
     k.wdh = 0; k.intervall = 0; k.falsch++; delete k.sicher;
@@ -166,6 +168,16 @@ function bewerte(id, r, note) {
   k.zuletzt = Date.now();
   S.karten[key] = k; geuebt();
 }
+// ---------- Tagesstatistik für die Lernkurve ----------
+// Pro Tag und Gerät: w = Wiederholungen gekonnter Karten, wOk = davon gewusst, n = neue Karten.
+// Getrennt nach Gerät, damit sich Handy und PC beim Abgleich nicht gegenseitig überschreiben.
+const GERAET = (() => { try { let g = localStorage.getItem("italienisch-geraet"); if (!g) { g = Math.random().toString(36).slice(2, 8); localStorage.setItem("italienisch-geraet", g); } return g; } catch (e) { return "x"; } })();
+function statZaehlen(art, ok) {
+  S.statistik = S.statistik || {};
+  const tag = (S.statistik[heute()] = S.statistik[heute()] || {});
+  const g = (tag[GERAET] = tag[GERAET] || { w: 0, wOk: 0, n: 0 });
+  if (art === "neu") g.n++; else { g.w++; if (ok) g.wOk++; }
+}
 // Ergebnisse aus Hören und Sprechen fließen sanft in den Lernstand ein
 function rueckmeldung(id, r, ok) {
   const key = schluessel(id, r), k = S.karten[key];
@@ -174,6 +186,7 @@ function rueckmeldung(id, r, ok) {
   k.zuletzt = Date.now(); // für den Abgleich zwischen Geräten: der zuletzt geübte Stand gewinnt
   if (ok) k.richtig++;
   else {
+    if (k.wdh > 0) statZaehlen("wdh", false); // gekonnte Karte beim Hören/Sprechen nicht gewusst = vergessen
     k.falsch++; delete k.sicher;
     k.ease = Math.max(1.3, k.ease - 0.1);
     k.intervall = Math.max(1, Math.round(k.intervall / 2));
@@ -571,6 +584,198 @@ function standSerie() {
     ${S.tage[heute()] ? "" : `<button class="btn voll" data-gehe="heute">▶ Heute üben</button>`}`);
 }
 
+// ---------- Lernkurve: was kann ich wirklich – und wie schnell lerne ich? ----------
+// Abrufwahrscheinlichkeit einer Karte (Vergessenskurve): Der Abstand ist so gewählt, dass man die Karte zum Termin
+// noch zu etwa 90 % weiß. Davor ist sie höher, danach sinkt sie:  R = 0,9 ^ (Tage seit dem letzten Üben / Abstand).
+function abrufW(z, zeitpunkt) {
+  if (!z || !z.wdh) return 0;
+  const letzte = z.zuletzt || (z.faellig - (z.intervall || 1) * TAG);
+  return Math.pow(0.9, Math.max(0, (zeitpunkt - letzte) / TAG) / Math.max(1, z.intervall));
+}
+// Rückblick für Tage vor der Aufzeichnung: frühere Wiederholungen grob nachbilden (Abstände wie bei „Gut“)
+const STANDARD_ABSTAENDE = [1, 3, 8, 20, 50, 125, 313];
+function abrufWDamals(z, zeitpunkt) {
+  if (!z || !z.wdh || !z.zuletzt) return 0;
+  let t = z.zuletzt, k = z.wdh, abstand = Math.max(1, z.intervall);
+  while (k >= 1) {
+    if (t <= zeitpunkt) return Math.pow(0.9, (zeitpunkt - t) / TAG / abstand);
+    k--; if (k < 1) break;
+    abstand = STANDARD_ABSTAENDE[k - 1] || 1; // Abstand nach der k-ten Wiederholung
+    t -= abstand * TAG;
+  }
+  return 0; // damals noch nicht gelernt
+}
+let A1_IDS = null;
+const a1Ids = () => A1_IDS || (A1_IDS = new Set(LEKTION_LISTE.flatMap(lektionKarten).map((k) => k.id)));
+// Wie viele Karten könntest du zu diesem Zeitpunkt abrufen? (Summe der Wahrscheinlichkeiten)
+function wortschatzMessen(zeitpunkt = Date.now(), damals = false) {
+  const f = damals ? abrufWDamals : abrufW, a1 = a1Ids();
+  let itde = 0, deit = 0, inA1 = 0;
+  for (const key in S.karten) {
+    const [id, r] = key.split("|"); if (!KARTE_NACH_ID[id]) continue;
+    const p = f(S.karten[key], zeitpunkt);
+    if (r === "it-de") itde += p; else deit += p;
+    if (a1.has(id)) inA1 += p;
+  }
+  return { itde: Math.round(itde), deit: Math.round(deit), a1: Math.round(inA1) };
+}
+// A1 gilt als erreicht, wenn 90 % des Lektionsstoffs (Karten in den geübten Richtungen) abrufbar sind
+const a1Ziel = () => Math.round(a1Ids().size * richtungenFuer(S.einstellungen.richtung).length * 0.9);
+const tagMinus = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+// Tageswerte festhalten: heute gemessen, fehlende frühere Tage (seit dem ersten Übungstag) nachträglich geschätzt
+function verlaufAktualisieren() {
+  S.verlauf = S.verlauf || {};
+  const vorher = JSON.stringify(S.verlauf[heute()] ? { ...S.verlauf[heute()], zeit: 0 } : null);
+  const tage = Object.keys(S.tage || {}).sort();
+  if (tage.length) for (let d = new Date(tage[0] + "T12:00:00"); d.toISOString().slice(0, 10) < heute(); d.setDate(d.getDate() + 1)) {
+    const k = d.toISOString().slice(0, 10);
+    if (!S.verlauf[k]) S.verlauf[k] = { ...wortschatzMessen(new Date(k + "T23:59:00").getTime(), true), geschaetzt: true, zeit: 0 };
+  }
+  S.verlauf[heute()] = { ...wortschatzMessen(), zeit: Date.now() };
+  return JSON.stringify({ ...S.verlauf[heute()], zeit: 0 }) !== vorher; // true = hat sich geändert
+}
+function statSumme(von, bis) {
+  let w = 0, wOk = 0, n = 0;
+  Object.entries(S.statistik || {}).forEach(([d, geraete]) => { if (d >= von && d <= bis) Object.values(geraete).forEach((g) => { w += g.w; wOk += g.wOk; n += g.n; }); });
+  return { w, wOk, n, quote: w ? Math.round((100 * wOk) / w) : null };
+}
+function lernAnalyse() {
+  if (verlaufAktualisieren()) { try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(S)); } catch (e) {} }
+  const v = S.verlauf, jetzt = v[heute()], summe = (x) => x.itde + x.deit;
+  // Zuwachs pro Tag: Vergleich mit dem Stand vor (bis zu) 7 Tagen
+  const frueher = Object.keys(v).filter((d) => d < heute()).sort();
+  const basis = frueher.find((d) => d >= tagMinus(7)) || frueher[0] || null;
+  const spanne = basis ? Math.max(1, Math.round((Date.parse(heute()) - Date.parse(basis)) / TAG)) : 0;
+  const tempoA1 = basis ? (jetzt.a1 - v[basis].a1) / spanne : null;
+  const tempo = basis ? (summe(jetzt) - summe(v[basis])) / spanne : null;
+  const w7 = statSumme(tagMinus(6), heute()), wVor = statSumme(tagMinus(13), tagMinus(7));
+  const ziel = a1Ziel();
+  // Schneller als die eingestellten neuen Karten pro Tag kann der Wortschatz auf Dauer nicht wachsen
+  // (jede neue Karte bringt gut 0,9 abrufbare Karten) – sonst wäre die Prognose nach einem fleißigen Start zu optimistisch.
+  const obergrenze = S.einstellungen.neueProTag * 0.9;
+  const tempoPrognose = tempoA1 == null ? null : Math.min(tempoA1, obergrenze);
+  let prognose = null;
+  if (jetzt.a1 >= ziel) prognose = { erreicht: true };
+  else if (tempoPrognose > 0.5) { const tage = (ziel - jetzt.a1) / tempoPrognose; prognose = { tage, datum: new Date(Date.now() + tage * TAG), begrenzt: tempoA1 > obergrenze }; }
+  return { jetzt, tempo, tempoA1, spanne, w7, wVor, ziel, prognose, empfehlung: lernEmpfehlung(w7, wVor) };
+}
+// Empfehlung: mehr oder weniger neue Karten – nach Behaltensquote, ihrem Trend und dem Rückstand an fälligen Karten
+function lernEmpfehlung(w7, wVor) {
+  const neu = S.einstellungen.neueProTag, faellig = anzahlFaellig();
+  const aktiveTage = Object.keys(S.statistik || {}).filter((d) => d >= tagMinus(6)).length || 1;
+  const wdhProTag = Math.round(w7.w / aktiveTage);
+  const e = (art, wert, text) => ({ art, wert, text });
+  if (w7.w < 30) return e("info", neu, `Für eine Empfehlung braucht es noch etwas mehr Wiederholungen (bisher ${w7.w} von mindestens 30 in 7 Tagen) – üb einfach weiter.`);
+  if (w7.quote < 80) return e("weniger", Math.max(5, neu - 5), `Bei Wiederholungen weißt du zurzeit nur ${w7.quote} % – es kommt mehr Neues dazu, als hängen bleibt. Weniger neue Karten geben dem Gedächtnis Zeit.`);
+  if (wVor.w >= 30 && w7.quote < wVor.quote - 7) return e("weniger", Math.max(5, neu - 5), `Deine Behaltensquote ist gesunken (${wVor.quote} % → ${w7.quote} %). Etwas weniger Neues hilft, das Gelernte zu festigen.`);
+  if (faellig > Math.max(60, 2 * wdhProTag)) return e("weniger", Math.max(5, neu - 10), `Es sind ${faellig} Karten fällig – mehr, als du sonst an zwei Tagen wiederholst. Erst den Rückstand abbauen, dann wieder mehr Neues.`);
+  if (w7.quote >= 92 && faellig <= Math.max(20, wdhProTag)) return e("mehr", Math.min(40, neu + 5), `Du weißt ${w7.quote} % der Wiederholungen und hast keinen Rückstand – du kannst mehr Neues vertragen.`);
+  return e("passt", neu, `Behaltensquote ${w7.quote} % – im guten Bereich (80–92 %), kein Rückstand. ${neu} neue Karten pro Tag passen.`);
+}
+const prognoseText = (p) => !p ? "Für eine Prognose braucht es noch ein paar Übungstage mit Zuwachs."
+  : p.erreicht ? "🎉 Du hast A1 erreicht: 90 % des Lektionsstoffs sind abrufbar."
+  : `Wenn du in diesem Tempo weiterlernst, erreichst du A1 voraussichtlich <b>${p.datum.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</b> (in etwa ${p.tage < 21 ? Math.round(p.tage) + " Tagen" : p.tage < 120 ? Math.round(p.tage / 7) + " Wochen" : Math.round(p.tage / 30) + " Monaten"}).`
+    + (p.begrenzt ? ` <small>Gerechnet mit ${S.einstellungen.neueProTag} neuen Karten pro Tag – schneller wächst der Wortschatz mit dieser Einstellung nicht.</small>` : "");
+
+// Kleine SVG-Diagramme ohne Bibliothek. Antippen oder Überfahren eines Punktes/Balkens zeigt den Wert darunter.
+const kurzDatum = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".";
+function diagramm(id, svg, legende = "") {
+  return `<div class="diagramm" id="${id}">${legende}${svg}<div class="diagramm-tipp leise">Punkt oder Balken antippen für den genauen Wert.</div></div>`;
+}
+function achsenRaster(B, H, L, U, max, format) {
+  return [0, 0.5, 1].map((f) => { const y = U - f * (U - 10); return `<line x1="${L}" x2="${B}" y1="${y}" y2="${y}" class="raster"/><text x="${L - 4}" y="${y + 4}" class="achse" text-anchor="end">${format(max * f)}</text>`; }).join("");
+}
+function xBeschriftung(tage, x, U) {
+  const idx = tage.length <= 3 ? tage.map((_, i) => i) : [0, Math.floor((tage.length - 1) / 2), tage.length - 1];
+  return [...new Set(idx)].map((i) => `<text x="${x(i)}" y="${U + 16}" class="achse" text-anchor="middle">${kurzDatum(tage[i])}</text>`).join("");
+}
+const schoeneGrenze = (v) => { const s = [5, 10, 20, 25, 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000, 3000, 5000]; return s.find((x) => x >= v) || Math.ceil(v / 1000) * 1000; };
+function linienDiagramm(tage, serien) { // serien: [{name, klasse, werte:[], gestrichelt}]
+  const B = 320, H = 170, L = 38, U = H - 24;
+  const max = schoeneGrenze(Math.max(5, ...serien.flatMap((s) => s.werte)));
+  const x = (i) => (tage.length === 1 ? (L + B) / 2 : L + 8 + (i * (B - L - 46)) / (tage.length - 1));
+  const y = (v) => U - (v / max) * (U - 10);
+  const linien = serien.map((s) => `<polyline class="linie ${s.klasse}" points="${s.werte.map((v, i) => `${x(i)},${y(v)}`).join(" ")}"/>`
+    + s.werte.map((v, i) => `<circle class="punkt ${s.klasse}${s.geschaetzt && s.geschaetzt[i] ? " hohl" : ""}" cx="${x(i)}" cy="${y(v)}" r="4" data-tipp="${kurzDatum(tage[i])}: ${s.name} ${v}${s.geschaetzt && s.geschaetzt[i] ? " (nachträglich geschätzt)" : ""}"/>`).join("")
+    + `<text x="${x(s.werte.length - 1) + 7}" y="${y(s.werte[s.werte.length - 1]) + 4}" class="direkt ${s.klasse}">${s.werte[s.werte.length - 1]}</text>`).join("");
+  return `<svg viewBox="0 0 ${B} ${H}" class="chart">${achsenRaster(B - 40, H, L, U, max, (v) => Math.round(v))}${linien}${xBeschriftung(tage, x, U)}</svg>`;
+}
+function balkenDiagramm(tage, werte, opt = {}) { // opt: {max, ziel, einheit, tipps}
+  const B = 320, H = 150, L = 38, U = H - 24;
+  const hatNeg = werte.some((v) => v < 0);
+  const max = opt.max || schoeneGrenze(Math.max(5, ...werte.map(Math.abs)));
+  const null0 = hatNeg ? (U + 10) / 2 : U, skala = (hatNeg ? (U - 10) / 2 : U - 10) / max;
+  const breite = Math.min(22, (B - L - 10) / tage.length - 2);
+  const x = (i) => L + 6 + i * ((B - L - 10) / tage.length) + ((B - L - 10) / tage.length - breite) / 2;
+  const balken = werte.map((v, i) => v == null ? "" : `<rect class="saeule${v < 0 ? " negativ" : ""}" x="${x(i)}" y="${v >= 0 ? null0 - v * skala : null0}" width="${breite}" height="${Math.max(1, Math.abs(v) * skala)}" rx="3" data-tipp="${(opt.tipps || [])[i] || kurzDatum(tage[i]) + ": " + v + (opt.einheit || "")}"/>`).join("");
+  const ziel = opt.ziel != null ? `<line x1="${L}" x2="${B}" y1="${null0 - opt.ziel * skala}" y2="${null0 - opt.ziel * skala}" class="ziellinie"/><text x="${B}" y="${null0 - opt.ziel * skala - 4}" class="achse" text-anchor="end">Ziel ${opt.ziel}${opt.einheit || ""}</text>` : "";
+  const raster = hatNeg
+    ? `<line x1="${L}" x2="${B}" y1="${null0}" y2="${null0}" class="raster"/><text x="${L - 4}" y="${null0 + 4}" class="achse" text-anchor="end">0</text><text x="${L - 4}" y="14" class="achse" text-anchor="end">+${max}</text><text x="${L - 4}" y="${U + 4}" class="achse" text-anchor="end">−${max}</text>`
+    : achsenRaster(B, H, L, U, max, (v) => Math.round(v) + (opt.einheit || ""));
+  const xi = (i) => x(i) + breite / 2;
+  return `<svg viewBox="0 0 ${B} ${H}" class="chart">${raster}${ziel}${balken}${xBeschriftung(tage, xi, U)}</svg>`;
+}
+function diagrammeKlickbar() {
+  $app.querySelectorAll(".diagramm").forEach((d) => {
+    const tipp = d.querySelector(".diagramm-tipp");
+    const zeigen = (ev) => { const t = ev.target.closest("[data-tipp]"); if (!t) return; tipp.textContent = t.dataset.tipp; d.querySelectorAll(".aktiv").forEach((x) => x.classList.remove("aktiv")); t.classList.add("aktiv"); };
+    d.addEventListener("click", zeigen); d.addEventListener("mouseover", zeigen);
+  });
+}
+function lernkurveSeite() {
+  setzeKopf("📈 Lernkurve", "start");
+  const a = lernAnalyse(), e = a.empfehlung;
+  const tage = Object.keys(S.verlauf).sort().slice(-30);
+  const v = tage.map((d) => S.verlauf[d]);
+  // 1. Behaltensquote der letzten 14 Tage
+  const tage14 = Array.from({ length: 14 }, (_, i) => tagMinus(13 - i));
+  const quoten = tage14.map((d) => statSumme(d, d));
+  // 3. Zuwachs pro Tag (Unterschied zum Vortag)
+  const zuwachs = tage.slice(1).map((d, i) => (v[i + 1].itde + v[i + 1].deit) - (v[i].itde + v[i].deit));
+  const empfFarbe = e.art === "weniger" ? "warnung" : e.art === "mehr" ? "gut" : "info";
+  zeige(`
+    <div class="statistik">
+      <div><b>${a.jetzt.itde}</b><span>Wörter & Sätze verstehst du gerade</span></div>
+      <div><b>${a.jetzt.deit}</b><span>kannst du gerade selbst sagen</span></div>
+      <div><b>${a.w7.quote == null ? "–" : a.w7.quote + " %"}</b><span>Behaltensquote (7 Tage)</span></div>
+      <div><b>${a.tempo == null ? "–" : (a.tempo >= 0 ? "+" : "") + a.tempo.toLocaleString("de-DE", { maximumFractionDigits: 1 })}</b><span>Zuwachs pro Tag${a.spanne ? ` (${a.spanne} ${a.spanne === 1 ? "Tag" : "Tage"})` : ""}</span></div>
+    </div>
+    <div class="meldung info">🎯 ${prognoseText(a.prognose)}<br><small>A1 = 90 % des Lektionsstoffs abrufbar: Ziel ${a.ziel}, jetzt ${a.jetzt.a1}.</small></div>
+    <div class="meldung ${empfFarbe === "warnung" ? "schlecht" : empfFarbe}">💡 <b>Empfehlung: ${e.art === "weniger" ? "weniger neue Karten" : e.art === "mehr" ? "mehr neue Karten" : e.art === "passt" ? "weiter so" : "noch zu früh"}</b><br>${e.text}
+      ${e.wert !== S.einstellungen.neueProTag ? `<br><button class="btn" id="empfJa" style="margin-top:8px">Übernehmen: ${e.wert} neue Karten pro Tag (bisher ${S.einstellungen.neueProTag})</button>` : ""}</div>
+
+    <h2>1. Behaltensquote</h2>
+    <p class="leise">Wie viel Prozent der Wiederholungen du noch wusstest – der ehrlichste Wert dafür, ob Gelerntes hängen bleibt. Gut: 80–92 %.</p>
+    ${quoten.every((q) => !q.w) ? `<p class="meldung info">Die Aufzeichnung der Wiederholungen läuft ab jetzt – nach ein paar Übungstagen erscheinen hier die Balken.</p>` : diagramm("dQuote", balkenDiagramm(tage14, quoten.map((q) => q.quote), { max: 100, ziel: 85, einheit: " %", tipps: tage14.map((d, i) => quoten[i].w ? `${kurzDatum(d)}: ${quoten[i].quote} % (${quoten[i].wOk} von ${quoten[i].w} Wiederholungen gewusst)` : `${kurzDatum(d)}: keine Wiederholungen`) }))}
+
+    <h2>2. Abrufbarer Wortschatz</h2>
+    <p class="leise">Wie viele Karten du an jedem Tag wahrscheinlich abrufen konntest. Hohle Punkte: nachträglich geschätzt (vor Beginn der Aufzeichnung).</p>
+    ${diagramm("dWortschatz", linienDiagramm(tage, [
+      { name: "verstehen", klasse: "s1", werte: v.map((x) => x.itde), geschaetzt: v.map((x) => !!x.geschaetzt) },
+      { name: "selbst sagen", klasse: "s2", werte: v.map((x) => x.deit), geschaetzt: v.map((x) => !!x.geschaetzt) }
+    ]), `<div class="legende"><span class="s1">● verstehen</span><span class="s2">● selbst sagen</span></div>`)}
+
+    <h2>3. Zuwachs pro Tag</h2>
+    <p class="leise">Neu Gelerntes minus Vergessenes (beide Richtungen zusammen). Rote Balken: An dem Tag ist mehr verblasst als dazugekommen – das passiert an Tagen ohne Üben.</p>
+    ${zuwachs.length ? diagramm("dZuwachs", balkenDiagramm(tage.slice(1), zuwachs, { tipps: tage.slice(1).map((d, i) => `${kurzDatum(d)}: ${zuwachs[i] >= 0 ? "+" : ""}${zuwachs[i]} Karten`) })) : `<p class="leise">Ab dem zweiten Tag zu sehen.</p>`}
+
+    <details class="leise" style="margin-top:16px"><summary>So wird gerechnet</summary>
+      <p>Für jede Karte schätzt die App, wie wahrscheinlich du sie gerade weißt: Zum Wiederholungstermin etwa 90 %, davor mehr, danach sinkt es (Vergessenskurve). Die Summe über alle Karten ist dein abrufbarer Wortschatz. Der Zuwachs pro Tag ist der Unterschied zu vor bis zu 7 Tagen, die Prognose rechnet diesen Zuwachs bis zum A1-Ziel weiter. Am Anfang ist sie noch ungenau – sie wird mit jeder Woche verlässlicher.</p>
+      <p>Behaltensquote: nur Wiederholungen von Karten, die du schon einmal konntest – Fehler bei neuen Karten zählen nicht, die gehören zum Lernen dazu.</p></details>`);
+  diagrammeKlickbar();
+  const ja = document.getElementById("empfJa");
+  if (ja) ja.onclick = () => { S.einstellungen.neueProTag = e.wert; S.empfehlungAntwort = { datum: heute(), art: e.art }; speichern(); toast(`Gespeichert: ${e.wert} neue Karten pro Tag.`); ohneSprung(lernkurveSeite); };
+}
+// Hinweis auf der Startseite, wenn die Empfehlung eine Änderung ist (höchstens alle 7 Tage, wenn man „Später“ sagt)
+function empfehlungHinweis(a) {
+  const e = a.empfehlung;
+  if (!["weniger", "mehr"].includes(e.art) || e.wert === S.einstellungen.neueProTag) return "";
+  const antw = S.empfehlungAntwort;
+  if (antw && antw.art === e.art && antw.datum > tagMinus(7)) return "";
+  return `<div class="meldung ${e.art === "weniger" ? "schlecht" : "gut"}">📈 <b>Lern-Analyse:</b> ${e.text}
+    <div class="reihe" style="margin:8px 0 0"><button class="btn" id="hEmpfJa">${e.wert} neue Karten pro Tag</button><button class="btn zweit" id="hEmpfNein">Später</button></div></div>`;
+}
+
 // ---------- Startseite ----------
 function startseite() {
   setzeKopf("Italienisch lernen", null);
@@ -583,7 +788,9 @@ function startseite() {
   const gram = gFaellig("verb:") + gFaellig("art:") + gFaellig("satz:") + gFaellig("ce:") + gFaellig("vsatz:") + gFaellig("lk:") + gFaellig("zahl:");
   const gespr = gFaellig("dialog:");
   const fehlerZahl = anzahlFehler();
-  zeige(`${schluesselWarnung()}${sicherungsHinweis()}
+  const la = lernAnalyse();
+  const prog = la.prognose && !la.prognose.erreicht ? ` · A1 voraussichtlich ${la.prognose.datum.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}` : la.prognose ? " · A1 erreicht 🎉" : "";
+  zeige(`${schluesselWarnung()}${sicherungsHinweis()}${empfehlungHinweis(la)}
     <div class="statistik">
       <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
       <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
@@ -593,6 +800,7 @@ function startseite() {
     <div class="kacheln">
       <button class="kachel breit haupt" data-gehe="heute"><span class="sym">▶️</span><span><b>Heute üben</b><br><small>${hOffen ? `${hs.length - hOffen} von ${hs.length} Schritten erledigt · ca. 15–20 Minuten` : "🎉 Für heute geschafft!"}</small></span></button>
       <button class="kachel breit" data-gehe="lektionen"><span class="sym">📚</span><span><b>Alle Lektionen</b><br><small>${gesamtGefestigt().prozent} % sitzen fest · ${LEKTION_LISTE.filter(durchgearbeitet).length} von 12 durchgearbeitet${akt ? ` · als Nächstes: Lektion ${akt.nr} – ${esc(akt.titel)}` : ""}</small></span></button>
+      <button class="kachel breit" data-gehe="lernkurve"><span class="sym">📈</span><span><b>Lernkurve</b><br><small>${la.jetzt.itde} verstehen · ${la.jetzt.deit} selbst sagen${la.tempo != null ? ` · ${la.tempo >= 0 ? "+" : ""}${la.tempo.toLocaleString("de-DE", { maximumFractionDigits: 1 })} pro Tag` : ""}${prog}</small></span></button>
       <button class="kachel breit" data-gehe="karten"><span class="sym">🗂️</span><span><b>Karteikarten</b><br><small>Vokabeln und Phrasen lernen und wiederholen</small></span></button>
       <button class="kachel" data-gehe="grammatik"><span class="sym">📘</span><b>Grammatik</b><small>${gram ? `<b>${gram} zum Wiederholen</b>` : "Verben, Artikel, Satzbau"}</small></button>
       <button class="kachel" data-gehe="dialoge"><span class="sym">🎧</span><b>Hör-Dialoge</b><small>Kurze Gespräche verstehen</small></button>
@@ -607,6 +815,10 @@ function startseite() {
     </div>
     ${TTS ? "" : `<div class="meldung info">Dieses Gerät kann nicht vorlesen. Bitte Chrome verwenden.</div>`}
   `);
+  // Empfehlung aus der Lern-Analyse annehmen oder auf später verschieben
+  const ej = document.getElementById("hEmpfJa"), en = document.getElementById("hEmpfNein");
+  if (ej) ej.onclick = () => { S.einstellungen.neueProTag = la.empfehlung.wert; S.empfehlungAntwort = { datum: heute(), art: la.empfehlung.art }; speichern(); toast(`Gespeichert: ${la.empfehlung.wert} neue Karten pro Tag.`); ohneSprung(startseite); };
+  if (en) en.onclick = () => { S.empfehlungAntwort = { datum: heute(), art: la.empfehlung.art }; speichern(); ohneSprung(startseite); };
 }
 
 // ---------- Themen auswählen (für Karten, Hören, Sprechen) ----------
@@ -2311,7 +2523,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -2325,6 +2537,10 @@ function zusammenfuehren(lokal, fern) {
   lokal.grammatik = mische(lokal.grammatik, fern.grammatik, (a, b) => (a.zuletzt || b.zuletzt ? juenger(a, b) : (b.richtig + b.falsch > a.richtig + a.falsch ? b : a)));
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
+  // Statistik: je Tag und Gerät – vom selben Gerät gilt der weitere Stand
+  lokal.statistik = mische(lokal.statistik, fern.statistik, (a, b) => mische(a, b, (x, y) => (y.w + y.n > x.w + x.n ? y : x)));
+  // Verlauf (geschätzter Wortschatz je Tag): echter Messwert schlägt nachträgliche Schätzung, sonst der spätere
+  lokal.verlauf = mische(lokal.verlauf, fern.verlauf, (a, b) => (a.geschaetzt && !b.geschaetzt ? b : b.geschaetzt && !a.geschaetzt ? a : (b.zeit || 0) > (a.zeit || 0) ? b : a));
   lokal.lektionen = mische(lokal.lektionen, fern.lektionen, (a, b) => ({ ...a, ...b, schritte: [...new Set([...(a.schritte || []), ...(b.schritte || [])])], bestanden: a.bestanden || b.bestanden }));
   lokal.eigeneAntworten = mische(lokal.eigeneAntworten, fern.eigeneAntworten, (a, b) => [...new Set([...(a || []), ...(b || [])])]);
   const cf = new Map((lokal.claudeFehler || []).map((f) => [f.text, f])); (fern.claudeFehler || []).forEach((f) => cf.has(f.text) || cf.set(f.text, f)); lokal.claudeFehler = [...cf.values()];
@@ -2704,7 +2920,7 @@ function route() {
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
     fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
-    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg)
+    phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();
 }

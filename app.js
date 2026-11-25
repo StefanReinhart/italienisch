@@ -348,6 +348,11 @@ function vergleiche(ziel, gesagt) {
 const ohneAkzente = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 const saeubern = (s) => zahlenAlsWorte(s).toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, " ").replace(/'\s*/g, "'").replace(/\s+/g, " ").trim();
 const ARTIKEL_RE = /^(il |lo |la |i |gli |le |l')/;
+// „Was?“ gibt es dreimal: che cosa / cosa / che (Cos'è = Che cos'è). Steht auf einer Seite cosa oder che cosa am Anfang,
+// gelten alle drei Formen als gleich. Nur dann – sonst könnte „che“ auch „welche“ heißen (Che ore sono?).
+const WAS_RE = /^(che cosa |cosa |che cos'|cos')/;
+const wasNorm = (s) => s.replace(/^che cos'/, "cos'").replace(/^(che cosa|cosa|che) /, "§ ");
+const wasGleich = (a, b) => (WAS_RE.test(a) || WAS_RE.test(b)) && wasNorm(a) === wasNorm(b);
 function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
   if (!e) return { stufe: "falsch", text: "Keine Antwort eingegeben." };
@@ -358,10 +363,14 @@ function pruefeEingabe(eingabe, karte) {
     const zs = saeubern(z);
     let r;
     if (e === zs) r = { stufe: "richtig", wert: 4 };
+    else if (wasGleich(e, zs)) r = { stufe: "richtig", wert: 4 };
     else if (ohneAkzente(e) === ohneAkzente(zs)) r = { stufe: "akzent", wert: 3 };
+    else if (wasGleich(ohneAkzente(e), ohneAkzente(zs))) r = { stufe: "akzent", wert: 3 };
     else if (ARTIKEL_RE.test(zs) && ohneAkzente(e) === ohneAkzente(zs.replace(ARTIKEL_RE, ""))) r = { stufe: "artikel", wert: 2 };
     else {
-      const s = aehnlich(ohneAkzente(e), ohneAkzente(zs));
+      let a = ohneAkzente(e), b = ohneAkzente(zs);
+      if (WAS_RE.test(a) || WAS_RE.test(b)) { a = wasNorm(a); b = wasNorm(b); } // Tippfehler bei „cosa fai …“ = fast richtig
+      const s = aehnlich(a, b);
       r = s >= 0.8 ? { stufe: "fast", wert: 1 + s } : { stufe: "falsch", wert: s };
     }
     if (r.wert > best.wert) best = { ...r, ziel: z };

@@ -149,6 +149,7 @@ window.HINWEISE = {
   "p_weg:Mi sono perso.": "Als Frau: Mi sono persa.",
   // Lektions-Sätze
   "lk_l1:Cos'è?": "Kurz für „Che cosa è?“ = Was ist das?",
+  "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",
   "lk_l1:Prego, si accomodi.": "Höfliche Aufforderung: Bitte setzen Sie sich / kommen Sie herein.",
   "lk_l1:Scusi, non ho capito.": "„ho capito“ ist Vergangenheit (ich habe verstanden) – als feste Wendung lernen.",

@@ -40,6 +40,14 @@ const LEKTION_GRUPPEN = (window.LEKTIONEN || []).filter((l) => l.neu).map((l, i)
   return { ...g, eintraege: zeilen(l.neu).map(mitKennung(g)) };
 });
 const PHRASEN_GRUPPEN = PHRASEN.map((t) => ({ ...t, eintraege: zeilen(t.liste).map(mitKennung(t)) })).concat(LEKTION_GRUPPEN);
+// Wörter aus data/woerterbuch.js (Grundformen aus Phrasen und Sätzen) sind ebenfalls Karteikarten – Kennung "wb:<italienisch>".
+// Was es schon als Karte gibt (gleicher italienischer Text), wird nicht doppelt aufgenommen.
+const WB_GRUPPE = (() => {
+  const schon = new Set(THEMEN.flatMap((t) => t.eintraege).concat(LEKTION_GRUPPEN.flatMap((g) => g.eintraege)).map((e) => e.it.toLowerCase().trim()));
+  const g = { id: "wb", name: "Wörter aus Phrasen & Sätzen", icon: "📖" };
+  return { ...g, liste: "", eintraege: zeilen(window.WOERTERBUCH || "").filter((e) => !schon.has(e.it.toLowerCase().trim())).map((e) => ({ it: e.it, de: e.de, id: "wb:" + e.it, thema: "wb" })) };
+})();
+THEMEN.push(WB_GRUPPE);
 const ALLE_WOERTER = THEMEN.flatMap((t) => t.eintraege);
 const ALLE_PHRASEN = PHRASEN_GRUPPEN.flatMap((t) => t.eintraege);
 const ALLE_KARTEN = ALLE_WOERTER.concat(ALLE_PHRASEN);
@@ -1564,7 +1572,27 @@ function lektionKarten(L) {
   // über die feste Kennung (bleibt beim Bearbeiten gleich); alte Einträge mit reinem Text gehen zur Sicherheit auch
   const kern = (L.kern || []).map((t) => KARTE_NACH_ID[t] || KARTE_NACH_TEXT[t]).filter(Boolean);
   const eigene = GRUPPE_NACH_ID["lk_" + L.id] ? GRUPPE_NACH_ID["lk_" + L.id].eintraege : [];
-  return [...new Map(kern.concat(eigene).map((k) => [k.id, k])).values()];
+  return [...new Map(kern.concat(eigene, wbFuerLektion(L.id)).map((k) => [k.id, k])).values()];
+}
+// Wörterbuch-Karten der ersten Lektion zuordnen, in deren Wörtern/Sätzen sie (oder eine Verbform davon) vorkommen
+let WB_ZUORDNUNG = null;
+function wbFuerLektion(lid) {
+  if (!WB_ZUORDNUNG) {
+    WB_ZUORDNUNG = {};
+    const woerterDer = LEKTION_LISTE.map((L) => {
+      const kern = (L.kern || []).map((t) => KARTE_NACH_ID[t] || KARTE_NACH_TEXT[t]).filter(Boolean);
+      const eigene = GRUPPE_NACH_ID["lk_" + L.id] ? GRUPPE_NACH_ID["lk_" + L.id].eintraege : [];
+      const s = new Set(); kern.concat(eigene).forEach((k) => woerterVon(k.it).forEach((w) => s.add(w.n)));
+      return { id: L.id, s };
+    });
+    WB_GRUPPE.eintraege.forEach((e) => {
+      const vf = verbFormen(e);
+      const suche = vf ? vf.formen.map((f) => normWort(f.split(" ").pop())) : woerterVon(e.it.split(" / ")[0]).map((w) => w.n).slice(-1);
+      const treffer = woerterDer.find((l) => suche.some((w) => l.s.has(w)));
+      if (treffer) (WB_ZUORDNUNG[treffer.id] = WB_ZUORDNUNG[treffer.id] || []).push(e);
+    });
+  }
+  return WB_ZUORDNUNG[lid] || [];
 }
 // Fragen über ihre feste Kennung (id; bei noch nie bearbeiteten Fragen ist das der ursprüngliche Fragetext)
 const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => (q.id || q.f) === f) || ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
@@ -2470,7 +2498,7 @@ function kachelHtml(e, gesucht) {
   const form = vf ? vf.formen.findIndex((f) => normWort(f.split(" ").pop()) === gesucht) : -1;
   return `<div class="eintrag kachel-wort" data-wort="${encodeURIComponent(e.id)}" role="button" tabindex="0">${lautBtn(e.it, true)}
     <div class="mitte"><div class="it">${esc(e.it)}</div><div class="de">${esc(e.de)}</div>
-      ${form >= 0 ? `<div class="ministand">Form: <b>${esc(vf.formen[form])}</b> (${PERSONEN[form]})</div>` : ""}${miniStand(e.id)}</div><span class="pfeil">›</span></div>`;
+      ${form >= 0 ? `<div class="ministand">Form: <b>${esc(vf.formen[form])}</b> (${PERSONEN[form]})</div>` : ""}</div><span class="pfeil">›</span></div>`;
 }
 const wbEintragHtml = kachelHtml;
 function lernstandZeile(id, r) {
@@ -2500,7 +2528,7 @@ function wortSeite(arg) {
     <h2>Lernstand</h2>
     ${istKarte ? `<table class="tab lernstand-tab">${lernstandZeile(id, "it-de")}${lernstandZeile(id, "de-it")}</table>
       <button class="btn voll" id="wUeben" style="margin-top:10px">🗂️ Diese Karte jetzt üben</button>`
-      : `<p class="leise">Dieses Wort steht nur im Wörterbuch (es kommt in Phrasen oder Sätzen vor) und ist keine eigene Karteikarte.</p>`}`);
+      : `<p class="leise">Für diesen Eintrag gibt es keine eigene Karteikarte.</p>`}`);
   const u = document.getElementById("wUeben");
   if (u) u.onclick = () => {
     const liste = richtungenFuer(S.einstellungen.richtung).map((r) => ({ k: e, r }));

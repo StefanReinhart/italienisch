@@ -5,5 +5,12 @@
   "de": "Wo ist die Toilette?",
   "nachricht": "Dov'è",
   "zeit": "2026-11-25"
+ },
+ {
+  "id": "p_verstaendigung:Può ripetere, per favore?",
+  "it": "Può ripetere, per favore?",
+  "de": "Können Sie das bitte wiederholen?",
+  "nachricht": "Può erklären",
+  "zeit": "2026-11-25"
  }
 ]

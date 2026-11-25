@@ -65,6 +65,10 @@ p { margin: 8px 0; }
 .hinweis.klein { font-size: 14px; padding: 5px 8px; margin-top: 5px; }
 .wunsch { margin-top: 8px; border: 1px dashed var(--rand); background: none; color: var(--grau); border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 14px; cursor: pointer; }
 .vformen { margin-top: 6px; font-size: 15px; }
+/* Wörterbuch: Buchstaben-Sprungleiste und Überschriften */
+.abc { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 10px; }
+.abc button { min-width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--rand); background: var(--karte); color: var(--gruen); font: inherit; font-weight: 700; cursor: pointer; }
+.abc-kopf { margin: 14px 0 6px; color: var(--gruen); scroll-margin-top: 70px; }
 .vformen summary { cursor: pointer; color: var(--gruen); font-weight: 600; }
 .vformen table { margin-top: 4px; }
 .vformen td { padding: 2px 8px 2px 0; vertical-align: middle; }

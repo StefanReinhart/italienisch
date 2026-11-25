@@ -2461,7 +2461,17 @@ function nachschlagen() {
   const n = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const zeichnen = () => {
     const q = n(feld.value.trim());
-    if (!q) { aus.innerHTML = `<p class="leise">${WOERTERBUCH_LISTE.length} Wörter. Bei Verben siehst du unter „Formen“ alle Formen – und du findest ein Verb auch über eine Form (z. B. „consiglia“ → consigliare). Ganze Sätze stehen unter 💬 Phrasen.</p>`; return; }
+    if (!q) {
+      // ohne Suchtext: alle Wörter alphabetisch (ohne Artikel sortiert), mit Buchstaben-Überschriften und Sprungleiste
+      const buchstabe = (e) => n(e.it.replace(/^(il |lo |la |i |gli |le |l')/i, "")).charAt(0).toUpperCase();
+      const gruppen = [];
+      WOERTERBUCH_LISTE.forEach((e) => { const b = buchstabe(e); if (!gruppen.length || gruppen[gruppen.length - 1].b !== b) gruppen.push({ b, eintraege: [] }); gruppen[gruppen.length - 1].eintraege.push(e); });
+      aus.innerHTML = `<p class="leise">${WOERTERBUCH_LISTE.length} Wörter, alphabetisch. Oben eintippen zum Filtern. Bei Verben siehst du unter „Formen“ alle Formen – und du findest ein Verb auch über eine Form (z. B. „consiglia“ → consigliare). Ganze Sätze stehen unter 💬 Phrasen.</p>
+        <div class="abc">${gruppen.map((g) => `<button data-abc="${g.b}">${g.b}</button>`).join("")}</div>
+        ${gruppen.map((g) => `<h2 class="abc-kopf" id="wb-${g.b}">${g.b}</h2>${g.eintraege.map((e) => wbEintragHtml(e)).join("")}`).join("")}`;
+      aus.querySelectorAll("[data-abc]").forEach((b) => (b.onclick = () => document.getElementById("wb-" + b.dataset.abc).scrollIntoView({ behavior: "smooth" })));
+      return;
+    }
     // Treffer: im Wort, in der Übersetzung oder in einer Verbform; genaue Treffer zuerst
     const treffer = [];
     WOERTERBUCH_LISTE.forEach((e) => {

@@ -1430,7 +1430,7 @@ function sprechenZeigen() {
         }
         geuebt();
         sprechenZeigen();
-        if (beste.v.prozent < 90) setTimeout(() => sprich(k.it), 500);
+        setTimeout(() => sprich(k.it), 500); // nach dem Sprechen immer die richtige Aussprache vorlesen – auch wenn es richtig war
       },
       fehler: (text) => { mikro.classList.remove("hoert"); status.textContent = text; sprechen.status = ""; },
       ende: () => mikro.classList.remove("hoert")

@@ -260,3 +260,5 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .nuss.an { opacity: 1; filter: none; }
 .karte > .nuss { position: absolute; top: 4px; right: 4px; }
 .kachel-wort .rang { min-width: 26px; font-weight: 700; }
+.walnuss { width: 1.1em; height: 1.1em; vertical-align: -0.18em; display: inline-block; }
+.nuss .walnuss { width: 30px; height: 30px; display: block; }

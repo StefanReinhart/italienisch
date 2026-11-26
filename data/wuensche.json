@@ -19,5 +19,12 @@
   "de": "Ich bin nicht von hier.",
   "nachricht": "Di erklären",
   "zeit": "2026-11-26"
+ },
+ {
+  "id": "wb:a",
+  "it": "a",
+  "de": "in, nach, zu, um (Uhrzeit)",
+  "nachricht": "Auch von? Zb a Monaco",
+  "zeit": "2026-11-26"
  }
 ]

@@ -1287,10 +1287,49 @@ function sprechGewicht(k) {
   const a = S.aussprache[k.id];
   return gewicht(k.id, "de-it") + (a && a.letzter < 70 ? 3 : 0) + (a ? 0 : 0.5);
 }
-function sprechenStarten(eintraege) {
-  sprechen = { liste: gewichtetZiehen(eintraege, sprechGewicht, eintraege.length), pos: 0, ergebnis: null, status: "", gezeigt: false };
+// opt.fest: Reihenfolge übernehmen · opt.modusFuer(k): Modus je Satz · opt.endlich: mit Abschluss statt endlos
+// opt.danach: wird am Ende aufgerufen (z. B. Fragen im Lektionsschritt) · opt.zurueck: Ziel des Zurück-Knopfs
+function sprechenStarten(eintraege, opt = {}) {
+  const liste = opt.fest ? eintraege : gewichtetZiehen(eintraege, sprechGewicht, eintraege.length);
+  sprechen = { liste, pos: 0, ergebnis: null, status: "", gezeigt: false, modi: opt.modusFuer ? liste.map(opt.modusFuer) : null,
+    endlich: !!opt.endlich, danach: opt.danach || null, zurueck: opt.zurueck || null, titel: opt.titel || "Sprechen", gewusst: 0, gefragt: 0 };
   geheZu("sprechen-ueben");
 }
+// ---------- Sätze sprechen (für „Heute üben“ und den Lektionsschritt „Sprechen“) ----------
+const istSatz = (k) => k.it.trim().split(/\s+/).length >= 3;
+const HEUTE_SAETZE = 20, LEKTION_SAETZE = 8;
+// Schon bekannte Sätze aus dem Gedächtnis sagen; ganz neue erst anhören und nachsprechen
+const satzModus = (k) => (istNeu(k.id, "it-de") && istNeu(k.id, "de-it") ? "hoeren" : "gedaechtnis");
+function saetzeAuswaehlen(karten, n, vorrang) {
+  const saetze = [...new Map(karten.filter(istSatz).map((k) => [k.id, k])).values()];
+  const bekannt = saetze.filter((k) => satzModus(k) === "gedaechtnis");
+  const gew = (k) => sprechGewicht(k) * (istFaellig(k.id, "de-it") ? 3 : 1) * (vorrang && vorrang.has(k.id) ? 1.5 : 1);
+  const liste = gewichtetZiehen(bekannt, gew, n);
+  // zu wenig bekannte Sätze: mit neuen aus den Vorrang-Karten auffüllen (die werden erst angehört)
+  if (liste.length < n) liste.push(...saetze.filter((k) => !liste.includes(k) && (!vorrang || vorrang.has(k.id))).slice(0, n - liste.length));
+  return liste;
+}
+function heuteSaetze() {
+  const lek = begonneneLektionen(), aktiv = aktiveLektionen().length ? aktiveLektionen() : lek;
+  const alleLek = [...new Set(lek.concat(aktiv))];
+  const quelle = alleLek.length ? alleLek.flatMap(lektionKarten) : kartenDerThemen(S.einstellungen.themen);
+  if (!quelle.some((k) => istSatz(k) && satzModus(k) === "gedaechtnis")) return []; // erst wenn schon Sätze gelernt sind
+  return saetzeAuswaehlen(quelle, HEUTE_SAETZE, aktiv.length ? new Set(aktiv.flatMap(lektionKarten).map((k) => k.id)) : null);
+}
+function sprechenFertig() {
+  const d = sprechen.danach, n = sprechen.liste.length, g = sprechen.gewusst, f = sprechen.gefragt;
+  if (d) { toast(`🎤 ${n} Sätze geübt – jetzt noch die Fragen.`, 2500); return d(); }
+  setzeKopf(sprechen.titel, sprechen.zurueck || "sprechen");
+  zeige(`<div class="ergebnis">
+      <div class="gross">🎤</div>
+      <h2>${n} Sätze geübt!</h2>
+      ${f ? `<p>Aus dem Gedächtnis richtig: <b>${g} von ${f}</b></p>` : ""}
+      <p class="leise">Was nicht geklappt hat, kommt bald wieder dran.</p>
+    </div>
+    ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${sprechen.zurueck || "sprechen"}">Zurück</button></div>`}`);
+}
+// Auswahl fürs Sprechen: die gewählten Themen – standardmäßig nur ganze Sätze (ab 3 Wörtern)
+const sprechKarten = () => kartenDerThemen(S.einstellungen.themen).filter((k) => S.einstellungen.nurSaetze === false || istSatz(k));
 function sprechenMenue() {
   setzeKopf("Sprechen", "start");
   zeige(`
@@ -1303,21 +1342,24 @@ function sprechenMenue() {
       hoeren: "Du siehst nur den deutschen Satz und hörst den italienischen vorgelesen. Den italienischen Text zeigt die App erst, wenn du auf „Text zeigen“ tippst oder gesprochen hast.",
       gedaechtnis: "Du siehst nur den deutschen Satz und sagst ihn ohne Hilfe auf Italienisch. Das Ergebnis zählt für den Lernstand „selbst sagen“."
     }[S.einstellungen.sprechenModus]} Was dir schwerfällt, kommt bevorzugt dran.</p>
-    <button class="btn voll" id="sLos" ${kartenDerThemen(S.einstellungen.themen).length ? "" : "disabled"}>🎤 Sprechen starten (${kartenDerThemen(S.einstellungen.themen).length} Einträge)</button>
+    ${umschalter("snur", S.einstellungen.nurSaetze === false ? "alle" : "saetze", [["saetze", "Nur Sätze"], ["alle", "Wörter und Sätze"]])}
+    <button class="btn voll" id="sLos" ${sprechKarten().length ? "" : "disabled"}>🎤 Sprechen starten (${sprechKarten().length} ${S.einstellungen.nurSaetze === false ? "Einträge" : "Sätze"})</button>
     <h2>Was möchtest du sprechen?</h2>
     <p class="leise">Themen antippen, mehrere sind möglich. Dieselbe Auswahl wie bei den Karteikarten und beim Hören.</p>
     <h2>Phrasen</h2>${themenAuswahl(PHRASEN_GRUPPEN, S.einstellungen.themen)}
     <h2>Wortschatz</h2>${themenAuswahl(THEMEN, S.einstellungen.themen)}`);
   $app.querySelectorAll("#smodus button").forEach((b) => (b.onclick = () => { S.einstellungen.sprechenModus = b.dataset.w; speichern(); ohneSprung(sprechenMenue); }));
   themenKlickbar(sprechenMenue);
-  document.getElementById("sLos").onclick = () => sprechenStarten(kartenDerThemen(S.einstellungen.themen));
+  $app.querySelectorAll("#snur button").forEach((b) => (b.onclick = () => { S.einstellungen.nurSaetze = b.dataset.w === "saetze"; speichern(); ohneSprung(sprechenMenue); }));
+  document.getElementById("sLos").onclick = () => sprechenStarten(sprechKarten());
 }
 function sprechenZeigen() {
   if (!sprechen) return abgelaufen("sprechen");
-  setzeKopf("Sprechen", "sprechen");
+  setzeKopf(sprechen.titel || "Sprechen", sprechen.zurueck || "sprechen");
   const k = sprechen.liste[sprechen.pos];
   const e = sprechen.ergebnis;
-  const modus = S.einstellungen.sprechenModus;
+  const modus = sprechen.modi ? sprechen.modi[sprechen.pos] : S.einstellungen.sprechenModus;
+  const letzter = sprechen.endlich && sprechen.pos === sprechen.liste.length - 1;
   const verdeckt = modus === "gedaechtnis";
   const zeigeItalienisch = modus === "zeigen" || sprechen.gezeigt || !!e;
   const zeigeLautsprecher = !verdeckt || zeigeItalienisch;
@@ -1350,7 +1392,7 @@ function sprechenZeigen() {
     ${ergebnisHtml}
     <div class="reihe">
       <button class="btn zweit" id="zurueckK" ${sprechen.pos ? "" : "disabled"}>‹ Vorheriger</button>
-      <button class="btn" id="weiterK">Nächster ›</button>
+      <button class="btn" id="weiterK">${letzter ? "Fertig ✓" : "Nächster ›"}</button>
     </div>
     <div class="reihe" style="margin-top:0">
       ${sprechen.nichtGewusst
@@ -1360,7 +1402,7 @@ function sprechenZeigen() {
   const zeigen = document.getElementById("zeigen");
   if (zeigen) zeigen.onclick = () => {
     sprechen.gezeigt = true;
-    if (verdeckt && !sprechen.gewertet) { sprechen.gewertet = true; rueckmeldung(k.id, "de-it", false); } // nachgeschaut = nicht gewusst
+    if (verdeckt && !sprechen.gewertet) { sprechen.gewertet = true; sprechen.gefragt++; rueckmeldung(k.id, "de-it", false); } // nachgeschaut = nicht gewusst
     sprechenZeigen(); if (verdeckt) sprich(k.it);
   };
   // "Nur hören": Satz beim Erscheinen automatisch vorlesen
@@ -1382,6 +1424,7 @@ function sprechenZeigen() {
         if (verdeckt && !sprechen.gezeigt && !sprechen.gewertet) {
           sprechen.gewertet = true;
           const ok = beste.v.prozent >= 80;
+          sprechen.gefragt++; if (ok) sprechen.gewusst++;
           // neue Phrase richtig aus dem Gedächtnis gesagt → als Karteikarte "selbst sagen" aufnehmen (wie "Gut": in 2 Tagen)
           if (ok && istNeu(k.id, "de-it")) bewerte(k.id, "de-it", 2); else rueckmeldung(k.id, "de-it", ok);
         }
@@ -1397,6 +1440,7 @@ function sprechenZeigen() {
   // Von Hand als "nicht gewusst" markieren: zählt als Fehler für "selbst sagen" und für die Auswahl beim Sprechen
   const ng = document.getElementById("nichtGewusst");
   if (ng) ng.onclick = () => {
+    if (verdeckt && !sprechen.gewertet) sprechen.gefragt++;
     sprechen.nichtGewusst = true; sprechen.gewertet = true;
     if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", false);
     else bewerte(k.id, "de-it", 0); // noch nie gelernt: als Karteikarte aufnehmen, kommt gleich dran
@@ -1405,7 +1449,10 @@ function sprechenZeigen() {
     toast("Gemerkt – der Satz kommt öfter wieder.");
     sprechenZeigen();
   };
-  document.getElementById("weiterK").onclick = () => wechsel((sprechen.pos + 1) % sprechen.liste.length);
+  document.getElementById("weiterK").onclick = () => {
+    if (letzter) return sprechenFertig();
+    wechsel((sprechen.pos + 1) % sprechen.liste.length);
+  };
   document.getElementById("zurueckK").onclick = () => wechsel(Math.max(0, sprechen.pos - 1));
 }
 
@@ -1774,7 +1821,7 @@ const LEKTION_SCHRITTE = [
   { id: "woerter", sym: "🗂️", name: "Neue Wörter", text: "Wörter und Sätze der Lektion als Karteikarten" },
   { id: "grammatik", sym: "📘", name: "Grammatik", text: "Übungen zum Grammatik-Schwerpunkt" },
   { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: "Ein kurzes Gespräch zum Thema" },
-  { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Fragen zum Thema auf Italienisch beantworten" }
+  { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Sätze der Lektion sagen, dann Fragen beantworten" }
 ];
 // „Gemischt üben“ ist kein Schritt zum Abhaken, sondern eine Wiederholung, die man beliebig oft machen kann
 const GEMISCHT_ANZAHL = 30;
@@ -1984,8 +2031,11 @@ function lektionStarten(L, schritt) {
   }
   if (schritt === "dialog") return geheZu("dialog/" + L.dialog);
   if (schritt === "sprechen") {
-    gespraech = { liste: mischen(lektionFragen(L)), pos: 0 };
-    neueFrage(); return geheZu("gespraech-ueben");
+    // erst Sätze der Lektion sagen (bekannte aus dem Gedächtnis, neue nachsprechen), dann die Fragen
+    const fragen = () => { gespraech = { liste: mischen(lektionFragen(L)), pos: 0 }; neueFrage(); return geheZu("gespraech-ueben"); };
+    const lk = lektionKarten(L), saetze = saetzeAuswaehlen(lk, LEKTION_SAETZE, new Set(lk.map((k) => k.id)));
+    if (!saetze.length) return fragen();
+    return sprechenStarten(saetze, { fest: true, modusFuer: satzModus, endlich: true, danach: fragen, zurueck, titel: `Lektion ${L.nr}: Sätze sprechen` });
   }
   if (schritt === "gemischt") {
     // Gemischt üben: Grammatik, Hören (auswählen) und Diktat (eintippen) – Fälliges und Schwieriges kommt bevorzugt
@@ -2039,6 +2089,7 @@ function heuteKartenRunde() {
 // Lektionen, mit denen man schon angefangen hat (für „Gemischt“ über alle Lektionen)
 const begonneneLektionen = () => LEKTION_LISTE.filter((L) => { const st = lStand(L.id); return st.bestanden || st.schritte.length; });
 const HEUTE_GEMISCHT = 10;
+const HEUTE_FRAGEN = 5;
 function heuteGemischtAufgaben() {
   const lek = begonneneLektionen(); if (!lek.length) return [];
   // Grammatik: reihum aus jeder begonnenen Lektion (jede Lektion = eine Gruppe), Schwaches bevorzugt
@@ -2074,6 +2125,7 @@ function heuteSchritte() {
   const nNeu = runde.neue.length, nWdh = nKarten - nNeu;
   const lek = begonneneLektionen();
   const nFehler = Math.min(15, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
+  const nSaetze = heuteSaetze().length;
   // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
   const st = heuteStand(), alleDurch = !aktiveLektionen().length;
   const [sA, sB] = heuteLektionsSchritte();
@@ -2086,11 +2138,12 @@ function heuteSchritte() {
     { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
       text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
+    { id: "saetze", sym: "🎤", name: "Sätze sprechen", leer: !nSaetze, text: nSaetze ? `${nSaetze} Sätze auf Italienisch sagen – ohne Hilfe, aus dem Gedächtnis` : "noch keine Sätze – erst ein paar Karten lernen" },
     { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
       text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
     lZeile("lektionA", sA),
     lZeile("lektionB", sB),
-    { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
+    { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: `${HEUTE_FRAGEN} Fragen frei beantworten` }
   ];
 }
 let letzterKontext = null, letzteLektion = null;
@@ -2133,7 +2186,7 @@ function heuteMenue() {
   const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
   const fertig = schritte.length - offen.length;
   zeige(`
-    <p>Eine Runde von etwa <b>15–20 Minuten</b>, gut gemischt: Wiederholungen aus allen Lektionen, Neues aus der aktuellen Lektion. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
+    <p>Eine Runde von etwa <b>20–30 Minuten</b>, gut gemischt: Wiederholungen aus allen Lektionen, Neues aus der aktuellen Lektion. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
     <div class="fortschritt"><span>${fertig} / ${schritte.length}</span><div class="balken"><i style="width:${(100 * fertig) / schritte.length}%"></i></div></div>
     <div class="liste">${schritte.map((s, i) => {
       const erledigt = st.erledigt.includes(s.id) || s.leer;
@@ -2171,6 +2224,11 @@ function heuteStarten(id) {
     sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
     return geheZu("karte");
   }
+  if (id === "saetze") {
+    const liste = heuteSaetze();
+    if (!liste.length) { heuteAktiv = null; return heuteMenue(); }
+    return sprechenStarten(liste, { fest: true, modusFuer: satzModus, endlich: true, zurueck: "heute", titel: "Sätze sprechen" });
+  }
   if (id === "gemischt") {
     const aufgaben = heuteGemischtAufgaben();
     if (!aufgaben.length) { heuteAktiv = null; return heuteMenue(); }
@@ -2191,7 +2249,7 @@ function heuteStarten(id) {
   }
   if (id === "dialog") return geheZu("dialog/" + naechsterDialog().id);
   if (id === "gespraech") {
-    gespraech = { liste: gewichtetZiehen(ALLE_FRAGEN, (q) => gGewicht(q.key), 3), pos: 0 };
+    gespraech = { liste: gewichtetZiehen(ALLE_FRAGEN, (q) => gGewicht(q.key), HEUTE_FRAGEN), pos: 0 };
     neueFrage(); return geheZu("gespraech-ueben");
   }
 }

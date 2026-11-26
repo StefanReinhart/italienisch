@@ -62,6 +62,7 @@ const STANDARD = {
   karten: {},          // "id|richtung" → { ease, intervall, wdh, faellig, richtig, falsch, vergessen }
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
+  nuesse: {},          // id → { drin, seit, serie, zuletzt } – „harte Nüsse“ (von Hand markiert)
   lektionen: {},       // Lektions-ID → { schritte }  (alte Stände: bestanden = früherer Abschluss-Check)
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
   eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
@@ -91,7 +92,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   // 25.11.2026: neuer Richtwert 25 neue Karten pro Tag (vorher 10) – einmalig umstellen, falls noch der alte Wert eingestellt ist
   if (!s.einstellungen.neu25) { if (s.einstellungen.neueProTag === 10) s.einstellungen.neueProTag = 25; s.einstellungen.neu25 = true; }
@@ -148,6 +149,7 @@ function naechsterAbstand(k, note) { // note: 0 nochmal, 1 schwer, 2 gut, 3 leic
   return Math.min(365, t);
 }
 function bewerte(id, r, note) {
+  nussLernen(id, note > 0);
   const key = schluessel(id, r), alt = S.karten[key];
   const k = alt || { ease: 2.5, intervall: 0, wdh: 0, faellig: 0, richtig: 0, falsch: 0, vergessen: 0 };
   const t = naechsterAbstand(alt, note);
@@ -183,6 +185,7 @@ function rueckmeldung(id, r, ok) {
   const key = schluessel(id, r), k = S.karten[key];
   if (!k) return; // neue Wörter werden nur über die Karteikarten eingeführt
   if (ok && k.faellig <= Date.now()) { bewerte(id, r, 2); return; } // fällige Karte richtig = zählt als Wiederholung
+  nussLernen(id, ok);
   k.zuletzt = Date.now(); // für den Abgleich zwischen Geräten: der zuletzt geübte Stand gewinnt
   if (ok) k.richtig++;
   else {
@@ -476,7 +479,10 @@ $app.addEventListener("click", (e) => {
   if (b) { e.stopPropagation(); sprich(b.dataset.sprich, b.dataset.langsam === "1"); }
   // Kachel eines Wortes / einer Phrase antippen (nicht den Lautsprecher) → Detailseite
   const kw = e.target.closest("[data-wort]");
-  if (kw && !b) geheZu("wort/" + kw.dataset.wort);
+  // 🥜 antippen: Karte zu den harten Nüssen legen oder wieder herausnehmen
+  const nb = e.target.closest("[data-nuss]");
+  if (nb) { e.stopPropagation(); nussUmschalten(nb.dataset.nuss); }
+  if (kw && !b && !nb) geheZu("wort/" + kw.dataset.wort);
   const g = e.target.closest("[data-gehe]");
   if (g) geheZu(g.dataset.gehe);
   if (e.target.closest("[data-heute-weiter]")) zurueckZuHeute();
@@ -908,6 +914,7 @@ function karteZeigen() {
   zeige(`
     ${fortschrittsLeiste(Math.min(sitzung.fertig + 1, sitzung.gesamt), sitzung.gesamt)}
     <div class="karte" id="karte">
+      ${nussBtn(k.id)}
       <span class="leise">${neu ? "✨ Neu · " : ""}${itDe ? "Was heißt das?" : "Wie sagt man auf Italienisch?"}</span>
       ${lernstandHtml(k.id, r)}
       <div class="wort">${esc(vorne)}</div>
@@ -1410,6 +1417,7 @@ function sprechenZeigen() {
   zeige(`
     ${fortschrittsLeiste(sprechen.pos + 1, sprechen.liste.length)}
     <div class="karte" style="min-height:auto">
+      ${nussBtn(k.id)}
       <div class="leise">${erstes ? "" : "🔁 Noch einmal – "}Sag auf Italienisch:</div>
       <div style="font-size:20px">${esc(k.de)}</div>
       <div class="trenner"></div>
@@ -2529,6 +2537,8 @@ function fehlerMenue() {
     ${karten.length + gram.length + saetze.length + fragen.length + sprechenListe.length === 0 ? `<div class="meldung gut">🎉 Im Moment gibt es keine Fehler zu wiederholen. Üb erst ein bisschen – Fehler sammeln sich hier automatisch.</div>` : ""}
     <div class="liste">
       ${zeile("fKarten", "🗂️", "Vokabeln & Phrasen", karten.length, "Karten (beide Richtungen)")}
+      <button class="zeile" data-gehe="nuesse"><span class="sym">🥜</span><span class="mitte">Harte Nüsse<small>${nussListe().length ? `<b>${nussListe().length}</b> Karten, die du selbst markiert hast` : "noch keine – auf einer Karte 🥜 antippen"}</small></span><span class="pfeil">›</span></button>
+      <button class="zeile" data-gehe="schwierig"><span class="sym">😬</span><span class="mitte">Schwierigste Karten<small>Was am häufigsten falsch war – zum Ansehen</small></span><span class="pfeil">›</span></button>
       ${zeile("fGram", "📘", "Grammatik", gram.length, "Verbformen, Artikel, c'è / ci sono")}
       ${zeile("fSatz", "🧩", "Satzbau", saetze.length, "Sätze")}
       ${zeile("fSprechen", "🎤", "Sprechen", sprechenListe.length, "Wörter und Sätze")}
@@ -2544,6 +2554,91 @@ function fehlerMenue() {
   klick("fSatz", () => { satz = null; geheZu("satzbau-fehler"); });
   klick("fSprechen", () => sprechenStarten(sprechenListe));
   klick("fFragen", () => { gespraech = { liste: mischen(fragen), pos: 0 }; neueFrage(); geheZu("gespraech-ueben"); });
+}
+
+// ---------- Harte Nüsse: von Hand markierte Karten ----------
+// Rein: 🥜 auf einer Karte antippen. Raus: 3-mal hintereinander richtig (egal in welcher Übung) oder Haken in der Liste wegnehmen.
+const NUSS_RAUS = 3;
+const istNuss = (id) => !!(S.nuesse[id] && S.nuesse[id].drin);
+const nussListe = () => Object.keys(S.nuesse).filter((id) => istNuss(id) && KARTE_NACH_ID[id]).map((id) => KARTE_NACH_ID[id]);
+function nussBtn(id) {
+  if (!KARTE_NACH_ID[id]) return "";
+  const an = istNuss(id);
+  return `<button class="nuss${an ? " an" : ""}" data-nuss="${esc(id)}" aria-pressed="${an}" title="${an ? "Ist bei den harten Nüssen – antippen zum Herausnehmen" : "Zu den harten Nüssen legen"}">🥜</button>`;
+}
+function nussSetzen(id, drin) {
+  const alt = S.nuesse[id] || {};
+  S.nuesse[id] = { ...alt, drin, serie: 0, zuletzt: Date.now(), seit: drin ? Date.now() : alt.seit };
+  speichern();
+}
+function nussUmschalten(id) {
+  const an = !istNuss(id);
+  nussSetzen(id, an);
+  document.querySelectorAll("[data-nuss]").forEach((x) => { if (x.dataset.nuss === id) { x.classList.toggle("an", an); x.setAttribute("aria-pressed", an); } });
+  toast(an ? `🥜 Zu den harten Nüssen gelegt. ${NUSS_RAUS}-mal hintereinander richtig, dann ist sie geknackt.` : "Aus den harten Nüssen genommen.", 2500);
+}
+// Normaler Lernweg: jede Antwort zählt mit – 3-mal hintereinander richtig = geknackt
+function nussLernen(id, ok) {
+  const n = S.nuesse[id]; if (!n || !n.drin) return;
+  n.zuletzt = Date.now();
+  if (!ok) { n.serie = 0; return; }
+  n.serie = (n.serie || 0) + 1;
+  if (n.serie >= NUSS_RAUS) { n.drin = false; n.serie = 0; n.geknackt = Date.now(); setTimeout(() => toast("🥜 Harte Nuss geknackt! Die Karte ist aus der Liste."), 50); }
+}
+const nussGemerkt = new Set(); // auf der Nüsse-Seite abgewählt: bleibt sichtbar, bis man die Seite verlässt
+function nuesseSeite() {
+  setzeKopf("Harte Nüsse", "fehler");
+  const ids = [...new Set(nussListe().map((k) => k.id).concat([...nussGemerkt]))];
+  const liste = ids.map((id) => KARTE_NACH_ID[id]).filter(Boolean)
+    .sort((a, b) => (istNuss(b.id) - istNuss(a.id)) || a.it.localeCompare(b.it, "it"));
+  const anzahl = nussListe().length;
+  const fehlerText = (id) => { const f = RICHTUNGEN.reduce((s, r) => s + ((zustand(id, r) || {}).falsch || 0), 0); return f ? ` · ${f} × falsch` : ""; };
+  zeige(`
+    <p>Deine <b>harten Nüsse</b>: Karten, die du selbst mit 🥜 markiert hast. Hier übst du nur sie.</p>
+    <div class="meldung info">ℹ️ <b>Rein:</b> auf einer Karte (beim Üben oder im Wörterbuch) auf 🥜 tippen.<br>
+    <b>Raus:</b> von selbst, wenn du die Karte <b>${NUSS_RAUS}-mal hintereinander richtig</b> hast – egal in welcher Übung. Oder hier den Haken wegnehmen.</div>
+    <button class="btn voll" id="nLos" ${anzahl ? "" : "disabled"}>🥜 Harte Nüsse üben (${anzahl})</button>
+    <div class="liste" style="margin-top:12px">${liste.length ? liste.map((k) => {
+      const an = istNuss(k.id), n = S.nuesse[k.id] || {};
+      const noch = an ? `noch ${NUSS_RAUS - (n.serie || 0)} × richtig bis geknackt` : "herausgenommen";
+      return `<button class="zeile${an ? " aktiv" : ""}" data-nzeile="${esc(k.id)}"><span class="mitte">${esc(k.it)}<small>${esc(k.de)} · ${noch}${fehlerText(k.id)}</small></span><span class="haken haken-gross" role="checkbox" aria-checked="${an}">${an ? "✓" : ""}</span></button>`;
+    }).join("") : `<p class="leise">Noch keine harten Nüsse. Tipp beim Üben auf 🥜, wenn eine Karte einfach nicht sitzen will – oder schau in die Liste der schwierigsten Karten.</p>`}</div>
+    <button class="btn zweit voll" data-gehe="schwierig" style="margin-top:10px">😬 Schwierigste Karten ansehen</button>`);
+  $app.querySelectorAll("[data-nzeile]").forEach((b) => (b.onclick = () => {
+    const id = b.dataset.nzeile, an = !istNuss(id);
+    nussSetzen(id, an); if (!an) nussGemerkt.add(id);
+    ohneSprung(nuesseSeite);
+  }));
+  const los = document.getElementById("nLos");
+  if (los) los.onclick = () => {
+    nussGemerkt.clear();
+    const richt = richtungenFuer(S.einstellungen.richtung);
+    const liste = mischen(nussListe().flatMap((k) => richt.map((r) => ({ k, r })))).slice(0, 30);
+    sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "nuesse" };
+    geheZu("karte");
+  };
+}
+// Die Karten, die am häufigsten falsch waren (beide Richtungen zusammen)
+function schwierigsteKarten(n = 50) {
+  const summe = {};
+  Object.entries(S.karten).forEach(([key, z]) => {
+    const [id, r] = key.split("|"); if (!KARTE_NACH_ID[id] || !z.falsch) return;
+    const s = summe[id] || (summe[id] = { k: KARTE_NACH_ID[id], falsch: 0, richtig: 0, r: {} });
+    s.falsch += z.falsch; s.richtig += z.richtig || 0; s.r[r] = z;
+  });
+  return Object.values(summe).sort((a, b) => b.falsch - a.falsch || a.richtig - b.richtig).slice(0, n);
+}
+function schwierigSeite() {
+  setzeKopf("Schwierigste Karten", "fehler");
+  const liste = schwierigsteKarten();
+  const rText = (z, name) => (z ? `${name} ${z.falsch} × falsch · ${z.richtig || 0} × richtig` : "");
+  zeige(`
+    <p>Die Karten, die du <b>am häufigsten falsch</b> hattest – oben die schwierigsten. Antippen zeigt die Erklärung, 🥜 legt sie zu den harten Nüssen.</p>
+    <div class="liste">${liste.length ? liste.map((s, i) => `<div class="eintrag kachel-wort" data-wort="${encodeURIComponent(s.k.id)}" role="button" tabindex="0">
+      <div class="rang leise">${i + 1}.</div>
+      <div class="mitte"><div class="it">${esc(s.k.it)}</div><div class="de">${esc(s.k.de)}</div>
+        <div class="ministand">${[rText(s.r["de-it"], "🇩🇪→🇮🇹"), rText(s.r["it-de"], "🇮🇹→🇩🇪")].filter(Boolean).join("<br>")}</div></div>
+      ${nussBtn(s.k.id)}</div>`).join("") : `<p class="leise">Noch keine Fehler – sehr gut!</p>`}</div>`);
 }
 
 // ---------- Fehler einer Lektion: derselbe Lernstand, nur auf die Lektion gefiltert ----------
@@ -2675,7 +2770,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -2688,6 +2783,7 @@ function zusammenfuehren(lokal, fern) {
   lokal.karten = mische(lokal.karten, fern.karten, juenger);
   lokal.grammatik = mische(lokal.grammatik, fern.grammatik, (a, b) => (a.zuletzt || b.zuletzt ? juenger(a, b) : (b.richtig + b.falsch > a.richtig + a.falsch ? b : a)));
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
+  lokal.nuesse = mische(lokal.nuesse, fern.nuesse, juenger);
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
   // Statistik: je Tag und Gerät – vom selben Gerät gilt der weitere Stand
   lokal.statistik = mische(lokal.statistik, fern.statistik, (a, b) => mische(a, b, (x, y) => (y.w + y.n > x.w + x.n ? y : x)));
@@ -2888,6 +2984,7 @@ function wortSeite(arg) {
     <table class="tab vformen-tab">${vf.formen.map((f, i) => `<tr${normWort(f.split(" ").pop()) === gesucht ? ' class="treffer"' : ""}><td class="leise">${PERSONEN[i]}</td><td><b>${esc(f)}</b></td><td class="leise">${PERSONEN_DE[i]}</td><td>${lautBtn(f, true)}</td></tr>`).join("")}</table>` : "";
   zeige(`
     <div class="karte" style="text-align:center">
+      ${nussBtn(e.id)}
       <div class="wort">${esc(e.it)}</div>
       <div class="mitte-zentriert" style="flex-direction:row;justify-content:center">${lautBtn(e.it)}${langsamBtn(e.it)}</div>
       <div class="loesung" style="font-size:22px">${esc(e.de)}</div>
@@ -3071,7 +3168,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    fehler: fehlerMenue, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    fehler: fehlerMenue, nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

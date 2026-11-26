@@ -253,3 +253,10 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 
 #toast { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 16px); background: #222; color: #fff; padding: 14px 16px; border-radius: 14px; text-align: center; z-index: 10; max-width: 600px; margin: 0 auto; }
 @media (max-width: 360px) { .bewertung { grid-template-columns: 1fr 1fr; } body { font-size: 18px; } }
+
+/* Harte Nüsse: 🥜 oben rechts auf der Karte – blass = nicht markiert, kräftig = bei den harten Nüssen */
+.karte { position: relative; }
+.nuss { background: none; border: 0; font-size: 24px; line-height: 1; padding: 8px; cursor: pointer; opacity: .45; filter: grayscale(1); flex: none; }
+.nuss.an { opacity: 1; filter: none; }
+.karte > .nuss { position: absolute; top: 4px; right: 4px; }
+.kachel-wort .rang { min-width: 26px; font-weight: 700; }

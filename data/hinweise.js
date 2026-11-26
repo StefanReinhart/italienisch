@@ -11,7 +11,8 @@ window.ABGELEHNTE_ANTWORTEN = {
 // KARTEN_ALTERNATIVEN: italienische Antworten (Deutsch → Italienisch), KARTEN_ALTERNATIVEN_DE: deutsche (Italienisch → Deutsch).
 // Format:  "kennung": ["andere richtige Antwort", …],
 window.KARTEN_ALTERNATIVEN = {
-  "lk_l1:Cos'è?": ["Cos'è questo?", "Che cos'è questo?", "Che cos'è?"]
+  "lk_l1:Cos'è?": ["Cos'è questo?", "Che cos'è questo?", "Che cos'è?"],
+  "lk_l1:Loro sono amici.": ["Sono amici."]
 };
 window.KARTEN_ALTERNATIVEN_DE = {
 };
@@ -191,6 +192,8 @@ window.HINWEISE = {
   "lk_l1:Prego, si accomodi.": "Bitte setzen Sie sich / kommen Sie herein (accomodarsi). Sie-Aufforderung: -are-Verben enden hier auf -i – si accomodi, nicht si accomoda (= er/sie nimmt Platz). Zu „du“: Accomodati!",
   "lk_l1:Scusi, non ho capito.": "scusi = Entschuldigen Sie (Sie-Aufforderung von scusare, -are → -i). „ho capito“ ist Vergangenheit (ich habe verstanden) – als feste Wendung lernen.",
   "lk_l1:Il piacere è mio.": "Antwort auf „Piacere!“ – wörtlich: Das Vergnügen ist meins.",
+  "lk_l1:Loro sono amici.": "„loro“ muss man nicht sagen: Sono amici. reicht – die Verbform zeigt schon, wer gemeint ist. loro (io, tu, lei …) sagt man nur zur Betonung oder zum Gegenüberstellen: Io sono tedesco, loro sono italiani.",
+  "lk_l1:Io sono Marco, lei è Anna.": "Hier braucht man io und lei, weil zwei Personen gegenübergestellt werden. Ohne Betonung genügt: Sono Marco.",
   "lk_l1:Come si scrive?": "si scrive = man schreibt (wörtlich: es schreibt sich). „si“ + Verb heißt oft „man“: Come si dice? = Wie sagt man? · Si mangia bene qui = Hier isst man gut.",
   "lk_l1:Ti presento Anna.": "ti = dir (dich). Es steht vor dem Verb: ti presento = ich stelle dir vor. Höflich (Sie): Le presento Anna.",
   "lk_l1:Mi scusi!": "Wörtlich: „Mich entschuldigen Sie!“ – also „Entschuldigen Sie mich!“ (scusare = entschuldigen, mi = mich). Sie-Aufforderung: -are-Verben enden hier auf -i (scusi, nicht scusa). Zu Freunden: Scusa! / Scusami!",

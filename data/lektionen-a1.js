@@ -14,6 +14,8 @@ No, non sono italiano. | Nein, ich bin kein Italiener.
 Noi siamo di Monaco. | Wir sind aus München.
 Siete in vacanza? | Seid ihr im Urlaub?
 Loro sono amici. | Sie sind Freunde.
+Siamo amici. | Wir sind Freunde.
+Io sono Marco, lei è Anna. | Ich bin Marco, sie ist Anna.
 Come si chiama Lei? | Wie heißen Sie?
 Anch'io sono tedesco. | Ich bin auch Deutscher.
 Ci vediamo domani! | Wir sehen uns morgen!

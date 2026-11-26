@@ -1774,10 +1774,31 @@ const LEKTION_SCHRITTE = [
 const GEMISCHT_ANZAHL = 30;
 let lektionAktiv = null, lektionTiefe = null;
 function lStand(id) { S.lektionen = S.lektionen || {}; return (S.lektionen[id] = S.lektionen[id] || { schritte: [] }); }
-// Durchgearbeitet = alle Schritte abgehakt (ältere Stände: früher bestandener Abschluss-Check zählt auch)
-const durchgearbeitet = (L) => { const st = lStand(L.id); return !!st.bestanden || LEKTION_SCHRITTE.every((s) => st.schritte.includes(s.id)); };
-const aktuelleLektion = () => LEKTION_LISTE.find((l) => !durchgearbeitet(l)) || null;
-const offeneSchritte = (L) => (lStand(L.id).bestanden ? [] : LEKTION_SCHRITTE.filter((s) => !lStand(L.id).schritte.includes(s.id)));
+// Ist ein Schritt erledigt? „Neue Wörter“ erst, wenn ALLE Karten der Lektion kennengelernt sind (oder von Hand abgehakt) –
+// eine einzelne Runde mit 12 Karten reicht nicht. Die anderen Schritte: einmal gemacht oder abgehakt.
+function schrittErledigt(L, sid) {
+  const st = lStand(L.id);
+  if (sid === "woerter") { const w = lektionWoerterStand(L); return w.kennen >= w.gesamt || !!st.woerterVonHand; }
+  return st.schritte.includes(sid);
+}
+// Durchgearbeitet = alle Schritte erledigt.
+const durchgearbeitet = (L) => LEKTION_SCHRITTE.every((s) => schrittErledigt(L, s.id));
+// Bis zu drei Lektionen laufen parallel: Die nächste Lektion beginnt, sobald bei der vorigen alle Schritte außer
+// „Neue Wörter“ erledigt sind – deren restliche Wörter kommen nebenher dran. Mehr als drei unfertige Lektionen gibt es nicht.
+const MAX_PARALLEL = 3;
+const bereitFuerNaechste = (L) => LEKTION_SCHRITTE.every((s) => s.id === "woerter" || schrittErledigt(L, s.id));
+function aktiveLektionen() {
+  const aktiv = [];
+  for (const L of LEKTION_LISTE) {
+    if (durchgearbeitet(L)) continue;
+    aktiv.push(L);
+    if (aktiv.length >= MAX_PARALLEL || !bereitFuerNaechste(L)) break;
+  }
+  return aktiv;
+}
+// Die „aktuelle“ Lektion = die vorderste der aktiven (dort geht es mit neuen Schritten weiter)
+const aktuelleLektion = () => { const a = aktiveLektionen(); return a[a.length - 1] || null; };
+const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !schrittErledigt(L, s.id));
 // Karten einer Lektion = Kernwortschatz (vorhandene Wörter/Sätze, über den italienischen Text gefunden) + eigene Lektions-Gruppe
 const KARTE_NACH_TEXT = {};
 ALLE_KARTEN.forEach((k) => { if (!k.thema.startsWith("lk_") && !KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k; });
@@ -1852,16 +1873,17 @@ const festBalken = (g) => `<div class="balken" title="${g.prozent} % sitzen fest
 function lektionenMenue() {
   setzeKopf("Lektionen", "start");
   lektionAktiv = null;
-  const akt = aktuelleLektion(), durch = LEKTION_LISTE.filter(durchgearbeitet).length, gs = gesamtGefestigt();
+  const akt = aktuelleLektion(), aktiv = aktiveLektionen(), durch = LEKTION_LISTE.filter(durchgearbeitet).length, gs = gesamtGefestigt();
   zeige(`
     <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du sie kannst, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
     <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog und Sprechen – dazu „Gemischt üben“ zum Wiederholen. Alle sind offen: Du kannst jederzeit springen.</p>
+    <p class="leise">„Heute üben“ arbeitet bis zu ${MAX_PARALLEL} Lektionen gleichzeitig ab: Die nächste beginnt, sobald bei der vorigen alle Schritte außer „Neue Wörter“ erledigt sind – deren restliche Wörter kommen nebenher dran.</p>
     <p class="leise">„% sitzen fest“ zeigt, was du wirklich kannst: Karten, die erst in einem halben Jahr wiederkommen, und Grammatik-Aufgaben und Fragen, die du sechsmal hintereinander richtig hattest (Karten zählen am meisten). Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
     <div class="fortschritt"><span>Alle 12: ${gs.prozent} % sitzen fest · ${durch} / ${LEKTION_LISTE.length} durchgearbeitet</span>${festBalken(gs)}</div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
-      const st = lStand(L.id), fertig = LEKTION_SCHRITTE.filter((s) => st.schritte.includes(s.id)).length, d = durchgearbeitet(L);
+      const st = lStand(L.id), fertig = LEKTION_SCHRITTE.filter((s) => schrittErledigt(L, s.id)).length, d = durchgearbeitet(L);
       const g = lektionGefestigt(L);
-      const status = d ? `✓ durchgearbeitet` : L === akt ? `<b>▶ empfohlen</b> · ${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : fertig ? `${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : "noch nicht begonnen";
+      const status = d ? `✓ durchgearbeitet` : L === akt ? `<b>▶ aktuell</b> · ${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : aktiv.includes(L) ? `<b>läuft nebenher</b> · ${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : fertig ? `${fertig} von ${LEKTION_SCHRITTE.length} Schritten` : "noch nicht begonnen";
       const fest = d || fertig || g.fest || g.lernen ? ` · <b>${g.prozent} % sitzen fest</b>${festBalken(g)}` : "";
       return `<button class="zeile${d ? " aktiv" : ""}" data-gehe="lektion/${L.id}"><span class="sym">${L.icon}</span>
         <span class="mitte">${L.nr}. ${esc(L.titel)}<small>${status}${fest}</small></span><span class="pfeil">›</span></button>`;
@@ -1883,8 +1905,8 @@ function lektionZeigen(id) {
     <button class="zeile" id="lGemischt" style="margin-bottom:12px"><span class="sym">🔀</span><span class="mitte"><b>Gemischt üben</b><small>${GEMISCHT_ANZAHL} gemischte Aufgaben aus der ganzen Lektion – Hören, Diktat und Grammatik. Beliebig oft, am besten immer wieder.</small></span><span class="pfeil">›</span></button>
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
-      const erledigt = st.schritte.includes(s.id) || !!st.bestanden;
-      const extra = s.id === "woerter" ? ` · ${w.kennen} von ${w.gesamt} kennengelernt` : "";
+      const erledigt = schrittErledigt(L, s.id);
+      const extra = s.id === "woerter" ? ` · <b>${w.kennen} von ${w.gesamt} kennengelernt</b>${w.kennen < w.gesamt && !st.woerterVonHand ? " – fertig, wenn alle dran waren" : ""}` : "";
       const text = s.text + extra;
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
         <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
@@ -1902,9 +1924,10 @@ function lektionZeigen(id) {
   $app.querySelectorAll("[data-lhaken]").forEach((h) => (h.onclick = (ev) => {
     ev.stopPropagation();
     const id = h.dataset.lhaken;
-    // alter Stand „Check bestanden“: beim ersten Antippen in einzelne Haken umwandeln
-    if (st.bestanden) { st.schritte = LEKTION_SCHRITTE.map((s) => s.id); delete st.bestanden; }
-    st.schritte = st.schritte.includes(id) ? st.schritte.filter((x) => x !== id) : st.schritte.concat(id);
+    if (id === "woerter") { // „Neue Wörter“ ergibt sich aus den Karten; von Hand abhaken = „reicht mir so“
+      if (schrittErledigt(L, "woerter") && !st.woerterVonHand) return toast("Alle Karten dieser Lektion sind schon kennengelernt.", 3000);
+      st.woerterVonHand = !st.woerterVonHand;
+    } else st.schritte = st.schritte.includes(id) ? st.schritte.filter((x) => x !== id) : st.schritte.concat(id);
     speichern(); ohneSprung(() => lektionZeigen(L.id));
   }));
   document.getElementById("lClaude").onclick = () => { claudeWerte.szene = L.szene; geheZu("claude"); };
@@ -1989,12 +2012,19 @@ function heuteStand() {
   return S.heute;
 }
 // Karteikarten für „Heute üben“: ALLE fälligen Wiederholungen – egal ob aus Lektion, Thema oder Phrasen –
-// plus bis zu 5 neue Karten aus der aktuellen Lektion (sind alle Lektionen durch: aus den gewählten Themen). Höchstens 20.
+// plus bis zu 5 neue Karten aus den aktiven Lektionen, die älteste zuerst (sind alle Lektionen durch: aus den Themen). Höchstens 20.
 function heuteKartenRunde() {
   const richt = richtungenFuer(S.einstellungen.richtung);
   const fa = faelligeKarten().filter((x) => richt.includes(x.r));
-  const L = aktuelleLektion();
-  const neue = rundePlanen(L ? lektionKarten(L) : kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung).neue.slice(0, Math.min(5, neueHeuteUebrig()));
+  const aktiv = aktiveLektionen(), frei = Math.min(5, neueHeuteUebrig());
+  let neue = [], L = null;
+  for (const A of aktiv) { // erst die Wörter der ältesten aktiven Lektion fertig machen
+    if (neue.length >= frei) break;
+    const n = rundePlanen(lektionKarten(A), S.einstellungen.richtung).neue.filter((x) => !neue.some((y) => y.k.id === x.k.id && y.r === x.r));
+    if (n.length && !L) L = A;
+    neue = neue.concat(n.slice(0, frei - neue.length));
+  }
+  if (!aktiv.length) neue = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung).neue.slice(0, frei);
   const f = fa.slice(0, 20 - neue.length), liste = [];
   let d = 0, n = 0;
   while (d < f.length || n < neue.length) { if (n < neue.length && (d >= f.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(f[d++]); }
@@ -2015,28 +2045,45 @@ function heuteGemischtAufgaben() {
   const hoeren = gewichtetZiehen(bekannt.length >= 4 ? bekannt : karten, (k) => gewicht(k.id, "it-de"), HEUTE_GEMISCHT - gram.length).map((k) => hoerAufgabe(k, karten));
   return mischen(gram.concat(hoeren));
 }
+// Die zwei Lektionsschritte für heute ({ L, s }):
+//  A = Fortschritt: nächster offener Schritt der vordersten aktiven Lektion
+//  B = Nachholen: „Neue Wörter“ einer älteren aktiven Lektion, sonst der übernächste Schritt der vordersten
+// Was heute schon über diese Zeilen gemacht wurde, bleibt an seinem Platz stehen.
+function heuteLektionsSchritte() {
+  const aktiv = aktiveLektionen(); if (!aktiv.length) return [null, null];
+  const vorn = aktiv[aktiv.length - 1], st = heuteStand();
+  const gemerkt = (x) => (x && LEKTION_NACH_ID[x.lid] ? { L: LEKTION_NACH_ID[x.lid], s: LEKTION_SCHRITTE.find((s) => s.id === x.sid) } : null);
+  const offenVorn = offeneSchritte(vorn);
+  const a = gemerkt(st.lektionAMerk) || (offenVorn[0] ? { L: vorn, s: offenVorn[0] } : null);
+  let b = gemerkt(st.lektionBMerk);
+  if (!b) {
+    const aelter = aktiv.slice(0, -1).find((L) => !schrittErledigt(L, "woerter") && !(a && a.L === L && a.s.id === "woerter"));
+    const s2 = offenVorn.find((s) => !a || a.L !== vorn || s.id !== a.s.id);
+    b = aelter ? { L: aelter, s: LEKTION_SCHRITTE.find((s) => s.id === "woerter") } : s2 ? { L: vorn, s: s2 } : null;
+  }
+  return [a, b];
+}
 function heuteSchritte() {
   const runde = heuteKartenRunde(), nKarten = runde.liste.length;
   const nNeu = runde.neue.length, nWdh = nKarten - nNeu;
   const lek = begonneneLektionen();
   const nFehler = Math.min(8, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
-  // Zwei Schritte der aktuellen Lektion (offene Schritte der Reihe nach)
-  const L = aktuelleLektion(), offeneL = L ? offeneSchritte(L) : [];
-  const st = heuteStand();
-  const lName = (nr) => {
-    const vorher = ["lektionA", "lektionB"].slice(0, nr).filter((x) => st.erledigt.includes(x)).length; // schon heute erledigte Lektionsschritte
-    const s = offeneL[nr - vorher];
-    return s ? `Lektion ${L.nr}: ${s.sym} ${s.name}` : "";
+  // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
+  const st = heuteStand(), alleDurch = !aktiveLektionen().length;
+  const [sA, sB] = heuteLektionsSchritte();
+  const lZeile = (id, x) => {
+    if (!x) return { id, sym: "📚", name: "Lektion", text: alleDurch ? "alle Lektionen durchgearbeitet" : "nichts mehr offen", leer: true };
+    const w = x.s.id === "woerter" ? lektionWoerterStand(x.L) : null;
+    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? `${w.kennen} von ${w.gesamt} Karten kennengelernt – die nächsten neuen` : x.s.text };
   };
-  const lA = st.erledigt.includes("lektionA") ? "erledigt" : lName(0), lB = st.erledigt.includes("lektionB") ? "erledigt" : lName(1);
   return [
     { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
       text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
     { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
       text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
-    { id: "lektionA", sym: "📚", name: "Lektion – nächster Schritt", text: lA || "alle Lektionen durchgearbeitet", leer: !lA },
-    { id: "lektionB", sym: "📚", name: "Lektion – noch ein Schritt", text: lB || "nichts mehr offen", leer: !lB },
+    lZeile("lektionA", sA),
+    lZeile("lektionB", sB),
     { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: "3 Fragen" }
   ];
 }
@@ -2046,7 +2093,8 @@ function schrittFertig() { // am Ende einer Übung aufrufen; true = kam aus "Heu
   if (lektionAktiv) {
     const ls = lStand(lektionAktiv.lid);
     // „Gemischt üben“ ist kein Schritt zum Abhaken
-    if (LEKTION_SCHRITTE.some((s) => s.id === lektionAktiv.schritt) && !ls.schritte.includes(lektionAktiv.schritt)) ls.schritte.push(lektionAktiv.schritt);
+    // „Neue Wörter“ wird nicht abgehakt – er ist erledigt, sobald alle Karten der Lektion kennengelernt sind
+    if (LEKTION_SCHRITTE.some((s) => s.id === lektionAktiv.schritt) && lektionAktiv.schritt !== "woerter" && !ls.schritte.includes(lektionAktiv.schritt)) ls.schritte.push(lektionAktiv.schritt);
     letzterKontext = "lektion"; letzteLektion = lektionAktiv.lid; lektionAktiv = null; kam = true;
   }
   if (heuteAktiv) {
@@ -2107,9 +2155,10 @@ function heuteMenue() {
 function heuteStarten(id) {
   heuteAktiv = id;
   if (id === "lektionA" || id === "lektionB") {
-    const L = aktuelleLektion(), s = L && offeneSchritte(L)[0];
-    if (!s) { heuteAktiv = null; return heuteMenue(); }
-    return lektionStarten(L, s.id);
+    const x = heuteLektionsSchritte()[id === "lektionA" ? 0 : 1];
+    if (!x) { heuteAktiv = null; return heuteMenue(); }
+    heuteStand()[id + "Merk"] = { lid: x.L.id, sid: x.s.id }; // merken, welche Lektion/welcher Schritt heute dran war
+    return lektionStarten(x.L, x.s.id);
   }
   if (id === "karten") {
     const { liste, neue } = heuteKartenRunde();

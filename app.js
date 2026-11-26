@@ -995,6 +995,7 @@ function grammatikMenue() {
     <details class="hilfe" style="margin-top:8px"><summary>Artikel</summary>${GRAMMATIK_HILFE.artikel}</details>
     <details class="hilfe" style="margin-top:8px"><summary>Satzbau und Verneinung</summary>${GRAMMATIK_HILFE.satz}</details>
     <details class="hilfe" style="margin-top:8px"><summary>c'è / ci sono – „es gibt“</summary>${GRAMMATIK_HILFE.ce}</details>
+    <details class="hilfe" style="margin-top:8px"><summary>Präpositionen – a, in, di, da, al, nel …</summary>${GRAMMATIK_HILFE.praep}</details>
   `);
 }
 // Übung c'è / ci sono
@@ -1430,7 +1431,7 @@ function bekannteWoerter() {
   WOERTERBUCH_LISTE.forEach((e) => { add(e.it); const vf = verbFormen(e); if (vf) vf.formen.forEach(add); });
   ALLE_VERBEN.forEach((v) => konjugiere(v).forEach(add));
   DIALOGE.forEach((d) => add(String(d.text).split("\n").map((z) => z.split("|")[1] || "").join(" ")));
-  Object.values(LUECKEN).forEach((set) => set.saetze.forEach((x) => add(x.s.replace("___", x.a))));
+  Object.values(LUECKEN).forEach((set) => set.saetze.forEach((x) => add(lueckeFuellen(x.s, x.a))));
   return (BEKANNTE_WOERTER = s);
 }
 function istZahlwort(w) {
@@ -1702,15 +1703,20 @@ function dialogZeigen(id) {
 }
 
 // ---------- Weitere Grammatik-Übungen: Lückensätze und Zahlen ----------
+// Setzt die Antwort in die Lücke(n): „a … in“ füllt zwei Lücken nacheinander, ein einzelnes Wort alle Lücken
+function lueckeFuellen(s, a) {
+  const teile = String(a).split(" … "); let i = 0;
+  return s.replace(/___/g, () => teile[Math.min(i++, teile.length - 1)]);
+}
 function lueckeAufgabe(setId, x) {
   const set = LUECKEN[setId], key = "lk:" + setId + ":" + x.s;
   const amAnfang = x.s.startsWith("___");
   const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   const optionen = x.o ? mischen(x.o) : set.optionen.map((o) => (amAnfang ? gross(o) : o));
-  const ganz = x.s.replace("___", x.a).replace(" → ", ", ").replace(/\s*\((du|Sie)\)/g, ""); // „(Sie)“ nicht mitvorlesen
+  const ganz = lueckeFuellen(x.s, x.a).replace(" → ", ", ").replace(/\s*\([^)]*\)/g, ""); // Klammer-Hinweise wie „(Sie)“ oder „(a + il)“ nicht mitvorlesen
   return {
-    frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
-    optionen, richtig: x.a, zwei: optionen.length !== 3, sprechen: ganz, erklaerung: x.s.replace("___", x.a),
+    frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace(/___/g, "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
+    optionen, richtig: x.a, zwei: optionen.length !== 3, sprechen: ganz, erklaerung: lueckeFuellen(x.s, x.a),
     beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
   };
 }
@@ -2251,7 +2257,7 @@ function fehlerFuerClaude() {
     else if (art === "art") zeilen.push(`Artikel: ${wert}`);
     else if (art === "ce") { const x = CE_CI_SONO.find((c) => c.s === wert); if (x) zeilen.push(`c'è / ci sono: ${x.s.replace("___", x.a)}`); }
     else if (art === "vsatz") { const x = VERB_SAETZE.find((c) => c.s === wert); if (x) zeilen.push(`Verb im Satz: ${x.s.replace("___", konjugiere(ALLE_VERBEN.find((v) => v.inf === x.inf))[x.p])}`); }
-    else if (art === "lk") { const set = LUECKEN[rest[0]], s = rest.slice(1).join(":"), x = set && set.saetze.find((c) => c.s === s); if (x) zeilen.push(`${set.titel}: ${x.s.replace("___", x.a).replace(" → ", " = ")}`); }
+    else if (art === "lk") { const set = LUECKEN[rest[0]], s = rest.slice(1).join(":"), x = set && set.saetze.find((c) => c.s === s); if (x) zeilen.push(`${set.titel}: ${lueckeFuellen(x.s, x.a).replace(" → ", " = ")}`); }
     else if (art === "zahl") zeilen.push(`Zahl: ${wert} = ${zahlMitAkzent(+wert)}`);
     else if (art === "satz") zeilen.push(`Satzbau: ${wert}`);
     else if (art === "dialog") { const q = ALLE_FRAGEN.find((x) => x.key === key); if (q) zeilen.push(`Antworten auf „${q.f}“ (z. B. ${q.b})`); }

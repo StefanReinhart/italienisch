@@ -144,6 +144,70 @@ Parla più piano! | Sprich langsamer! | p_aufforderung:parla
 Parli più piano! | Sprechen Sie langsamer! | p_aufforderung:parli
 Ripeti, per favore! | Wiederhol bitte! | p_aufforderung:ripeti
 Ripeta, per favore! | Wiederholen Sie bitte! | p_aufforderung:ripeta
+` },
+{ id: "p_praep", name: "Präpositionen: feste Wendungen", icon: "📌", liste: `
+a casa | zu Hause / nach Hause | p_praep:acasa
+a Roma | in Rom / nach Rom | p_praep:aroma
+in Italia | in Italien / nach Italien | p_praep:initalia
+in centro | im Zentrum / ins Zentrum | p_praep:incentro
+in città | in der Stadt | p_praep:incitta
+in campagna | auf dem Land / aufs Land | p_praep:incampagna
+in montagna | in den Bergen / in die Berge | p_praep:inmontagna
+al mare | am Meer / ans Meer | p_praep:almare
+in vacanza | im Urlaub / in den Urlaub | p_praep:invacanza
+in ufficio | im Büro / ins Büro | p_praep:inufficio
+in banca | in der Bank / zur Bank | p_praep:inbanca
+in farmacia | in der Apotheke / zur Apotheke | p_praep:infarmacia
+a scuola | in der Schule / zur Schule | p_praep:ascuola
+a letto | im Bett / ins Bett | p_praep:aletto
+a teatro | im Theater / ins Theater | p_praep:ateatro
+al cinema | im Kino / ins Kino | p_praep:alcinema
+al bar | in der Bar / in die Bar | p_praep:albar
+al ristorante | im Restaurant / ins Restaurant | p_praep:alristorante
+alla stazione | am Bahnhof / zum Bahnhof | p_praep:allastazione
+all'aeroporto | am Flughafen / zum Flughafen | p_praep:allaeroporto
+dal medico | beim Arzt / zum Arzt | p_praep:dalmedico
+da Marco | bei Marco / zu Marco | p_praep:damarco
+in macchina | mit dem Auto | p_praep:inmacchina
+in treno | mit dem Zug | p_praep:intreno
+in autobus | mit dem Bus | p_praep:inautobus
+in aereo | mit dem Flugzeug | p_praep:inaereo
+in bicicletta | mit dem Fahrrad | p_praep:inbici
+alle otto | um acht (Uhr) | p_praep:alleotto
+dalle nove alle cinque | von neun bis fünf | p_praep:dallenove
+dal lunedì al venerdì | von Montag bis Freitag | p_praep:dallunedi
+a maggio | im Mai | p_praep:amaggio
+in estate | im Sommer | p_praep:inestate
+di mattina | morgens | p_praep:dimattina
+di notte | nachts | p_praep:dinotte
+fra due giorni | in zwei Tagen | p_praep:fraduegiorni
+tra poco | gleich, in Kürze | p_praep:trapoco
+da tre anni | seit drei Jahren | p_praep:datreanni
+per una settimana | eine Woche lang | p_praep:perunasettimana
+in ritardo | zu spät, verspätet | p_praep:inritardo
+in anticipo | zu früh | p_praep:inanticipo
+in tempo | rechtzeitig | p_praep:intempo
+una tazza di tè | eine Tasse Tee | p_praep:tazzadite
+la crema di pistacchio | die Pistaziencreme | p_praep:cremadipistacchio
+il gelato al cioccolato | das Schokoladeneis | p_praep:gelatoalcioccolato
+gli spaghetti alle vongole | Spaghetti mit Venusmuscheln | p_praep:spaghettivongole
+il panino al prosciutto | das Schinkenbrötchen | p_praep:paninoprosciutto
+qualcosa da bere | etwas zu trinken | p_praep:qualcosadabere
+qualcosa da mangiare | etwas zu essen | p_praep:qualcosadamangiare
+gli occhiali da sole | die Sonnenbrille | p_praep:occhialidasole
+pensare a | denken an | p_praep:pensarea
+parlare di | sprechen über | p_praep:parlaredi
+telefonare a | (jemanden) anrufen | p_praep:telefonarea
+cominciare a | anfangen zu | p_praep:cominciarea
+smettere di | aufhören zu | p_praep:smetteredi
+Vado dal medico. | Ich gehe zum Arzt. | p_praep:vadodalmedico
+Stasera sono da Marco. | Heute Abend bin ich bei Marco. | p_praep:sonodamarco
+Abito in Germania, a Monaco. | Ich wohne in Deutschland, in München. | p_praep:abitoingermania
+Il libro è sul tavolo. | Das Buch liegt auf dem Tisch. | p_praep:sultavolo
+Le chiavi sono nella borsa. | Die Schlüssel sind in der Tasche. | p_praep:nellaborsa
+Torno fra un'ora. | Ich bin in einer Stunde zurück. | p_praep:tornofraunora
+Studio italiano da un mese. | Ich lerne seit einem Monat Italienisch. | p_praep:studiodaunmese
+Penso spesso a te. | Ich denke oft an dich. | p_praep:pensoate
 ` }
 ];
 

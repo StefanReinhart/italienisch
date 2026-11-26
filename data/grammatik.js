@@ -53,6 +53,38 @@ window.VERBEN_REGELMAESSIG = [
 
 // Kurze Erklärungen, die in der App angezeigt werden
 window.GRAMMATIK_HILFE = {
+  praep: `<p><b>Präpositionen</b> sind die kleinen Wörter wie <i>a, in, di, da, su, con, per, tra/fra</i>. Sie passen oft nicht 1:1 zum Deutschen – darum am besten mit Beispielen lernen.</p>
+<p><b>1. Wo? / Wohin? – a oder in</b></p>
+<table class="tab"><tr><th>a</th><th>in</th></tr>
+<tr><td><b>Städte:</b> a Roma, a Monaco</td><td><b>Länder, Regionen, große Inseln:</b> in Italia, in Toscana, in Sicilia</td></tr>
+<tr><td>a casa, a scuola, a letto, a teatro</td><td>in ufficio, in banca, in farmacia, in centro, in città, in montagna, in vacanza</td></tr>
+<tr><td>a piedi (zu Fuß)</td><td><b>Verkehrsmittel:</b> in macchina, in treno, in bici, in aereo</td></tr></table>
+<p>Das Schöne: <b>wo</b> und <b>wohin</b> sind gleich. <i>Sono a Roma</i> (ich bin in Rom) · <i>Vado a Roma</i> (ich fahre nach Rom).</p>
+<p><b>2. di oder da?</b></p>
+<table class="tab"><tr><th>di</th><th>da</th></tr>
+<tr><td><b>Herkunft mit essere:</b> Sono di Monaco. · Non sono di qui.</td><td><b>von … her, mit venire / partire:</b> Vengo da Monaco. · Il treno da Milano</td></tr>
+<tr><td><b>Besitz:</b> la macchina di Paolo (Paolos Auto)</td><td><b>bei / zu Personen:</b> Vado da Marco. · Sono dal medico.</td></tr>
+<tr><td><b>Menge und Sorte:</b> una tazza di caffè, la crema di pistacchio</td><td><b>seit:</b> da tre anni, da ieri</td></tr>
+<tr><td><b>Thema:</b> parlare di calcio, un libro di italiano</td><td><b>Zweck – „zum …“:</b> qualcosa da bere, gli occhiali da sole, la camera da letto</td></tr></table>
+<p><b>3. Verschmelzung mit dem Artikel</b> – <i>a, di, da, in, su</i> + <i>il, la …</i> werden ein Wort:</p>
+<table class="tab"><tr><th></th><th>il</th><th>lo</th><th>la</th><th>l'</th><th>i</th><th>gli</th><th>le</th></tr>
+<tr><td><b>a</b></td><td>al</td><td>allo</td><td>alla</td><td>all'</td><td>ai</td><td>agli</td><td>alle</td></tr>
+<tr><td><b>di</b></td><td>del</td><td>dello</td><td>della</td><td>dell'</td><td>dei</td><td>degli</td><td>delle</td></tr>
+<tr><td><b>da</b></td><td>dal</td><td>dallo</td><td>dalla</td><td>dall'</td><td>dai</td><td>dagli</td><td>dalle</td></tr>
+<tr><td><b>in</b></td><td>nel</td><td>nello</td><td>nella</td><td>nell'</td><td>nei</td><td>negli</td><td>nelle</td></tr>
+<tr><td><b>su</b></td><td>sul</td><td>sullo</td><td>sulla</td><td>sull'</td><td>sui</td><td>sugli</td><td>sulle</td></tr></table>
+<p>Muster: <b>a</b> → al-, <b>di</b> → de-, <b>da</b> → dal-, <b>in</b> → ne-, <b>su</b> → su-. Die Endung ist immer die des Artikels. <i>con</i> und <i>per</i> verschmelzen nicht: <i>con il latte</i>.</p>
+<p>Wann mit Artikel? Steht beim Wort ein Artikel, verschmilzt er: <i>a casa</i> (fest, ohne Artikel) – aber <i>al cinema, alla stazione, al mare</i>. <i>in Italia</i> – aber <i>negli Stati Uniti</i>. Essen „mit Geschmack“: <i>gelato al cioccolato, spaghetti alle vongole</i>.</p>
+<p><b>4. Zeit</b></p>
+<table class="tab"><tr><td><b>alle</b> otto · <b>a</b> mezzogiorno</td><td>um acht · um zwölf</td></tr>
+<tr><td><b>dalle</b> nove <b>alle</b> cinque · <b>dal</b> lunedì <b>al</b> venerdì</td><td>von neun bis fünf · von Montag bis Freitag</td></tr>
+<tr><td><b>a</b> maggio · <b>ad</b> agosto · <b>in</b> estate · <b>nel</b> 2020</td><td>im Mai · im August · im Sommer · 2020</td></tr>
+<tr><td><b>il</b> lunedì · <b>di</b> sera · <b>di</b> notte</td><td>montags · abends · nachts</td></tr>
+<tr><td><b>fra / tra</b> due giorni</td><td>in zwei Tagen (ab jetzt)</td></tr>
+<tr><td><b>da</b> tre anni · <b>per</b> una settimana</td><td>seit drei Jahren (dauert noch) · eine Woche lang</td></tr>
+<tr><td><b>in</b> ritardo · <b>in</b> orario · <b>in</b> anticipo</td><td>zu spät · pünktlich · zu früh</td></tr></table>
+<p><b>5. Weitere wichtige</b>: <i>con</i> (mit) · <i>per</i> (für, nach: <i>il treno per Napoli</i>) · <i>su</i> (auf, über) · <i>tra / fra</i> (zwischen, in) · <i>sotto</i> (unter) · <i>sopra</i> (über, auf) · <i>davanti a</i> (vor) · <i>dietro</i> (hinter) · <i>accanto a</i> (neben) · <i>vicino a</i> (in der Nähe von) · <i>lontano da</i> (weit weg von).</p>
+<p><b>Verben mit fester Präposition:</b> <i>pensare <b>a</b></i> (denken an) · <i>telefonare <b>a</b></i> (anrufen) · <i>cominciare <b>a</b></i> (anfangen zu) · <i>andare <b>a</b> fare</i> (… gehen) · <i>parlare <b>di</b></i> (sprechen über) · <i>avere bisogno <b>di</b></i> (brauchen) · <i>smettere <b>di</b></i> (aufhören zu).</p>`,
   verben: `<p><b>So bildet man das Präsens</b> – man nimmt die Endung <b>-are / -ere / -ire</b> ab und hängt an:</p>
 <table class="tab"><tr><th></th><th>-are<br><small>parlare</small></th><th>-ere<br><small>prendere</small></th><th>-ire<br><small>dormire</small></th></tr>
 <tr><td>io</td><td>parl<b>o</b></td><td>prend<b>o</b></td><td>dorm<b>o</b></td></tr>

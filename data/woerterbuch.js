@@ -5,7 +5,7 @@
 window.WOERTERBUCH = `
 a | in, nach, zu, um (Uhrzeit)
 di | von, aus
-da | von … her, bei, seit
+da | von … her, bei, zu (Personen), seit
 in | in, nach (bei Ländern)
 su | auf, über
 per | für, nach (Ziel)

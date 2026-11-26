@@ -238,7 +238,7 @@ I nonni hanno un grande giardino. | Die Großeltern haben einen großen Garten.
 <p><b>Eigenschaftswörter</b> passen sich an: <i>il ragazzo alt<b>o</b>, la ragazza alt<b>a</b>, i ragazzi alt<b>i</b>, le ragazze alt<b>e</b></i>. Wörter auf -e haben nur zwei Formen: <i>grand<b>e</b> / grand<b>i</b></i>.</p>`
 },
 l5: {
-  kern: ["essen:la pasta", "essen:la pizza", "essen:il pane", "essen:la carne", "essen:il pesce", "essen:il pollo", "essen:il formaggio", "essen:la verdura", "essen:la frutta", "essen:l'insalata", "essen:il dolce", "essen:il gelato", "essen:la colazione", "essen:il pranzo", "essen:la cena", "restaurant:il ristorante", "restaurant:il cameriere", "restaurant:il menù", "restaurant:il tavolo", "restaurant:il primo", "restaurant:il secondo", "restaurant:il contorno",
+  kern: ["p_praep:tazzadite", "p_praep:cremadipistacchio", "p_praep:gelatoalcioccolato", "p_praep:spaghettivongole", "p_praep:paninoprosciutto", "p_praep:qualcosadabere", "p_praep:qualcosadamangiare", "essen:la pasta", "essen:la pizza", "essen:il pane", "essen:la carne", "essen:il pesce", "essen:il pollo", "essen:il formaggio", "essen:la verdura", "essen:la frutta", "essen:l'insalata", "essen:il dolce", "essen:il gelato", "essen:la colazione", "essen:il pranzo", "essen:la cena", "restaurant:il ristorante", "restaurant:il cameriere", "restaurant:il menù", "restaurant:il tavolo", "restaurant:il primo", "restaurant:il secondo", "restaurant:il contorno",
     "p_restaurant:Un tavolo per due, per favore.", "p_restaurant:Il menù, per favore.", "p_restaurant:Che cosa ci consiglia?", "p_restaurant:mi-consiglia", "p_restaurant:specialita", "p_restaurant:Vorrei una pizza margherita.", "p_restaurant:È delizioso!", "p_restaurant:Sono vegetariano.", "p_alltag:Mi piace molto.",
     "essen:il riso", "essen:l'uovo", "essen:il pomodoro", "essen:la patata", "essen:la zuppa", "essen:la torta", "essen:il sale", "essen:il pepe", "essen:l'olio",
     "restaurant:l'antipasto", "restaurant:il piatto", "restaurant:la forchetta", "restaurant:il coltello", "restaurant:il cucchiaio", "restaurant:la mancia", "restaurant:la prenotazione",
@@ -359,7 +359,7 @@ Pago con la carta. | Ich zahle mit Karte.
 <p><i>blu, rosa</i> und <i>arancione</i> ändern sich (fast) nie: <i>le scarpe blu</i>.</p>`
 },
 l7: {
-  kern: ["stadt:la città", "stadt:la strada", "stadt:la via", "stadt:la piazza", "stadt:il centro", "stadt:la chiesa", "stadt:il museo", "stadt:la banca", "stadt:la posta", "stadt:l'ospedale", "stadt:la stazione", "stadt:il parco", "weg:a destra", "weg:a sinistra", "weg:dritto", "weg:vicino", "weg:lontano", "weg:davanti", "weg:dietro", "weg:accanto", "weg:di fronte", "weg:l'angolo", "weg:il semaforo", "weg:l'incrocio",
+  kern: ["p_praep:acasa", "p_praep:aroma", "p_praep:initalia", "p_praep:incentro", "p_praep:incitta", "p_praep:inufficio", "p_praep:inbanca", "p_praep:infarmacia", "p_praep:ascuola", "p_praep:aletto", "p_praep:ateatro", "p_praep:alcinema", "p_praep:albar", "p_praep:alristorante", "p_praep:allastazione", "p_praep:allaeroporto", "p_praep:dalmedico", "p_praep:damarco", "p_praep:vadodalmedico", "p_praep:sonodamarco", "p_praep:abitoingermania", "p_praep:sultavolo", "p_praep:nellaborsa", "stadt:la città", "stadt:la strada", "stadt:la via", "stadt:la piazza", "stadt:il centro", "stadt:la chiesa", "stadt:il museo", "stadt:la banca", "stadt:la posta", "stadt:l'ospedale", "stadt:la stazione", "stadt:il parco", "weg:a destra", "weg:a sinistra", "weg:dritto", "weg:vicino", "weg:lontano", "weg:davanti", "weg:dietro", "weg:accanto", "weg:di fronte", "weg:l'angolo", "weg:il semaforo", "weg:l'incrocio",
     "p_weg:Scusi, dov'è la stazione?", "p_weg:Come arrivo al centro?", "p_weg:È lontano?", "p_weg:È vicino.", "p_weg:Vada sempre dritto.", "p_weg:Giri a destra.", "p_weg:Giri a sinistra.", "p_weg:È dietro l'angolo.", "p_weg:Mi sono perso.", "p_weg:C'è una farmacia qui vicino?",
     "p_aufforderung:gira", "p_aufforderung:prendi", "p_aufforderung:prenda", "p_aufforderung:va", "p_aufforderung:senta", "p_aufforderung:scusami",
     "stadt:il paese", "stadt:la scuola", "stadt:l'ufficio", "stadt:il ponte", "stadt:l'aeroporto", "weg:la mappa", "weg:girare", "weg:attraversare", "grundwoerter:qui"],
@@ -407,14 +407,16 @@ Vado in centro con un amico. | Ich gehe mit einem Freund ins Zentrum.
 È la chiave di Marco. | Das ist Marcos Schlüssel.
 Questo autobus va in centro? | Fährt dieser Bus ins Zentrum?
 `,
-  grammatikPlus: [{ luecke: "praep" }, { luecke: "aufforderung" }],
+  grammatikPlus: [{ luecke: "praep" }, { luecke: "praep_ort" }, { luecke: "praep_dida" }, { luecke: "praep_artikel" }, { luecke: "aufforderung" }],
   fragenPlus: ["C'è una farmacia vicino a casa tua?"],
   erklaerungPlus: `<p><b>Vier wichtige kleine Wörter:</b> <i>di</i> (von, aus – Herkunft und Besitz: <i>sono di Monaco, la chiave di Marco</i>) · <i>da</i> (von … her: <i>vengo da Roma</i>) · <i>con</i> (mit) · <i>per</i> (für, nach: <i>un biglietto per Firenze</i>).</p>
 <p><b>Aufforderungen – du oder Sie?</b> Bei <i>-are</i>-Verben tauschen die Endungen: du → <b>-a</b>, Sie → <b>-i</b>: <i>Gira a destra!</i> (bieg ab) · <i>Giri a destra!</i> (biegen Sie ab). Bei <i>-ere/-ire</i>-Verben umgekehrt: du → <b>-i</b>, Sie → <b>-a</b>: <i>Prendi!</i> · <i>Prenda!</i>
-Unregelmäßig (Sie): <i>vada</i> (andare), <i>venga</i> (venire), <i>tenga</i> (tenere), <i>dica</i> (dire).</p>`
+Unregelmäßig (Sie): <i>vada</i> (andare), <i>venga</i> (venire), <i>tenga</i> (tenere), <i>dica</i> (dire).</p>
+<p><b>a oder in?</b> Städte mit <i>a</i> (<i>a Roma</i>), Länder mit <i>in</i> (<i>in Italia</i>). <i>a casa, a scuola</i> – aber <i>in ufficio, in banca, in centro</i>. Verkehrsmittel mit <i>in</i>: <i>in macchina, in treno</i> – nur <i>a piedi</i>.</p>
+<p><b>Verschmelzung:</b> <i>a + il = al</i> (al cinema), <i>a + la = alla</i> (alla stazione), <i>da + il = dal</i> (dal medico = zum/beim Arzt), <i>in + la = nella</i>, <i>su + il = sul</i>. Die ganze Tabelle steht unter Grammatik → Präpositionen.</p>`
 },
 l8: {
-  kern: ["zeit:il giorno", "zeit:la settimana", "zeit:il mese", "zeit:l'ora", "zeit:la mattina", "zeit:il pomeriggio", "zeit:la sera", "zeit:la notte", "zeit:lunedì", "zeit:martedì", "zeit:mercoledì", "zeit:giovedì", "zeit:venerdì", "zeit:sabato", "zeit:domenica", "zeit:il fine settimana", "zeit:presto", "zeit:tardi", "zeit:dopo", "zeit:prima",
+  kern: ["p_praep:alleotto", "p_praep:dallenove", "p_praep:dallunedi", "p_praep:amaggio", "p_praep:inestate", "p_praep:dimattina", "p_praep:dinotte", "p_praep:fraduegiorni", "p_praep:trapoco", "p_praep:datreanni", "p_praep:perunasettimana", "p_praep:inritardo", "p_praep:inanticipo", "p_praep:intempo", "p_praep:tornofraunora", "p_praep:studiodaunmese", "zeit:il giorno", "zeit:la settimana", "zeit:il mese", "zeit:l'ora", "zeit:la mattina", "zeit:il pomeriggio", "zeit:la sera", "zeit:la notte", "zeit:lunedì", "zeit:martedì", "zeit:mercoledì", "zeit:giovedì", "zeit:venerdì", "zeit:sabato", "zeit:domenica", "zeit:il fine settimana", "zeit:presto", "zeit:tardi", "zeit:dopo", "zeit:prima",
     "verben:parlare", "verben:lavorare", "verben:abitare", "verben:mangiare", "verben:guardare", "verben:comprare", "verben:ascoltare", "verben:arrivare", "p_alltag:Che ore sono?", "p_alltag:Sono le tre.",
     "zeit:il minuto", "zeit:gennaio", "zeit:febbraio", "zeit:marzo", "zeit:aprile", "zeit:maggio", "zeit:giugno", "zeit:luglio", "zeit:agosto", "zeit:settembre", "zeit:ottobre", "zeit:novembre", "zeit:dicembre",
     "verben:aspettare", "verben:imparare", "verben:chiamare", "verben:dormire"],
@@ -469,15 +471,16 @@ Di solito arrivo alle otto. | Normalerweise komme ich um acht an.
 Mi lavo e faccio colazione. | Ich wasche mich und frühstücke.
 Noi parliamo italiano. | Wir sprechen Italienisch.
 `,
-  grammatikPlus: [{ luecke: "uhrzeit" }, { luecke: "reflexiv" }],
+  grammatikPlus: [{ luecke: "uhrzeit" }, { luecke: "praep_zeit" }, { luecke: "reflexiv" }],
   erklaerungPlus: `<p><b>Reflexive Verben</b> („sich …“) – das kleine Wort steht <b>vor</b> dem Verb:</p>
 <table class="tab"><tr><td>io</td><td><b>mi</b> alzo</td><td>ich stehe auf</td></tr><tr><td>tu</td><td><b>ti</b> alzi</td><td>du stehst auf</td></tr>
 <tr><td>lui / lei</td><td><b>si</b> alza</td><td>er/sie steht auf</td></tr><tr><td>noi</td><td><b>ci</b> alziamo</td><td>wir stehen auf</td></tr></table>
 <p>So funktioniert auch <i>mi chiamo</i> (ich heiße, wörtlich: ich nenne mich).</p>
-<p><b>Wochentage:</b> <i>lunedì</i> = am Montag · <i>il lunedì</i> = montags (jeden Montag).</p>`
+<p><b>Wochentage:</b> <i>lunedì</i> = am Montag · <i>il lunedì</i> = montags (jeden Montag).</p>
+<p><b>Zeit mit Präpositionen:</b> <i>alle otto</i> (um acht) · <i>dalle nove alle cinque</i> (von … bis) · <i>a maggio, in estate</i> · <i>di sera</i> (abends) · <i>fra due giorni</i> (in zwei Tagen) · <i>da tre anni</i> (seit drei Jahren – das Verb bleibt in der Gegenwart: <i>Abito qui da tre anni.</i>) · <i>per una settimana</i> (eine Woche lang).</p>`
 },
 l9: {
-  kern: ["verkehr:il treno", "verkehr:l'autobus", "verkehr:la macchina", "verkehr:la bicicletta", "verkehr:l'aereo", "verkehr:il taxi", "verkehr:la metropolitana", "verkehr:il biglietto", "verkehr:il binario", "verkehr:la fermata", "verkehr:la partenza", "verkehr:l'arrivo", "verkehr:il ritardo", "verkehr:la valigia", "verkehr:il passaporto", "verkehr:il viaggio", "verkehr:le vacanze",
+  kern: ["p_praep:inmacchina", "p_praep:intreno", "p_praep:inautobus", "p_praep:inaereo", "p_praep:inbici", "p_praep:incampagna", "p_praep:inmontagna", "p_praep:almare", "p_praep:invacanza", "p_praep:occhialidasole", "p_praep:pensarea", "p_praep:parlaredi", "p_praep:telefonarea", "p_praep:cominciarea", "p_praep:smetteredi", "p_praep:pensoate", "verkehr:il treno", "verkehr:l'autobus", "verkehr:la macchina", "verkehr:la bicicletta", "verkehr:l'aereo", "verkehr:il taxi", "verkehr:la metropolitana", "verkehr:il biglietto", "verkehr:il binario", "verkehr:la fermata", "verkehr:la partenza", "verkehr:l'arrivo", "verkehr:il ritardo", "verkehr:la valigia", "verkehr:il passaporto", "verkehr:il viaggio", "verkehr:le vacanze",
     "p_reisen:Un biglietto per Roma, per favore.", "p_reisen:Solo andata.", "p_reisen:Andata e ritorno.", "p_reisen:A che ora parte il treno?", "p_reisen:Da quale binario parte?", "p_reisen:Il treno è in ritardo.",
     "verkehr:la nave", "stadt:il porto", "verben:partire", "verben:aspettare", "verben:andare", "verben:venire", "verben:uscire"],
   neu: `
@@ -526,7 +529,8 @@ Da dove vieni? | Woher kommst du?
 Vengono domani. | Sie kommen morgen.
 Dov'è la fermata dell'autobus? | Wo ist die Bushaltestelle?
 `,
-  grammatikPlus: [{ verben: ["uscire"] }],
+  grammatikPlus: [{ verben: ["uscire"] }, { luecke: "praep_mix" }],
+  erklaerungPlus: `<p><b>Präpositionen gemischt:</b> Unterwegs braucht man fast alle: <i>Vado <b>a</b> Roma <b>in</b> treno.</i> · <i>il treno <b>per</b> Napoli</i> (nach) · <i>il treno <b>da</b> Milano</i> (aus) · <i>vicino <b>alla</b> stazione</i>. Feste Verben: <i>pensare <b>a</b>, telefonare <b>a</b>, parlare <b>di</b>, smettere <b>di</b></i>. Die ganze Übersicht steht unter Grammatik → Präpositionen.</p>`,
   fragenPlus: ["Come vai in centro?"]
 },
 l10: {

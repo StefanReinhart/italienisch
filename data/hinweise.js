@@ -18,6 +18,14 @@ window.KARTEN_ALTERNATIVEN_DE = {
 };
 
 window.HINWEISE = {
+  "wb:da": "da hat vier Bedeutungen: 1. von … her: Vengo da Roma. 2. bei/zu Personen: Vado da Marco (zu Marco), Sono dal medico (beim Arzt). 3. seit: da tre anni. 4. zum …/zu … (Zweck): qualcosa da bere = etwas zu trinken, da mangiare = zu essen, gli occhiali da sole = Sonnenbrille.",
+  "wb:a": "a steht vor Städten: a Monaco = in München oder nach München – nicht „von“! „Aus/von München“ heißt: Sono di Monaco (Herkunft) oder Vengo da Monaco (komme von dort). Außerdem: a casa, alle otto (um acht), a piedi.",
+  "wb:di": "di = von, aus – vor allem bei Herkunft (Sono di Monaco), Besitz (la macchina di Paolo) und Sorte/Inhalt: la crema di pistacchio (Pistaziencreme – mit -cch-), una tazza di caffè, un chilo di pane. Vor Selbstlaut oft d': un bicchiere d'acqua.",
+  "wb:in": "in bei Ländern und Regionen: in Italia, in Toscana. Bei vielen Orten im Alltag: in centro, in ufficio, in banca, in farmacia, in città, in montagna, in vacanza. Bei Verkehrsmitteln: in macchina, in treno, in aereo. Mit Artikel verschmilzt es: nel (in + il), nella (in + la).",
+  "lk_l1:Non sono di qui.": "di = von, aus. Mit essere drückt di die Herkunft aus: Sono di Monaco (ich bin aus München), Di dove sei? (Woher bist du?). qui = hier. Wörtlich: Ich bin nicht von hier.",
+  "lk_l1:Le presento Anna.": "Ja: Le = Ihnen (höfliche Sie-Form, großgeschrieben möglich). Le presento = ich stelle Ihnen vor. Zu Freunden: Ti presento Anna (dir).",
+  "lk_l1:Puoi ripetere, per favore?": "puoi = du kannst. Höflich (Sie): Può ripetere, per favore? = Können Sie das bitte wiederholen? (può = Sie können / er kann).",
+  "p_verstaendigung:Più piano, per favore.": "Wörtlich: Mehr langsam, bitte. più = mehr, piano = langsam (auch: leise). So bildet man „-er“: più grande = größer, più caro = teurer.",
   // Erste Wörter
   "grundwoerter:prego": "Antwort auf „grazie“ (bitte sehr, gern geschehen). Zum Bitten sagt man „per favore“.",
   "grundwoerter:per favore": "Zum Bitten. Als Antwort auf „grazie“ sagt man dagegen „prego“.",

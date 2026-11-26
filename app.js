@@ -2012,7 +2012,7 @@ function heuteStand() {
   return S.heute;
 }
 // Karteikarten für „Heute üben“: ALLE fälligen Wiederholungen – egal ob aus Lektion, Thema oder Phrasen –
-// plus bis zu 5 neue Karten aus den aktiven Lektionen, die älteste zuerst (sind alle Lektionen durch: aus den Themen). Höchstens 20.
+// plus bis zu 5 neue Karten aus den aktiven Lektionen, die älteste zuerst (sind alle Lektionen durch: aus den Themen). Bis zu 25 Wiederholungen + 5 neue.
 function heuteKartenRunde() {
   const richt = richtungenFuer(S.einstellungen.richtung);
   const fa = faelligeKarten().filter((x) => richt.includes(x.r));
@@ -2025,7 +2025,7 @@ function heuteKartenRunde() {
     neue = neue.concat(n.slice(0, frei - neue.length));
   }
   if (!aktiv.length) neue = rundePlanen(kartenDerThemen(S.einstellungen.themen), S.einstellungen.richtung).neue.slice(0, frei);
-  const f = fa.slice(0, 20 - neue.length), liste = [];
+  const f = fa.slice(0, 25), liste = [];
   let d = 0, n = 0;
   while (d < f.length || n < neue.length) { if (n < neue.length && (d >= f.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(f[d++]); }
   return { liste, neue, faellig: fa.length, lektion: L };
@@ -2067,7 +2067,7 @@ function heuteSchritte() {
   const runde = heuteKartenRunde(), nKarten = runde.liste.length;
   const nNeu = runde.neue.length, nWdh = nKarten - nNeu;
   const lek = begonneneLektionen();
-  const nFehler = Math.min(8, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
+  const nFehler = Math.min(15, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
   // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
   const st = heuteStand(), alleDurch = !aktiveLektionen().length;
   const [sA, sB] = heuteLektionsSchritte();
@@ -2171,7 +2171,7 @@ function heuteStarten(id) {
     return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Gemischt – alle Lektionen", nochmal: "heute" });
   }
   if (id === "fehler") {
-    const liste = schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).slice(0, 8);
+    const liste = schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).slice(0, 15);
     sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
     return geheZu("karte");
   }

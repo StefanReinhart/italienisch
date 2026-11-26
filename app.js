@@ -1292,9 +1292,29 @@ function sprechGewicht(k) {
 function sprechenStarten(eintraege, opt = {}) {
   const liste = opt.fest ? eintraege : gewichtetZiehen(eintraege, sprechGewicht, eintraege.length);
   sprechen = { liste, pos: 0, ergebnis: null, status: "", gezeigt: false, modi: opt.modusFuer ? liste.map(opt.modusFuer) : null,
-    endlich: !!opt.endlich, danach: opt.danach || null, zurueck: opt.zurueck || null, titel: opt.titel || "Sprechen", gewusst: 0, gefragt: 0 };
+    endlich: !!opt.endlich, danach: opt.danach || null, zurueck: opt.zurueck || null, titel: opt.titel || "Sprechen", gewusst: 0, gefragt: 0, wieder: {}, verfehlt: [] };
   geheZu("sprechen-ueben");
 }
+// Ergebnis aus dem Gedächtnis merken: nicht gewusst → kommt in dieser Runde nochmal und in die Liste „nicht gewusste Sätze“;
+// zweimal hintereinander richtig → fällt aus dieser Liste wieder heraus
+function sprechMerken(k, ok) {
+  const a = S.aussprache[k.id] || { versuche: 0, bester: 0, letzter: 0 };
+  if (ok) { a.serie = (a.serie || 0) + 1; if (a.serie >= 2) a.offen = false; }
+  else { a.serie = 0; a.offen = true; }
+  S.aussprache[k.id] = a;
+  if (!ok && sprechen) { sprechen.nichtOk = true; if (!sprechen.verfehlt.includes(k)) sprechen.verfehlt.push(k); }
+}
+// Sätze, die zuletzt nicht geklappt haben (ältere Stände ohne „offen“: schwache Aussprache oder oft falsch)
+function offeneSprechSaetze() {
+  return ALLE_KARTEN.filter((k) => {
+    if (!istSatz(k)) return false;
+    const a = S.aussprache[k.id];
+    if (a && a.offen !== undefined) return a.offen;
+    return (a && a.versuche > 0 && a.letzter < 70) || kartenSchwach(zustand(k.id, "de-it"));
+  });
+}
+const nochmalSprechen = (liste, zurueck, titel) =>
+  sprechenStarten(liste, { modusFuer: () => "gedaechtnis", endlich: true, zurueck, titel });
 // ---------- Sätze sprechen (für „Heute üben“ und den Lektionsschritt „Sprechen“) ----------
 const istSatz = (k) => k.it.trim().split(/\s+/).length >= 3;
 const HEUTE_SAETZE = 20, LEKTION_SAETZE = 8;
@@ -1317,7 +1337,8 @@ function heuteSaetze() {
   return saetzeAuswaehlen(quelle, HEUTE_SAETZE, aktiv.length ? new Set(aktiv.flatMap(lektionKarten).map((k) => k.id)) : null);
 }
 function sprechenFertig() {
-  const d = sprechen.danach, n = sprechen.liste.length, g = sprechen.gewusst, f = sprechen.gefragt;
+  const d = sprechen.danach, n = new Set(sprechen.liste).size, g = sprechen.gewusst, f = sprechen.gefragt;
+  const verfehlt = sprechen.verfehlt, zurueck = sprechen.zurueck || "sprechen";
   if (d) { toast(`🎤 ${n} Sätze geübt – jetzt noch die Fragen.`, 2500); return d(); }
   setzeKopf(sprechen.titel, sprechen.zurueck || "sprechen");
   zeige(`<div class="ergebnis">
@@ -1326,13 +1347,19 @@ function sprechenFertig() {
       ${f ? `<p>Aus dem Gedächtnis richtig: <b>${g} von ${f}</b></p>` : ""}
       <p class="leise">Was nicht geklappt hat, kommt bald wieder dran.</p>
     </div>
-    ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${sprechen.zurueck || "sprechen"}">Zurück</button></div>`}`);
+    ${verfehlt.length ? `<button class="btn voll zweit" id="sNochmal">🔁 ${verfehlt.length === 1 ? "Den nicht gewussten Satz" : `Die ${verfehlt.length} nicht gewussten`} nochmal</button>` : ""}
+    ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${zurueck}">Zurück</button></div>`}`);
+  const b = document.getElementById("sNochmal");
+  if (b) b.onclick = () => nochmalSprechen(mischen(verfehlt.slice()), zurueck, "Nicht gewusste Sätze");
 }
 // Auswahl fürs Sprechen: die gewählten Themen – standardmäßig nur ganze Sätze (ab 3 Wörtern)
 const sprechKarten = () => kartenDerThemen(S.einstellungen.themen).filter((k) => S.einstellungen.nurSaetze === false || istSatz(k));
 function sprechenMenue() {
   setzeKopf("Sprechen", "start");
+  const offen = offeneSprechSaetze();
   zeige(`
+    ${offen.length ? `<button class="btn voll" id="sOffen" style="margin-bottom:12px">🎯 Nicht gewusste Sätze wiederholen (${offen.length})</button>
+    <p class="leise" style="margin-top:-6px">Sätze, die zuletzt nicht geklappt haben – aus dem Gedächtnis. Zweimal hintereinander richtig, dann fällt der Satz aus der Liste.</p>` : ""}
     <div class="meldung info">ℹ️ Gut zu wissen: Die Spracherkennung schreibt auf, was sie verstanden hat, und vergleicht es mit dem Zielsatz. Das ist <b>keine echte Bewertung deiner Aussprache</b>, aber ein guter Hinweis: Wenn das Handy dich versteht, verstehen dich meist auch Menschen. Auf Android braucht die Erkennung meist <b>Internet</b>.</div>
     ${SR ? "" : `<div class="meldung schlecht">Dieser Browser hat keine Spracherkennung. Bitte die App in Chrome öffnen.</div>`}
     <h2>Wie möchtest du üben?</h2>
@@ -1352,6 +1379,8 @@ function sprechenMenue() {
   themenKlickbar(sprechenMenue);
   $app.querySelectorAll("#snur button").forEach((b) => (b.onclick = () => { S.einstellungen.nurSaetze = b.dataset.w === "saetze"; speichern(); ohneSprung(sprechenMenue); }));
   document.getElementById("sLos").onclick = () => sprechenStarten(sprechKarten());
+  const so = document.getElementById("sOffen");
+  if (so) so.onclick = () => nochmalSprechen(gewichtetZiehen(offen, sprechGewicht, 20), "sprechen", "Nicht gewusste Sätze");
 }
 function sprechenZeigen() {
   if (!sprechen) return abgelaufen("sprechen");
@@ -1359,7 +1388,10 @@ function sprechenZeigen() {
   const k = sprechen.liste[sprechen.pos];
   const e = sprechen.ergebnis;
   const modus = sprechen.modi ? sprechen.modi[sprechen.pos] : S.einstellungen.sprechenModus;
-  const letzter = sprechen.endlich && sprechen.pos === sprechen.liste.length - 1;
+  // nicht gewusst → kommt am Ende der Runde nochmal (höchstens zweimal zusätzlich)
+  const nochmal = sprechen.endlich && sprechen.nichtOk && (sprechen.wieder[k.id] || 0) < 2;
+  const erstes = !sprechen.wieder || !sprechen.wieder[k.id]; // nur das erste Mal zählt für „aus dem Gedächtnis richtig“
+  const letzter = sprechen.endlich && sprechen.pos === sprechen.liste.length - 1 && !nochmal;
   const verdeckt = modus === "gedaechtnis";
   const zeigeItalienisch = modus === "zeigen" || sprechen.gezeigt || !!e;
   const zeigeLautsprecher = !verdeckt || zeigeItalienisch;
@@ -1378,7 +1410,7 @@ function sprechenZeigen() {
   zeige(`
     ${fortschrittsLeiste(sprechen.pos + 1, sprechen.liste.length)}
     <div class="karte" style="min-height:auto">
-      <div class="leise">Sag auf Italienisch:</div>
+      <div class="leise">${erstes ? "" : "🔁 Noch einmal – "}Sag auf Italienisch:</div>
       <div style="font-size:20px">${esc(k.de)}</div>
       <div class="trenner"></div>
       ${zeigeItalienisch ? `<div class="wort" style="font-size:28px">${esc(k.it)}</div>` : ""}
@@ -1402,7 +1434,7 @@ function sprechenZeigen() {
   const zeigen = document.getElementById("zeigen");
   if (zeigen) zeigen.onclick = () => {
     sprechen.gezeigt = true;
-    if (verdeckt && !sprechen.gewertet) { sprechen.gewertet = true; sprechen.gefragt++; rueckmeldung(k.id, "de-it", false); } // nachgeschaut = nicht gewusst
+    if (verdeckt && !sprechen.gewertet) { sprechen.gewertet = true; if (erstes) sprechen.gefragt++; rueckmeldung(k.id, "de-it", false); sprechMerken(k, false); speichern(); } // nachgeschaut = nicht gewusst
     sprechenZeigen(); if (verdeckt) sprich(k.it);
   };
   // "Nur hören": Satz beim Erscheinen automatisch vorlesen
@@ -1424,7 +1456,8 @@ function sprechenZeigen() {
         if (verdeckt && !sprechen.gezeigt && !sprechen.gewertet) {
           sprechen.gewertet = true;
           const ok = beste.v.prozent >= 80;
-          sprechen.gefragt++; if (ok) sprechen.gewusst++;
+          if (erstes) { sprechen.gefragt++; if (ok) sprechen.gewusst++; }
+          sprechMerken(k, ok);
           // neue Phrase richtig aus dem Gedächtnis gesagt → als Karteikarte "selbst sagen" aufnehmen (wie "Gut": in 2 Tagen)
           if (ok && istNeu(k.id, "de-it")) bewerte(k.id, "de-it", 2); else rueckmeldung(k.id, "de-it", ok);
         }
@@ -1436,12 +1469,14 @@ function sprechenZeigen() {
       ende: () => mikro.classList.remove("hoert")
     });
   };
-  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechen.nichtGewusst = false; sprechenZeigen(); };
+  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechen.nichtGewusst = false; sprechen.nichtOk = false; sprechenZeigen(); };
   // Von Hand als "nicht gewusst" markieren: zählt als Fehler für "selbst sagen" und für die Auswahl beim Sprechen
   const ng = document.getElementById("nichtGewusst");
   if (ng) ng.onclick = () => {
-    if (verdeckt && !sprechen.gewertet) sprechen.gefragt++;
+    if (verdeckt && !sprechen.gewertet && erstes) sprechen.gefragt++;
+    if (sprechen.gewertet && verdeckt && erstes && !sprechen.gezeigt && sprechen.ergebnis && sprechen.ergebnis.prozent >= 80) sprechen.gewusst--; // doch nicht gewusst
     sprechen.nichtGewusst = true; sprechen.gewertet = true;
+    sprechMerken(k, false);
     if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", false);
     else bewerte(k.id, "de-it", 0); // noch nie gelernt: als Karteikarte aufnehmen, kommt gleich dran
     const a = S.aussprache[k.id] || { versuche: 0, bester: 0, letzter: 0 };
@@ -1451,6 +1486,10 @@ function sprechenZeigen() {
   };
   document.getElementById("weiterK").onclick = () => {
     if (letzter) return sprechenFertig();
+    if (nochmal) {
+      sprechen.wieder[k.id] = (sprechen.wieder[k.id] || 0) + 1;
+      sprechen.liste.push(k); if (sprechen.modi) sprechen.modi.push("gedaechtnis");
+    }
     wechsel((sprechen.pos + 1) % sprechen.liste.length);
   };
   document.getElementById("zurueckK").onclick = () => wechsel(Math.max(0, sprechen.pos - 1));

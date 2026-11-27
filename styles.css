@@ -267,3 +267,7 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 /* Sprechen: Zurück / Nochmal / Weiter bleiben unten immer sichtbar, auch wenn das Ergebnis lang ist */
 .sprechleiste { position: sticky; bottom: 0; z-index: 5; background: var(--hinter); margin: 8px -4px 0; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)); flex-wrap: nowrap; }
 .sprechleiste > .btn { min-width: 0; padding-left: 8px; padding-right: 8px; }
+/* Typische Fehler */
+.tf-zeile { align-items: flex-start; }
+.tf-falsch { color: var(--rot); text-decoration: line-through; }
+.tf-weg { background: none; border: 1px solid var(--rand); border-radius: 10px; width: 40px; height: 40px; font-size: 18px; color: var(--grau); cursor: pointer; flex: none; }

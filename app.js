@@ -63,6 +63,7 @@ const STANDARD = {
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
   nuesse: {},          // id → { drin, seit, serie, zuletzt } – „harte Nüsse“ (von Hand markiert)
+  fehlerMuster: {},    // „di→a“ → { falsch, richtig, anzahl, beispiele, … } – typische Verwechslungen
   lektionen: {},       // Lektions-ID → { schritte }  (alte Stände: bestanden = früherer Abschluss-Check)
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
   eigeneAntworten: {}, // Frage-Kennung → selbst als richtig markierte Antworten (vereinfachte Schreibweise)
@@ -92,7 +93,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.fehlerMuster = s.fehlerMuster || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   // 25.11.2026: neuer Richtwert 25 neue Karten pro Tag (vorher 10) – einmalig umstellen, falls noch der alte Wert eingestellt ist
   if (!s.einstellungen.neu25) { if (s.einstellungen.neueProTag === 10) s.einstellungen.neueProTag = 25; s.einstellungen.neu25 = true; }
@@ -982,7 +983,11 @@ function karteZeigen() {
   if (auf) auf.onclick = () => { sitzung.aufgedeckt = true; karteZeigen(); };
   const feld = document.getElementById("antwort");
   if (feld) {
-    const pruefen = () => { sitzung.eingabe = { ...pruefeEingabe(feld.value, k), eingabe: feld.value.trim() }; sitzung.aufgedeckt = true; karteZeigen(); };
+    const pruefen = () => {
+      sitzung.eingabe = { ...pruefeEingabe(feld.value, k), eingabe: feld.value.trim() };
+      if (!["richtig", "akzent"].includes(sitzung.eingabe.stufe)) fehlerAusText(k.it, feld.value); // typische Verwechslung merken
+      sitzung.aufgedeckt = true; karteZeigen();
+    };
     feld.focus();
     feld.onkeydown = (e) => { if (e.key === "Enter") pruefen(); };
     document.getElementById("pruefen").onclick = pruefen;
@@ -1241,6 +1246,7 @@ function quizZeigen() {
   $app.querySelectorAll("[data-o]").forEach((b) => (b.onclick = () => {
     if (beantwortet) return; beantwortet = true;
     const ok = b.dataset.o === a.richtig;
+    if (!ok && !a.deutsch) { fehlerMerken(b.dataset.o, a.richtig, a.erklaerung); speichern(); } // typische Verwechslung merken
     if (ok) { quiz.punkte++; richtigGezaehlt = true; }
     if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
     aufloesen(ok, ok ? "✅ Richtig!" : "❌ Leider falsch.", b);
@@ -1254,6 +1260,7 @@ function quizZeigen() {
       beantwortet = true; feld.disabled = true;
       const e = saeubern(feld.value), z = saeubern(a.richtig);
       const ok = e === z || ohneAkzente(e) === ohneAkzente(z);
+      if (!ok && !a.deutsch) { if (a.richtig.split(" ").length <= 3) fehlerMerken(feld.value, a.richtig, a.erklaerung); else fehlerAusText(a.richtig, feld.value); }
       if (ok) { quiz.punkte++; richtigGezaehlt = true; }
       if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
       aufloesen(ok, ok ? (e === z ? "✅ Richtig!" : "✅ Richtig – achte noch auf den Akzent:") : `❌ Leider falsch (du: „${esc(feld.value.trim())}“). Richtig:`);
@@ -1370,7 +1377,7 @@ function hoerAufgabe(k, pool) {
   return {
     frage: `<div class="leise">Was bedeutet das?</div>
       <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
-    optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
+    deutsch: true, optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
     beimStart: () => setTimeout(() => sprich(k.it), 250),
     // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
     sicher: () => bewerte(k.id, "it-de", 4),
@@ -2653,6 +2660,7 @@ function fehlerMenue() {
     <div class="liste">
       ${zeile("fKarten", "🗂️", "Vokabeln & Phrasen", karten.length, "Karten (beide Richtungen)")}
       <button class="zeile" data-gehe="nuesse"><span class="sym">${WALNUSS}</span><span class="mitte">Harte Nüsse<small>${nussListe().length ? `<b>${nussListe().length}</b> Karten, die du selbst markiert hast` : "noch keine – auf einer Karte ${WALNUSS} antippen"}</small></span><span class="pfeil">›</span></button>
+      <button class="zeile" data-gehe="typfehler"><span class="sym">🔀</span><span class="mitte">Typische Fehler<small>${fehlerMusterListe().length ? `<b>${fehlerMusterListe().length}</b> Verwechslungen, z. B. ${esc(fehlerMusterListe()[0].falsch)} statt ${esc(fehlerMusterListe()[0].richtig)} – gezielt üben` : "was du verwechselst, z. B. di statt a – sammelt sich von selbst"}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="schwierig"><span class="sym">😬</span><span class="mitte">Schwierigste Karten<small>Was am häufigsten falsch war – zum Ansehen</small></span><span class="pfeil">›</span></button>
       ${zeile("fGram", "📘", "Grammatik", gram.length, "Verbformen, Artikel, c'è / ci sono")}
       ${zeile("fSatz", "🧩", "Satzbau", saetze.length, "Sätze")}
@@ -2756,6 +2764,117 @@ function schwierigSeite() {
       <div class="mitte"><div class="it">${esc(s.k.it)}</div><div class="de">${esc(s.k.de)}</div>
         <div class="ministand">${[rText(s.r["de-it"], "🇩🇪→🇮🇹"), rText(s.r["it-de"], "🇮🇹→🇩🇪")].filter(Boolean).join("<br>")}</div></div>
       ${nussBtn(s.k.id)}</div>`).join("") : `<p class="leise">Noch keine Fehler – sehr gut!</p>`}</div>`);
+}
+
+// ---------- Typische Fehler: Verwechslungen wie „di statt a“ automatisch sammeln ----------
+// S.fehlerMuster["di→a"] = { falsch, richtig, anzahl, beispiele: [...], zuletzt, geloescht, serie }
+// Gesammelt wird bei Auswahl-Aufgaben (falsche Option) und beim Eintippen (Wort für Wort verglichen) – nicht beim Sprechen,
+// weil die Spracherkennung selbst oft danebenliegt.
+const PRAEP_WOERTER = new Set("a in di da su con per tra fra al allo alla all' ai agli alle del dello della dell' dei degli delle dal dallo dalla dall' dai dagli dalle nel nello nella nell' nei negli nelle sul sullo sulla sull' sui sugli sulle ad".split(" "));
+const ARTIKEL_WOERTER = new Set("il lo la l' i gli le un uno una un'".split(" "));
+function musterArt(f, r) {
+  if (PRAEP_WOERTER.has(f) && PRAEP_WOERTER.has(r)) return "Präposition";
+  if (ARTIKEL_WOERTER.has(f) && ARTIKEL_WOERTER.has(r)) return "Artikel";
+  if (f.slice(0, 3) === r.slice(0, 3) && f.length > 2 && r.length > 2) return "Endung / Form";
+  return "Wort";
+}
+const musterNorm = (s) => String(s || "").toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, "").replace(/\s+/g, " ").trim();
+function fehlerMerken(falsch, richtig, beispiel) {
+  // zwei Lücken („a … in“ statt „in … a“): jede Lücke einzeln
+  if (String(falsch).includes(" … ") && String(richtig).includes(" … ")) {
+    const fs = String(falsch).split(" … "), rs = String(richtig).split(" … ");
+    return fs.forEach((x, i) => rs[i] && fehlerMerken(x, rs[i], beispiel));
+  }
+  const f = musterNorm(falsch), r = musterNorm(richtig);
+  if (!f || !r || f === r || ohneAkzente(f) === ohneAkzente(r)) return; // gleich oder nur Akzent
+  if (f.split(" ").length > 3 || r.split(" ").length > 3) return;       // nur einzelne Wörter / kurze Wendungen
+  const key = f + "→" + r, alt = S.fehlerMuster[key];
+  const m = alt && !alt.geloescht ? alt : { falsch: f, richtig: r, anzahl: 0, beispiele: [], serie: 0 };
+  m.anzahl++; m.zuletzt = Date.now(); m.geloescht = false; m.serie = 0;
+  if (beispiel && !m.beispiele.includes(beispiel)) m.beispiele = [beispiel].concat(m.beispiele).slice(0, 5);
+  S.fehlerMuster[key] = m;
+}
+// Eingetippten Satz mit der Lösung vergleichen und die verwechselten Wörter merken
+function fehlerAusText(loesung, eingabe) {
+  if (!eingabe || !loesung) return;
+  const v = vergleiche(loesung, eingabe);
+  const falsche = v.woerter.filter((w) => (w.art === "falsch" || w.art === "fast") && w.gehoert);
+  if (falsche.length > 2) return; // ganz anderer Satz – keine einzelne Verwechslung
+  falsche.forEach((w) => fehlerMerken(w.gehoert, w.wort, loesung));
+}
+const fehlerMusterListe = () => Object.entries(S.fehlerMuster).filter(([, m]) => !m.geloescht).map(([key, m]) => ({ key, ...m }))
+  .sort((a, b) => b.anzahl - a.anzahl || b.zuletzt - a.zuletzt);
+// Gezielte Übung zu einem Fehler: passende Lückensätze und Karten, in denen das richtige Wort vorkommt
+function musterAufgaben(m, n = 12) {
+  const r = m.richtig, f = m.falsch, aufgaben = [];
+  const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  Object.entries(LUECKEN).forEach(([setId, set]) => set.saetze.forEach((x) => {
+    const opt = (x.o || set.optionen || []).map(musterNorm);
+    if (musterNorm(x.a) === r && opt.includes(f)) aufgaben.push(() => musterWerten(lueckeAufgabe(setId, x), m));
+  }));
+  const wortRe = new RegExp("(^|[\\s'’])(" + r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?=[\\s.,!?;:]|$)", "i");
+  ALLE_KARTEN.filter((k) => k.it.split(/\s+/).length >= 2 && k.it.split(/\s+/).length <= 12 && wortRe.test(k.it)).forEach((k) => aufgaben.push(() => {
+    const treffer = k.it.match(wortRe), start = treffer.index + treffer[1].length;
+    const satz = k.it.slice(0, start) + "___" + k.it.slice(start + treffer[2].length);
+    const amAnfang = start === 0;
+    const opts = mischen([r, f]).map((o) => (amAnfang ? gross(o) : o));
+    const richtig = amAnfang ? gross(r) : r;
+    return musterWerten({
+      frage: `<div class="leise">${esc(k.de)}</div><div class="gross" style="font-size:24px">${esc(satz).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
+      optionen: opts, richtig, zwei: true, sprechen: k.it, erklaerung: k.it,
+      beiAntwort: (ok) => { if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", ok); geuebt(); }
+    }, m);
+  }));
+  return mischen(aufgaben).slice(0, n).map((bau) => bau());
+}
+// In der gezielten Übung mitzählen, wie oft hintereinander richtig
+function musterWerten(a, m) {
+  const bA = a.beiAntwort, key = m.falsch + "→" + m.richtig;
+  return { ...a, beiAntwort: (ok) => {
+    const x = S.fehlerMuster[key];
+    if (x) { x.serie = ok ? (x.serie || 0) + 1 : 0; x.zuletzt = Date.now(); }
+    if (bA) bA(ok); else geuebt();
+  } };
+}
+function typFehlerSeite() {
+  setzeKopf("Typische Fehler", "fehler");
+  const liste = fehlerMusterListe();
+  zeige(`
+    <p>Hier sammelt die App <b>automatisch</b>, welche Wörter du verwechselst – z. B. <b>di</b> statt <b>a</b>. Daraus macht sie gezielte Übungen.</p>
+    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben und beim Eintippen (nicht beim Sprechen – da verhört sich das Handy zu oft).
+    War etwas kein typischer Fehler, nimm ihn mit <b>✕</b> heraus.</div>
+    ${liste.length ? `<button class="btn voll" id="tfAlle">🎯 Alle typischen Fehler üben</button>` : ""}
+    <div class="liste" style="margin-top:12px">${liste.length ? liste.map((m) => `
+      <div class="eintrag tf-zeile">
+        <div class="mitte">
+          <div class="it"><span class="tf-falsch">${esc(m.falsch)}</span> statt <b>${esc(m.richtig)}</b> <small class="leise">· ${musterArt(m.falsch, m.richtig)}</small></div>
+          <div class="de">${m.anzahl} × passiert${m.serie ? ` · zuletzt ${m.serie} × hintereinander richtig` : ""}</div>
+          ${m.beispiele.length ? `<div class="ministand">z. B. ${esc(m.beispiele[0])}</div>` : ""}
+          <button class="btn zweit" data-tfueben="${esc(m.key)}" style="margin-top:6px;padding:6px 12px;min-height:0">🎯 Üben</button>
+        </div>
+        <button class="tf-weg" data-tfweg="${esc(m.key)}" title="Kein typischer Fehler – herausnehmen" aria-label="Herausnehmen">✕</button>
+      </div>`).join("") : `<p class="leise">Noch keine typischen Fehler gesammelt. Sie erscheinen hier, sobald du etwas verwechselst.</p>`}</div>
+    <h2>Selbst eintragen</h2>
+    <p class="leise">Dir ist selbst ein Fehler aufgefallen? Trag ihn ein:</p>
+    <div class="reihe" style="flex-wrap:nowrap;align-items:center"><input id="tfF" placeholder="falsch, z. B. di" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"><span>statt</span><input id="tfR" placeholder="richtig, z. B. a" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"></div>
+    <button class="btn zweit voll" id="tfDazu">➕ Eintragen</button>`);
+  const ueben = (ms, titel) => {
+    const aufgaben = mischen(ms.flatMap((m) => musterAufgaben(m, ms.length > 1 ? 4 : 12))).slice(0, 15);
+    if (!aufgaben.length) return toast("Dazu gibt es noch keine passenden Übungssätze.", 3000);
+    quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "typfehler", titel, nochmal: "typfehler" });
+  };
+  $app.querySelectorAll("[data-tfueben]").forEach((b) => (b.onclick = () => { const m = liste.find((x) => x.key === b.dataset.tfueben); ueben([m], `${m.falsch} statt ${m.richtig}`); }));
+  $app.querySelectorAll("[data-tfweg]").forEach((b) => (b.onclick = () => {
+    const m = S.fehlerMuster[b.dataset.tfweg]; if (!m) return;
+    m.geloescht = true; m.zuletzt = Date.now(); speichern();
+    toast(`„${m.falsch} statt ${m.richtig}“ herausgenommen.`); ohneSprung(typFehlerSeite);
+  }));
+  const alle = document.getElementById("tfAlle"); if (alle) alle.onclick = () => ueben(liste.slice(0, 8), "Typische Fehler");
+  document.getElementById("tfDazu").onclick = () => {
+    const f = document.getElementById("tfF").value, r = document.getElementById("tfR").value;
+    if (!musterNorm(f) || !musterNorm(r) || musterNorm(f) === musterNorm(r)) return toast("Bitte beide Felder ausfüllen (falsch und richtig).");
+    fehlerMerken(f, r, ""); speichern(); toast("Eingetragen."); ohneSprung(typFehlerSeite);
+  };
 }
 
 // ---------- Fehler einer Lektion: derselbe Lernstand, nur auf die Lektion gefiltert ----------
@@ -2903,7 +3022,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "fehlerMuster", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -2917,6 +3036,7 @@ function zusammenfuehren(lokal, fern) {
   lokal.grammatik = mische(lokal.grammatik, fern.grammatik, (a, b) => (a.zuletzt || b.zuletzt ? juenger(a, b) : (b.richtig + b.falsch > a.richtig + a.falsch ? b : a)));
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
   lokal.nuesse = mische(lokal.nuesse, fern.nuesse, juenger);
+  lokal.fehlerMuster = mische(lokal.fehlerMuster, fern.fehlerMuster, juenger);
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
   // Statistik: je Tag und Gerät – vom selben Gerät gilt der weitere Stand
   lokal.statistik = mische(lokal.statistik, fern.statistik, (a, b) => mische(a, b, (x, y) => (y.w + y.n > x.w + x.n ? y : x)));
@@ -3301,7 +3421,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    fehler: fehlerMenue, nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    fehler: fehlerMenue, typfehler: typFehlerSeite, nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

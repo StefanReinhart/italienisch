@@ -63,6 +63,7 @@ const STANDARD = {
   grammatik: {},       // "verb:essere:0", "art:il libro", "satz:…" → { intervall, faellig, richtig, falsch }
   aussprache: {},      // id → { versuche, bester, letzter }
   nuesse: {},          // id → { drin, seit, serie, zuletzt } – „harte Nüsse“ (von Hand markiert)
+  eigeneKarten: {},    // „eigen:<it>“ → { it, de, gruppe, lektion } – per Knopf aus Claudes Vorschlägen
   fehlerMuster: {},    // „di→a“ → { falsch, richtig, anzahl, beispiele, … } – typische Verwechslungen
   lektionen: {},       // Lektions-ID → { schritte }  (alte Stände: bestanden = früherer Abschluss-Check)
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
@@ -93,7 +94,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.fehlerMuster = s.fehlerMuster || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.eigeneKarten = s.eigeneKarten || {}; s.fehlerMuster = s.fehlerMuster || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   // 25.11.2026: neuer Richtwert 25 neue Karten pro Tag (vorher 10) – einmalig umstellen, falls noch der alte Wert eingestellt ist
   if (!s.einstellungen.neu25) { if (s.einstellungen.neueProTag === 10) s.einstellungen.neueProTag = 25; s.einstellungen.neu25 = true; }
@@ -481,6 +482,7 @@ function besteSprachAntwort(alternativen, karte, itDe) {
 // ---------- Kleine Bausteine für Bildschirme ----------
 function setzeKopf(titel, zurueck) {
   document.getElementById("titel").textContent = titel;
+  postSymbol(); // 💬 oben: neue Nachrichten von Claude
   const b = document.getElementById("zurueck");
   b.hidden = !zurueck;
   // Gibt es in der App eine Seite davor, dorthin zurück; sonst (z. B. direkt geöffnet) zur übergeordneten Seite
@@ -548,6 +550,10 @@ $app.addEventListener("click", (e) => {
   // Kastanie antippen: Karte zu den harten Nüssen legen oder wieder herausnehmen
   const nb = e.target.closest("[data-nuss]");
   if (nb) { e.stopPropagation(); nussUmschalten(nb.dataset.nuss); }
+  // ➕ Vorschlag von Claude als Karte übernehmen
+  const nk = e.target.closest("[data-neukarte]");
+  if (e.target.closest("#startPost")) document.getElementById("post").click();
+  if (nk) { e.stopPropagation(); eigeneKarteHinzufuegen(JSON.parse(nk.dataset.neukarte)); nk.outerHTML = `<span class="leise rm-dabei">✓ als Karte dabei</span>`; }
   if (kw && !b && !nb) geheZu("wort/" + kw.dataset.wort);
   const g = e.target.closest("[data-gehe]");
   if (g) geheZu(g.dataset.gehe);
@@ -862,7 +868,7 @@ function startseite() {
   const fehlerZahl = anzahlFehler();
   const la = lernAnalyse();
   const prog = la.prognose && !la.prognose.erreicht ? ` · A1 voraussichtlich ${la.prognose.datum.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}` : la.prognose ? " · A1 erreicht 🎉" : "";
-  zeige(`${schluesselWarnung()}${sicherungsHinweis()}${empfehlungHinweis(la)}${neueRueckmeldungen() ? `<button class="meldung info voll" data-gehe="rueckmeldungen" style="text-align:left;width:100%;border:0;cursor:pointer">💬 <b>${neueRueckmeldungen()} neue Rückmeldung${neueRueckmeldungen() === 1 ? "" : "en"}</b> von Claude zu deinen Antworten – antippen</button>` : ""}
+  zeige(`${schluesselWarnung()}${sicherungsHinweis()}${empfehlungHinweis(la)}${neueNachrichten() ? `<button class="meldung info voll" id="startPost" style="text-align:left;width:100%;border:0;cursor:pointer">💬 <b>${neueNachrichten()} neue Nachricht${neueNachrichten() === 1 ? "" : "en"}</b> von Claude – antippen oder oben auf 💬</button>` : ""}
     <div class="statistik">
       <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
       <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
@@ -2103,6 +2109,49 @@ const offeneSchritte = (L) => LEKTION_SCHRITTE.filter((s) => !schrittErledigt(L,
 // Karten einer Lektion = Kernwortschatz (vorhandene Wörter/Sätze, über den italienischen Text gefunden) + eigene Lektions-Gruppe
 const KARTE_NACH_TEXT = {};
 ALLE_KARTEN.forEach((k) => { if (!k.thema.startsWith("lk_") && !KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k; });
+// ---------- Eigene Karten: aus Claudes Vorschlägen per Knopf hinzugefügt ----------
+// S.eigeneKarten["eigen:<it>"] = { it, de, gruppe (z. B. p_restaurant), lektion (z. B. l5), zuletzt, geloescht }
+// Sie werden beim Start in die passende Phrasen-Gruppe und Lektion einsortiert und kommen sofort zum Üben dran.
+const EIGEN_GRUPPE = { id: "eigen", name: "Meine Karten (von Claude vorgeschlagen)", icon: "⭐", liste: "", eintraege: [] };
+function eigeneKartenEinbauen() {
+  if (!GRUPPE_NACH_ID.eigen) { PHRASEN_GRUPPEN.push(EIGEN_GRUPPE); GRUPPE_NACH_ID.eigen = EIGEN_GRUPPE; }
+  Object.entries(S.eigeneKarten || {}).forEach(([id, e]) => {
+    if (e.geloescht || KARTE_NACH_ID[id]) return;
+    const gruppe = GRUPPE_NACH_ID[e.gruppe] ? e.gruppe : "eigen";
+    const k = { it: e.it, de: e.de, id, thema: gruppe };
+    ALLE_KARTEN.push(k); ALLE_PHRASEN.push(k); KARTE_NACH_ID[id] = k;
+    if (!KARTE_NACH_TEXT[k.it]) KARTE_NACH_TEXT[k.it] = k;
+    GRUPPE_NACH_ID[gruppe].eintraege.push(k);
+    if (gruppe !== "eigen") EIGEN_GRUPPE.eintraege.push(k);
+    const lg = e.lektion && GRUPPE_NACH_ID["lk_" + e.lektion];
+    if (lg) lg.eintraege.push(k); // gehört damit auch zu dieser Lektion
+  });
+}
+// Gibt es diesen Satz schon als Karte? (gleicher italienischer Text)
+const karteMitText = (it) => ALLE_KARTEN.find((k) => k.it.toLowerCase().trim() === String(it).toLowerCase().trim());
+// Karte sofort zum Üben einplanen (beide Richtungen), falls sie noch nie dran war
+function karteEinplanen(id) {
+  RICHTUNGEN.forEach((r) => {
+    const key = schluessel(id, r);
+    if (!S.karten[key]) S.karten[key] = { ease: 2.5, intervall: 0, wdh: 0, faellig: Date.now(), richtig: 0, falsch: 0, vergessen: 0, zuletzt: Date.now() };
+  });
+}
+function eigeneKarteHinzufuegen(v) {
+  const da = karteMitText(v.it);
+  if (da) { karteEinplanen(da.id); speichern(); return toast("Diese Karte gibt es schon – sie kommt jetzt beim Üben dran.", 3000); }
+  const id = "eigen:" + v.it;
+  S.eigeneKarten = S.eigeneKarten || {};
+  S.eigeneKarten[id] = { it: v.it, de: v.de, gruppe: v.gruppe || "", lektion: v.lektion || "", zuletzt: Date.now() };
+  eigeneKartenEinbauen(); karteEinplanen(id); speichern();
+  const g = GRUPPE_NACH_ID[KARTE_NACH_ID[id].thema];
+  toast(`➕ Als Karte aufgenommen${g ? " – bei „" + g.name + "“" : ""}. Sie kommt gleich beim Üben dran.`, 3500);
+}
+// Knopf „Als Karte üben“ – zeigt „✓ ist dabei“, wenn es die Karte schon gibt
+function karteKnopf(v, text) {
+  const k = karteMitText(v.it);
+  if (k && RICHTUNGEN.some((r) => zustand(k.id, r))) return `<span class="leise rm-dabei">✓ als Karte dabei</span>`;
+  return `<button class="btn zweit rm-karte" data-neukarte="${esc(JSON.stringify({ it: v.it, de: v.de, gruppe: v.gruppe || "", lektion: v.lektion || "" }))}">➕ ${text || "Als Karte üben"}</button>`;
+}
 function lektionKarten(L) {
   if (!L.kern && !L.neu) return kartenDerThemen(L.themen);
   // über die feste Kennung (bleibt beim Bearbeiten gleich); alte Einträge mit reinem Text gehen zur Sicherheit auch
@@ -3157,22 +3206,56 @@ function rueckmeldungHtml(r) {
   return `<div class="rueckmeldung">
     <div class="leise">💬 Claude zu deiner Antwort${r.datum ? " vom " + r.datum.split("-").reverse().join(".") : ""}: „${esc(r.antwort)}“</div>
     <div>${esc(r.text)}</div>
-    ${r.besser ? `<div class="rm-besser"><span class="leise">Ausführlicher:</span> <b>${esc(r.besser)}</b> ${lautBtn(r.besser, true)}${r.besserDe ? `<div class="leise">${esc(r.besserDe)}</div>` : ""}</div>` : ""}
+    ${r.besser ? `<div class="rm-besser"><span class="leise">Ausführlicher:</span> <b>${esc(r.besser)}</b> ${lautBtn(r.besser, true)}${r.besserDe ? `<div class="leise">${esc(r.besserDe)}</div>` : ""}
+      ${karteKnopf({ it: r.besser, de: r.besserDe || "", gruppe: r.gruppe, lektion: r.lektion })}</div>` : ""}
+    ${(r.karten || []).length ? `<div class="rm-teile"><div class="leise">Daraus lohnt sich auch:</div>${r.karten.map((v) => `<div class="rm-teil">
+      <span><b>${esc(v.it)}</b> ${lautBtn(v.it, true)}<br><span class="leise">${esc(v.de)}</span></span>${karteKnopf({ gruppe: r.gruppe, lektion: r.lektion, ...v }, "Karte")}</div>`).join("")}</div>` : ""}
   </div>`;
 }
 const alleRueckmeldungen = () => Object.entries(window.RUECKMELDUNGEN || {}).flatMap(([key, liste]) => liste.map((r) => ({ key, ...r })))
   .sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
 const neueRueckmeldungen = () => alleRueckmeldungen().filter((r) => (r.datum || "") > (S.rueckGesehen || "")).length;
-function rueckmeldungenSeite() {
-  setzeKopf("Rückmeldungen von Claude", "gespraech");
-  const liste = alleRueckmeldungen(), frage = (key) => (ALLE_FRAGEN.find((q) => q.key === key) || {}).f || "";
-  zeige(`
-    <p>Deine Antworten bei „Frage &amp; Antwort“ gehen automatisch in den Postkasten. Claude schreibt dazu eine Rückmeldung und einen Vorschlag, wie man ausführlicher antworten kann – die neuesten stehen oben.</p>
-    ${liste.length ? liste.map((r) => `<div class="karte" style="min-height:auto;text-align:left;align-items:stretch;margin-bottom:10px">
-      <div><b>${esc(frage(r.key))}</b> ${lautBtn(frage(r.key), true)}</div>${rueckmeldungHtml(r)}</div>`).join("")
-      : `<p class="leise">Noch keine Rückmeldungen. Beantworte ein paar Fragen – die Rückmeldungen kommen mit einer der nächsten Versionen.</p>`}`);
-  if (liste.length) { S.rueckGesehen = liste[0].datum; speichern(); }
+// Deine Fragen aus dem Postkasten, die Claude inzwischen beantwortet hat (die Antwort steht als 💡 bei der Karte)
+const beantworteteFragen = () => (S.wuensche || []).filter((w) => !w.typ && hinweisZu(w.id))
+  .sort((a, b) => (b.zeit || "").localeCompare(a.zeit || ""));
+const neueNachrichten = () => neueRueckmeldungen() + beantworteteFragen().filter((w) => !w.gelesen).length;
+// Symbol 💬 oben in der Kopfleiste: Anzahl neuer Nachrichten
+function postSymbol() {
+  const b = document.getElementById("post"); if (!b) return;
+  const n = neueNachrichten(), z = document.getElementById("postZahl");
+  z.hidden = !n; z.textContent = n > 9 ? "9+" : n;
+  b.onclick = () => {
+    if (!neueRueckmeldungen() && beantworteteFragen().some((w) => !w.gelesen)) nachrichtenTab = "fragen"; else if (neueRueckmeldungen()) nachrichtenTab = "antworten";
+    geheZu("rueckmeldungen");
+  };
 }
+function rueckmeldungenSeite() {
+  setzeKopf("Nachrichten von Claude", "start");
+  const liste = alleRueckmeldungen(), fragen = beantworteteFragen(), frage = (key) => (ALLE_FRAGEN.find((q) => q.key === key) || {}).f || "";
+  const datum = (d) => (d ? d.slice(0, 10).split("-").reverse().join(".") : "");
+  const neuR = (r) => (r.datum || "") > (S.rueckGesehen || ""), tab = nachrichtenTab;
+  zeige(`
+    ${umschalter("ntab", tab, [["antworten", `Zu deinen Antworten${liste.some(neuR) ? " •" : ""}`], ["fragen", `Zu deinen Fragen${fragen.some((w) => !w.gelesen) ? " •" : ""}`]])}
+    ${tab === "antworten" ? `
+      <p class="leise">Deine Antworten bei „Frage &amp; Antwort“ gehen automatisch in den Postkasten. Claude schreibt eine Rückmeldung und einen Vorschlag für eine ausführlichere Antwort – mit ➕ übernimmst du ihn als Karte.</p>
+      ${liste.length ? liste.map((r) => `<div class="karte nachricht${neuR(r) ? " neu" : ""}">
+        <div><b>${esc(frage(r.key))}</b> ${lautBtn(frage(r.key), true)}</div>${rueckmeldungHtml(r)}</div>`).join("")
+        : `<p class="leise">Noch keine Rückmeldungen. Beantworte ein paar Fragen – die Rückmeldungen kommen mit einer der nächsten Versionen.</p>`}`
+    : `
+      <p class="leise">Fragen, die du bei einer Karte oder einem typischen Fehler gestellt hast – mit Claudes Antwort.</p>
+      ${fragen.length ? fragen.map((w) => { const z = wunschZiel(w.id); return `<div class="karte nachricht${w.gelesen ? "" : " neu"}">
+        <div class="leise">${datum(w.zeit)} · ${esc(z ? z.it : w.it || w.id)}</div>
+        <div>${w.nachricht ? `Deine Frage: <b>${esc(w.nachricht)}</b>` : "Du hast eine Erklärung gewünscht."}</div>
+        <div class="hinweis">💡 ${esc(hinweisZu(w.id))}</div>
+        ${KARTE_NACH_ID[w.id] || WB_NACH_ID[w.id] ? `<button class="btn zweit" data-wort="${encodeURIComponent(w.id)}" style="align-self:flex-start;padding:6px 12px;min-height:0">Zur Karte ›</button>` : ""}</div>`; }).join("")
+        : `<p class="leise">Noch keine beantworteten Fragen. Stell eine Frage bei einer Karte („❓ Erklärung wünschen / Frage stellen“) – die Antwort erscheint hier und bei der Karte.</p>`}`}`);
+  $app.querySelectorAll("#ntab button").forEach((b) => (b.onclick = () => { nachrichtenTab = b.dataset.w; ohneSprung(rueckmeldungenSeite); }));
+  // was angezeigt wurde, gilt als gelesen
+  if (tab === "antworten" && liste.length && neuR(liste[0])) { S.rueckGesehen = liste[0].datum; speichern(); }
+  if (tab === "fragen" && fragen.some((w) => !w.gelesen)) { fragen.forEach((w) => (w.gelesen = true)); speichern(); }
+  postSymbol();
+}
+let nachrichtenTab = "antworten";
 
 // Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
 function auchRichtigHtml(k) {
@@ -3247,7 +3330,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "fehlerMuster", "rueckGesehen", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "eigeneKarten", "fehlerMuster", "rueckGesehen", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -3261,6 +3344,7 @@ function zusammenfuehren(lokal, fern) {
   lokal.grammatik = mische(lokal.grammatik, fern.grammatik, (a, b) => (a.zuletzt || b.zuletzt ? juenger(a, b) : (b.richtig + b.falsch > a.richtig + a.falsch ? b : a)));
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
   lokal.nuesse = mische(lokal.nuesse, fern.nuesse, juenger);
+  lokal.eigeneKarten = mische(lokal.eigeneKarten, fern.eigeneKarten, juenger);
   lokal.fehlerMuster = mische(lokal.fehlerMuster, fern.fehlerMuster, juenger);
   if ((fern.rueckGesehen || "") > (lokal.rueckGesehen || "")) lokal.rueckGesehen = fern.rueckGesehen; // gelesene Rückmeldungen
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
@@ -3288,6 +3372,7 @@ async function syncHolen() {
   const fern = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), (c) => c.charCodeAt(0))));
   const vorher = syncInhalt(S);
   zusammenfuehren(S, fern);
+  eigeneKartenEinbauen(); // Karten, die auf dem anderen Gerät hinzugefügt wurden
   syncLetzterInhalt = syncInhalt(fern);
   const geaendert = syncInhalt(S) !== vorher;
   if (geaendert) { try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -3654,6 +3739,7 @@ function route() {
   };
   (seiten[teil] || startseite)();
 }
+eigeneKartenEinbauen(); // eigene Karten (per Knopf hinzugefügt) einsortieren, bevor die erste Seite erscheint
 window.addEventListener("hashchange", route);
 speichern(); // übernommenen Lernstand (Version 1 → 2) gleich sichern
 route();

@@ -281,3 +281,14 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .akzente button:active { background: var(--gruen-hell); }
 .frage { position: relative; }
 .frage > .nuss { position: absolute; top: 4px; right: 4px; }
+/* 💬 Nachrichten-Symbol in der Kopfleiste */
+.post-btn { position: relative; font-size: 22px; padding: 0; margin-right: 8px; }
+.post-btn b { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; border-radius: 10px; background: var(--rot); color: #fff; font-size: 12px; line-height: 20px; padding: 0 4px; }
+/* Nachrichten-Verlauf und Karten-Vorschläge */
+.nachricht { min-height: auto; text-align: left; align-items: stretch; margin-bottom: 10px; }
+.nachricht.neu { border-color: var(--blau); box-shadow: 0 0 0 2px var(--blau); }
+.rm-karte { padding: 6px 12px; min-height: 0; margin-top: 6px; }
+.rm-dabei { display: inline-block; margin-top: 6px; color: var(--gruen); }
+.rm-teile { margin-top: 10px; }
+.rm-teil { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px dashed var(--rand); }
+.rm-teil .rm-karte, .rm-teil .rm-dabei { margin-top: 0; flex: none; }

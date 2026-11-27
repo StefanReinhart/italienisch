@@ -32,15 +32,20 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      (`"dialog:…": ["falsche Antwort"]`) – dann zählt sie nicht mehr als richtig – und dem Nutzer den Fehler erklären.
 4b. Einträge mit `"typ": "gespraech"` sind ALLE Antworten aus „Frage & Antwort“ (`id` = Kennung der Frage, `frage`,
    `antwort`, `stufe` = wie die App sie bewertet hat). Für jede eine Rückmeldung in `data/rueckmeldungen.js` schreiben
-   (`window.RUECKMELDUNGEN["dialog:…"]`, Liste mit `{ datum, antwort, text, besser, besserDe }`):
+   (`window.RUECKMELDUNGEN["dialog:…"]`, Liste mit `{ datum, antwort, text, besser, besserDe, gruppe, lektion, karten }`):
    - `text`: kurz und freundlich – was gut war, was falsch war (Grammatik, Wortwahl), auf Deutsch. Fehlende Akzente
      (si statt sì) NICHT bemängeln – der Nutzer hat am Handy keinen leichten Zugang zu Akzenten; die App wertet das ohnehin als richtig.
    - `besser`: eine ausführlichere, natürliche Antwort auf A1/A2-Niveau, die auf seiner Antwort aufbaut; `besserDe` = Übersetzung.
    - **Datenschutz:** Die Dateien sind öffentlich. Echte Namen, Adressen, Orte o. Ä. aus seinen Antworten NICHT
      übernehmen – durch Platzhalter ersetzen (z. B. „a nome Rossi“, „Monaco“ ist ok, Familiennamen nicht).
-   - Gleiche oder sehr ähnliche Antworten zusammenfassen; pro Frage höchstens die 3 neuesten Rückmeldungen behalten.
+   - `gruppe` + `lektion`: wohin eine daraus gemachte Karte gehört (Phrasen-Gruppe wie `p_restaurant`, `p_reisen`,
+     `p_einkaufen`, `p_weg`, `p_alltag`, `p_begruessung` … und Lektion wie `l5` Restaurant, `l10` Hotel). Der Nutzer
+     übernimmt `besser` und die `karten` selbst per Knopf „➕ Als Karte üben“ – dafür NICHT selbst Karten anlegen.
+   - `karten`: 2–4 lohnende Teile aus `besser` als eigene Karten-Vorschläge (`{ it, de }`), z. B. „abbiamo prenotato“,
+     „a nome Rossi“ – kurze, wiederverwendbare Bausteine, keine Sätze, die es schon als Karte gibt.
+   - Gleiche oder sehr ähnliche Antworten zusammenfassen. ALLE Rückmeldungen stehen lassen – sie sind der Verlauf
+     (Seite „Nachrichten von Claude“, 💬 oben).
    - War eine richtige Antwort nicht erkannt, Muster in `data/gespraech.js` ergänzen (wie bei Punkt 4).
-   - Neue nützliche Wendungen aus `besser` auch als Karten in die passende Lektion.
 5. `data/wuensche.json` danach wieder auf `[]` setzen.
 6. Dem Nutzer kurz sagen, welche Erklärungen und Antwortmuster dazugekommen sind, und seine Fragen auch im Chat beantworten.
 

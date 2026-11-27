@@ -273,3 +273,5 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .tf-weg { background: none; border: 1px solid var(--rand); border-radius: 10px; width: 40px; height: 40px; font-size: 18px; color: var(--grau); cursor: pointer; flex: none; }
 .tf-erkl .hinweis { margin: 6px 0 2px; }
 .tf-erkl .wunsch { margin-top: 4px; }
+.rueckmeldung { text-align: left; background: var(--blau-hell, rgba(37,99,235,.08)); border-radius: 12px; padding: 10px 12px; margin: 10px 0 4px; font-size: 16px; }
+.rueckmeldung .rm-besser { margin-top: 6px; }

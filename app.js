@@ -829,7 +829,7 @@ function startseite() {
   const fehlerZahl = anzahlFehler();
   const la = lernAnalyse();
   const prog = la.prognose && !la.prognose.erreicht ? ` · A1 voraussichtlich ${la.prognose.datum.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}` : la.prognose ? " · A1 erreicht 🎉" : "";
-  zeige(`${schluesselWarnung()}${sicherungsHinweis()}${empfehlungHinweis(la)}
+  zeige(`${schluesselWarnung()}${sicherungsHinweis()}${empfehlungHinweis(la)}${neueRueckmeldungen() ? `<button class="meldung info voll" data-gehe="rueckmeldungen" style="text-align:left;width:100%;border:0;cursor:pointer">💬 <b>${neueRueckmeldungen()} neue Rückmeldung${neueRueckmeldungen() === 1 ? "" : "en"}</b> von Claude zu deinen Antworten – antippen</button>` : ""}
     <div class="statistik">
       <button data-gehe="stand/faellig"><b>${anzahlFaellig()}</b><span>Karten heute wiederholen</span></button>
       <button data-gehe="stand/serie"><b>${serie()}</b><span>Tage am Stück geübt</span></button>
@@ -1696,6 +1696,7 @@ function gespraechMenue() {
     <p>Die App stellt eine Frage auf Italienisch – du antwortest auf Italienisch, gesprochen 🎤 oder getippt.</p>
     <div class="meldung info">ℹ️ Die App kennt für jede Frage typische Antworten (z. B. „Mi chiamo …“ mit beliebigem Namen). Eine ungewöhnliche, aber richtige Antwort erkennt sie vielleicht nicht – dann tippst du auf „Meine Antwort war richtig“.</div>
     ${umschalter("gtext", S.einstellungen.gespraechText ? "ja" : "nein", [["ja", "Frage lesen + hören"], ["nein", "Frage nur hören"]])}
+    <button class="btn zweit voll" data-gehe="rueckmeldungen" style="margin-bottom:10px">💬 Rückmeldungen von Claude${neueRueckmeldungen() ? ` – <b>${neueRueckmeldungen()} neu</b>` : alleRueckmeldungen().length ? ` (${alleRueckmeldungen().length})` : ""}</button>
     <button class="btn voll" id="alle">🎲 10 Fragen aus allen Themen</button>
     <h2>Themen</h2>
     <div class="liste">${GESPRAECH_THEMEN.map((t) => `<button class="zeile" data-gthema="${t.id}"><span class="sym">💬</span><span class="mitte">${esc(t.thema)}<small>${t.fragen.length} Fragen${z(f(t.fragen))}</small></span><span class="pfeil">›</span></button>`).join("")}</div>`);
@@ -1729,6 +1730,7 @@ function gespraechZeigen() {
       <div style="font-size:21px;font-weight:650;color:var(--gruen)">${esc(q.b)}</div>
       <div class="leise">${esc(q.bde)}</div>
       <div class="reihe" style="justify-content:center">${lautBtn(q.b)}${langsamBtn(q.b)}</div>
+      ${rueckmeldungenZu(q.key).slice(0, 1).map(rueckmeldungHtml).join("")}
       ${e.stufe !== "richtig" && !g.korrigiert ? `<button class="btn zweit voll" id="warRichtig">Meine Antwort war richtig</button>` : ""}
       ${e.stufe === "richtig" && !g.nichtGewusst ? (g.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in ein paar Monaten wieder</button>` : `<button class="btn zweit voll b-sicher" id="gSicher">🏆 Kann ich sicher <small>kommt erst in ein paar Monaten wieder</small></button>`) : ""}
     </div>`;
@@ -1768,6 +1770,7 @@ function gespraechZeigen() {
   const auswerten = (texte) => {
     const r = pruefeAntwort(q, texte);
     g.ergebnis = r;
+    antwortProtokollieren(q, r);
     if (r.stufe !== "richtig") fehlerAusText(q.b, r.text, true); // z. B. „Abito vicino di Monaco“ → „di statt a“ (nur wenn der Satz der Beispielantwort ähnelt)
     if (!g.gewertet) { g.gewertet = true; g.alsRichtigGezaehlt = r.stufe === "richtig"; gBewerte(q.key, g.alsRichtigGezaehlt); } else geuebt();
     gespraechZeigen();
@@ -3039,6 +3042,38 @@ function antwortZurPruefung(q, text) {
   toast("Gemerkt: Diese Antwort gilt ab jetzt als richtig. Claude prüft sie bei der nächsten Bearbeitung.", 4500);
   clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 2000);
 }
+// ---------- Rückmeldungen von Claude zu Antworten aus „Frage & Antwort“ ----------
+// Jede eigene Antwort geht still in den Postkasten (data/wuensche.json, typ „gespraech“). Claude schreibt bei der nächsten
+// Bearbeitung eine Rückmeldung und einen Vorschlag für eine ausführlichere Antwort in data/rueckmeldungen.js.
+function antwortProtokollieren(q, r) {
+  const text = (r.text || "").trim(); if (!text) return;
+  const w = { typ: "gespraech", id: q.key, frage: q.f, antwort: text, stufe: r.stufe, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
+  if ((S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) return;
+  S.wuensche = (S.wuensche || []).concat(w); speichern();
+  clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 4000);
+}
+const rueckmeldungenZu = (key) => ((window.RUECKMELDUNGEN || {})[key] || []).slice().sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
+function rueckmeldungHtml(r) {
+  return `<div class="rueckmeldung">
+    <div class="leise">💬 Claude zu deiner Antwort${r.datum ? " vom " + r.datum.split("-").reverse().join(".") : ""}: „${esc(r.antwort)}“</div>
+    <div>${esc(r.text)}</div>
+    ${r.besser ? `<div class="rm-besser"><span class="leise">Ausführlicher:</span> <b>${esc(r.besser)}</b> ${lautBtn(r.besser, true)}${r.besserDe ? `<div class="leise">${esc(r.besserDe)}</div>` : ""}</div>` : ""}
+  </div>`;
+}
+const alleRueckmeldungen = () => Object.entries(window.RUECKMELDUNGEN || {}).flatMap(([key, liste]) => liste.map((r) => ({ key, ...r })))
+  .sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
+const neueRueckmeldungen = () => alleRueckmeldungen().filter((r) => (r.datum || "") > (S.rueckGesehen || "")).length;
+function rueckmeldungenSeite() {
+  setzeKopf("Rückmeldungen von Claude", "gespraech");
+  const liste = alleRueckmeldungen(), frage = (key) => (ALLE_FRAGEN.find((q) => q.key === key) || {}).f || "";
+  zeige(`
+    <p>Deine Antworten bei „Frage &amp; Antwort“ gehen automatisch in den Postkasten. Claude schreibt dazu eine Rückmeldung und einen Vorschlag, wie man ausführlicher antworten kann – die neuesten stehen oben.</p>
+    ${liste.length ? liste.map((r) => `<div class="karte" style="min-height:auto;text-align:left;align-items:stretch;margin-bottom:10px">
+      <div><b>${esc(frage(r.key))}</b> ${lautBtn(frage(r.key), true)}</div>${rueckmeldungHtml(r)}</div>`).join("")
+      : `<p class="leise">Noch keine Rückmeldungen. Beantworte ein paar Fragen – die Rückmeldungen kommen mit einer der nächsten Versionen.</p>`}`);
+  if (liste.length) { S.rueckGesehen = liste[0].datum; speichern(); }
+}
+
 // Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
 function auchRichtigHtml(k) {
   if (!KARTE_NACH_ID[k.id]) return "";
@@ -3208,6 +3243,7 @@ function sicherungsHinweis() {
 
 // kurze Beschreibung eines Eintrags (Liste in den Einstellungen, Kopieren, Commit-Text)
 const wunschText = (w) => w.typ === "antwort" ? `Antwort „${w.antwort}“ prüfen (zu: ${w.frage})`
+  : w.typ === "gespraech" ? `Rückmeldung zu „${w.antwort}“ (Frage: ${w.frage})`
   : w.typ === "nachricht" ? `Nachricht: ${w.nachricht}`
   : w.nachricht ? `Frage zu „${w.it}“: ${w.nachricht}` : `Erklärung zu „${w.it}“`;
 let wunschStatus = "";
@@ -3227,6 +3263,7 @@ async function wuenscheSenden() {
       offen.forEach((w) => {
         if (vorhanden.has(wunschSchluessel(w))) return;
         liste.push(w.typ === "antwort" ? { typ: "antwort", id: w.id, frage: w.frage, antwort: w.antwort, zeit: w.zeit }
+          : w.typ === "gespraech" ? { typ: "gespraech", id: w.id, frage: w.frage, antwort: w.antwort, stufe: w.stufe, zeit: w.zeit }
           : w.typ === "nachricht" ? { typ: "nachricht", id: w.id, nachricht: w.nachricht, zeit: w.zeit }
           : { id: w.id, it: w.it, de: w.de, ...(w.nachricht ? { nachricht: w.nachricht } : {}), zeit: w.zeit });
       });
@@ -3511,7 +3548,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    rueckmeldungen: rueckmeldungenSeite, fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

@@ -247,6 +247,8 @@ l5: {
     "restaurant:l'antipasto", "restaurant:il piatto", "restaurant:la forchetta", "restaurant:il coltello", "restaurant:il cucchiaio", "restaurant:la mancia", "restaurant:la prenotazione",
     "p_restaurant:Ho una prenotazione.", "p_restaurant:Per me una pasta, per favore.", "p_restaurant:Un bicchiere di vino rosso.", "p_restaurant:Una bottiglia d'acqua naturale.", "p_alltag:Ho fame.", "p_alltag:Ho sete.", "farben:buono"],
   neu: `
+Abbiamo prenotato un tavolo per due persone. | Wir haben einen Tisch für zwei Personen reserviert.
+Sì, a nome Rossi. Per le otto. | Ja, auf den Namen Rossi. Für acht Uhr.
 la bistecca | das Steak
 il risotto | das Risotto
 la marmellata | die Marmelade

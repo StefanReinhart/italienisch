@@ -30,6 +30,16 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      ergänzen (Schreibweise steht oben in der Datei), damit es auf allen Geräten erkannt wird.
    - **Falsch:** in `data/hinweise.js` unter `window.ABGELEHNTE_ANTWORTEN` eintragen
      (`"dialog:…": ["falsche Antwort"]`) – dann zählt sie nicht mehr als richtig – und dem Nutzer den Fehler erklären.
+4b. Einträge mit `"typ": "gespraech"` sind ALLE Antworten aus „Frage & Antwort“ (`id` = Kennung der Frage, `frage`,
+   `antwort`, `stufe` = wie die App sie bewertet hat). Für jede eine Rückmeldung in `data/rueckmeldungen.js` schreiben
+   (`window.RUECKMELDUNGEN["dialog:…"]`, Liste mit `{ datum, antwort, text, besser, besserDe }`):
+   - `text`: kurz und freundlich – was gut war, was falsch war (Grammatik, Wortwahl, Akzente), auf Deutsch.
+   - `besser`: eine ausführlichere, natürliche Antwort auf A1/A2-Niveau, die auf seiner Antwort aufbaut; `besserDe` = Übersetzung.
+   - **Datenschutz:** Die Dateien sind öffentlich. Echte Namen, Adressen, Orte o. Ä. aus seinen Antworten NICHT
+     übernehmen – durch Platzhalter ersetzen (z. B. „a nome Rossi“, „Monaco“ ist ok, Familiennamen nicht).
+   - Gleiche oder sehr ähnliche Antworten zusammenfassen; pro Frage höchstens die 3 neuesten Rückmeldungen behalten.
+   - War eine richtige Antwort nicht erkannt, Muster in `data/gespraech.js` ergänzen (wie bei Punkt 4).
+   - Neue nützliche Wendungen aus `besser` auch als Karten in die passende Lektion.
 5. `data/wuensche.json` danach wieder auf `[]` setzen.
 6. Dem Nutzer kurz sagen, welche Erklärungen und Antwortmuster dazugekommen sind, und seine Fragen auch im Chat beantworten.
 

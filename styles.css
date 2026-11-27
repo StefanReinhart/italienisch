@@ -271,3 +271,5 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .tf-zeile { align-items: flex-start; }
 .tf-falsch { color: var(--rot); text-decoration: line-through; }
 .tf-weg { background: none; border: 1px solid var(--rand); border-radius: 10px; width: 40px; height: 40px; font-size: 18px; color: var(--grau); cursor: pointer; flex: none; }
+.tf-erkl .hinweis { margin: 6px 0 2px; }
+.tf-erkl .wunsch { margin-top: 4px; }

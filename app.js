@@ -1230,7 +1230,7 @@ function quizZeigen() {
     const sicherKnopf = ok && a.sicher && !(a._erg && a._erg.ng)
       ? (a._erg && a._erg.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in Monaten wieder</button>` : `<button class="btn zweit voll b-sicher" id="qSicher">🏆 Kann ich sicher <small>kommt erst in Monaten wieder</small></button>`)
       : "";
-    document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${text} <b>${esc(a.erklaerung)}</b></div>
+    document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${text} <b>${esc(a.erklaerung)}</b></div>${a.nachHtml || ""}
       <button class="btn voll" id="weiter">Weiter</button>${sicherKnopf}`;
     document.getElementById("weiter").onclick = () => { quiz.pos++; quizZeigen(); };
     const qs = document.getElementById("qSicher");
@@ -2890,7 +2890,8 @@ function musterBausteine(m, r, f) {
 }
 // In der gezielten Übung mitzählen, wie oft hintereinander richtig
 function musterWerten(a, m) {
-  const bA = a.beiAntwort, key = m.falsch + "→" + m.richtig;
+  const bA = a.beiAntwort, key = m.falsch + "→" + m.richtig, h = hinweisZu(fehlerId(m));
+  if (h) a = { ...a, nachHtml: `<div class="hinweis">💡 ${esc(h)}</div>` }; // Erklärung zum typischen Fehler gleich nach der Antwort
   return { ...a, beiAntwort: (ok) => {
     const x = S.fehlerMuster[key];
     if (x) { x.serie = ok ? (x.serie || 0) + 1 : 0; x.zuletzt = Date.now(); }
@@ -2911,6 +2912,7 @@ function typFehlerSeite() {
           <div class="it"><span class="tf-falsch">${esc(m.falsch)}</span> statt <b>${esc(m.richtig)}</b> <small class="leise">· ${musterArt(m.falsch, m.richtig)}</small></div>
           <div class="de">${m.anzahl} × passiert${m.serie ? ` · zuletzt ${m.serie} × hintereinander richtig` : ""}</div>
           ${m.beispiele.length ? `<div class="ministand">z. B. ${esc(m.beispiele[0])}</div>` : ""}
+          <div class="tf-erkl">${hinweisHtml({ id: fehlerId(m) })}</div>
           <button class="btn zweit" data-tfueben="${esc(m.key)}" style="margin-top:6px;padding:6px 12px;min-height:0">🎯 Üben</button>
         </div>
         <button class="tf-weg" data-tfweg="${esc(m.key)}" title="Kein typischer Fehler – herausnehmen" aria-label="Herausnehmen">✕</button>
@@ -2989,12 +2991,23 @@ const eintragHtml = (e) => `<div class="eintrag">${lautBtn(e.it, true)}<div clas
 // und schickt die Wünsche (mit GitHub-Schlüssel) in die Datei data/wuensche.json – Claude liest sie
 // bei der nächsten Bearbeitung aus und trägt die Erklärungen ein.
 const hinweisZu = (id) => (window.HINWEISE || {})[id];
+// Typische Fehler haben eine eigene Kennung für Erklärungen – gleich für beide Richtungen: „fehler:a / di“
+const fehlerId = (m) => "fehler:" + [m.falsch, m.richtig].sort().join(" / ");
+// Wozu gehört eine Kennung? Karte, Wörterbuch-Eintrag oder typischer Fehler
+function wunschZiel(id) {
+  const k = KARTE_NACH_ID[id] || WB_NACH_ID[id]; if (k) return k;
+  if (String(id).startsWith("fehler:")) {
+    const m = fehlerMusterListe().find((x) => fehlerId(x) === id);
+    return { id, it: id.slice(7).replace(" / ", " oder "), de: m ? `${m.falsch} statt ${m.richtig}${m.beispiele[0] ? " – z. B. " + m.beispiele[0] : ""}` : "typischer Fehler" };
+  }
+  return null;
+}
 const gewuenscht = (id) => (S.wuensche || []).some((w) => w.id === id && w.typ !== "antwort" && !w.nachricht);
 // Eintrag in der Wunschliste: Erklärung/Frage zu einer Karte, eine freie Nachricht – oder eine selbst als richtig markierte Antwort zur Prüfung
 const wunschSchluessel = (w) => `${w.typ || "erklaerung"}|${w.id}|${w.antwort || w.nachricht || ""}`;
 // Eingabefeld für eine Frage an Claude zu einer Karte (leer = nur Erklärung wünschen)
 function wunschFormular(knopf) {
-  const id = knopf.dataset.wunsch, k = KARTE_NACH_ID[id] || WB_NACH_ID[id];
+  const id = knopf.dataset.wunsch, k = wunschZiel(id);
   const div = document.createElement("div");
   div.className = "wunschform"; div.dataset.vorher = knopf.outerHTML;
   div.innerHTML = `<div class="leise" style="font-size:13px;margin-bottom:4px">✉️ Frage an Claude zu „${esc(k ? k.it : id)}“</div>
@@ -3035,7 +3048,7 @@ function hinweisHtmlOhne(k, klein) {
   return frage;
 }
 function wunschHinzufuegen(id, nachricht) {
-  const k = KARTE_NACH_ID[id] || WB_NACH_ID[id]; if (!k) return;
+  const k = wunschZiel(id); if (!k) return;
   nachricht = (nachricht || "").trim();
   if (!nachricht && gewuenscht(id)) return;
   const w = { id, it: k.it, de: k.de, zeit: new Date().toISOString().slice(0, 10), gesendet: false };

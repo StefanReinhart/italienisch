@@ -17,6 +17,11 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      eine Wendung auf, die es noch nicht als Karte gibt (z. B. „la prima volta“ aus „È la prima volta …“), sie als
      neue Karte in die passende Lektion (`neu` in `data/lektionen-a1.js`) aufnehmen – Karten gibt es automatisch in
      beiden Richtungen – und die Grundform ins Wörterbuch. Nicht nur erklären, sondern lernbar machen.
+   - Einträge mit `id: "fehler:…"` (z. B. `"fehler:a / di"`) kommen von der Seite „Typische Fehler“: Der Nutzer
+     möchte wissen, wann man welches der beiden Wörter nimmt. Erklärung unter genau dieser Kennung in
+     `HINWEISE` (data/hinweise.js, Block „Erklärungen zu typischen Fehlern“) eintragen: kurz, mit Merkhilfe und
+     Beispielen für BEIDE Wörter. Die Kennung ist immer „fehler:“ + beide Wörter alphabetisch sortiert, mit „ / “.
+     Passen neue Beispielsätze, auch als Karten aufnehmen.
    - Einträge mit `"typ": "nachricht"` (`id: "allgemein"`) sind freie Nachrichten aus den Einstellungen
      (Wünsche, Fragen, Fehlermeldungen): umsetzen bzw. beantworten; wenn unklar oder größer, den Nutzer erst fragen.
 4. Einträge mit `"typ": "antwort"` sind Antworten aus „Frage & Antwort“, die der Nutzer selbst als richtig

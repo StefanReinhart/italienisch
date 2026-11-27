@@ -20,6 +20,22 @@ window.KARTEN_ALTERNATIVEN_DE = {
 };
 
 window.HINWEISE = {
+  // ---- Erklärungen zu typischen Fehlern (Kennung „fehler:“ + beide Wörter alphabetisch, mit „ / “ getrennt) ----
+  "fehler:a / di": "a = in/nach/zu (Ort, Richtung): Abito a Monaco, Vado a Roma, vicino a, davanti a, pensare a. di = von/aus (Herkunft mit essere, Besitz, Sorte): Sono di Monaco, la macchina di Paolo, una tazza di caffè. Merkhilfe: Wo bin ich / wohin gehe ich? → a. Woher bin ich / wem gehört es / wovon? → di.",
+  "fehler:a / in": "a vor Städten (a Roma, a Monaco) und bei a casa, a scuola, a letto, a piedi. in vor Ländern und Regionen (in Italia, in Toscana), bei vielen Orten im Alltag (in centro, in ufficio, in banca) und bei Verkehrsmitteln (in treno, in macchina).",
+  "fehler:da / di": "di = Herkunft mit essere (Sono di Monaco), Besitz, Sorte (crema di pistacchio), Thema (parlare di). da = von … her mit venire/partire (Vengo da Monaco), bei/zu Personen (vado da Marco), seit (da tre anni) und Zweck (qualcosa da bere, occhiali da sole).",
+  "fehler:a / da": "a = zu einem Ort (Vado a Roma, al cinema). da = zu/bei einer Person (Vado da Marco, Sono dal medico) oder von … her (Vengo da Roma). Merkhilfe: Ort → a, Person → da.",
+  "fehler:al / dal": "al = a + il → zu einem Ort/Ding: Vado al cinema, al bar. dal = da + il → zu/bei einer Person: Vado dal medico, dal parrucchiere – oder von … her: Torno dal lavoro.",
+  "fehler:a / al": "a ohne Artikel vor Städten, Namen und festen Wendungen (a Roma, a casa, a piedi, a Marco). al = a + il, wenn ein Artikel dazugehört: al cinema, al mare, al bar, alle otto (Uhrzeit).",
+  "fehler:in / nel": "in ohne Artikel bei Ländern und festen Wendungen (in Italia, in centro, in ufficio). nel = in + il, sobald ein Artikel dazugehört: nel frigorifero, nel centro storico, nel 2020.",
+  "fehler:il mio / mio": "Bei Familienmitgliedern in der Einzahl steht KEIN Artikel: mio marito, mia moglie, mio fratello, sua madre. Sonst steht der Artikel immer: il mio libro, la mia macchina – und auch bei Familie in der Mehrzahl: i miei genitori. Ausnahme: loro (il loro figlio).",
+  "fehler:la mia / mia": "Bei Familienmitgliedern in der Einzahl steht KEIN Artikel: mia moglie, mia madre, mia sorella. Sonst immer mit Artikel: la mia casa, la mia borsa – und Familie in der Mehrzahl: le mie sorelle.",
+  "fehler:lui / questo": "questo / questa = dieser, das hier – zum Zeigen und Vorstellen: Questo è mio marito (Das ist mein Mann). lui = er – wenn schon klar ist, von wem die Rede ist: Lui è mio marito (Er ist mein Mann). Bei Frauen: questa / lei.",
+  "fehler:lei / questa": "questa = diese, das hier – zum Zeigen und Vorstellen: Questa è mia moglie (Das ist meine Frau). lei = sie – wenn schon klar ist, von wem die Rede ist. Achtung: Lei groß = Sie (höflich).",
+  "fehler:mi / ti": "mi = mir/mich (ich), ti = dir/dich (du): Mi chiamo Anna (Ich heiße Anna) · Come ti chiami? (Wie heißt du?). Das kleine Wort steht vor dem Verb und passt zur Person: io mi …, tu ti …, lui/lei si …",
+  "fehler:ho / sono": "Vergangenheit: Die meisten Verben bilden sie mit avere (ho mangiato, ho visto). Mit essere (sono) gehen Verben der Bewegung und Veränderung: sono andato, sono arrivato, sono stato, sono uscito. Bei essere passt sich die Endung an: sono andata (Frau).",
+  "fehler:come / dove": "come = wie (Come stai? Come ti chiami?), dove = wo (Dove abiti? Dov'è la stazione?), di dove = woher (Di dove sei?).",
+  "fehler:che / come": "come = wie (Come stai?), che / che cosa = was (Che fai?), che + Hauptwort = welche/r (Che ore sono?). Und bei Ausrufen: Che bello! = Wie schön!",
   "wb:da": "da hat vier Bedeutungen: 1. von … her: Vengo da Roma. 2. bei/zu Personen: Vado da Marco (zu Marco), Sono dal medico (beim Arzt). 3. seit: da tre anni. 4. zum …/zu … (Zweck): qualcosa da bere = etwas zu trinken, da mangiare = zu essen, gli occhiali da sole = Sonnenbrille.",
   "wb:a": "a steht vor Städten: a Monaco = in München oder nach München – nicht „von“! „Aus/von München“ heißt: Sono di Monaco (Herkunft) oder Vengo da Monaco (komme von dort). Außerdem: a casa, alle otto (um acht), a piedi.",
   "wb:di": "di = von, aus – vor allem bei Herkunft (Sono di Monaco), Besitz (la macchina di Paolo) und Sorte/Inhalt: la crema di pistacchio (Pistaziencreme – mit -cch-), una tazza di caffè, un chilo di pane. Vor Selbstlaut oft d': un bicchiere d'acqua.",

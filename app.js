@@ -2783,7 +2783,14 @@ function schwierigSeite() {
 // weil die Spracherkennung selbst oft danebenliegt.
 const PRAEP_WOERTER = new Set("a in di da su con per tra fra al allo alla all' ai agli alle del dello della dell' dei degli delle dal dallo dalla dall' dai dagli dalle nel nello nella nell' nei negli nelle sul sullo sulla sull' sui sugli sulle ad".split(" "));
 const ARTIKEL_WOERTER = new Set("il lo la l' i gli le un uno una un'".split(" "));
+// Fürwörter: ich/du/er …, dieser/jener, mein/dein …, mir/dich … – z. B. „Lui è mio marito“ statt „Questo è mio marito“
+const PRONOMEN_WOERTER = new Set(("io tu lui lei noi voi loro questo questa questi queste quello quella quelli quelle quel " +
+  "mio mia miei mie tuo tua tuoi tue suo sua suoi sue nostro nostra nostri nostre vostro vostra vostri vostre " +
+  "mi ti si ci vi me te ne lo li").split(" "));
+const FRAGE_WOERTER = new Set("che cosa chi come dove quando quanto quanta quanti quante quale quali perché".split(" "));
 function musterArt(f, r) {
+  if (PRONOMEN_WOERTER.has(f) && PRONOMEN_WOERTER.has(r) && !(ARTIKEL_WOERTER.has(f) && ARTIKEL_WOERTER.has(r))) return "Fürwort";
+  if (FRAGE_WOERTER.has(f) && FRAGE_WOERTER.has(r)) return "Fragewort";
   // ein Wort zu viel oder zu wenig: „il mio“ statt „mio“, „vicino Monaco“ statt „vicino a Monaco“
   const [lang, kurz] = f.split(" ").length > r.split(" ").length ? [f, r] : [r, f];
   if (lang !== kurz && lang.endsWith(" " + kurz)) {
@@ -2895,7 +2902,7 @@ function typFehlerSeite() {
   const liste = fehlerMusterListe();
   zeige(`
     <p>Hier sammelt die App <b>automatisch</b>, welche Wörter du verwechselst – z. B. <b>di</b> statt <b>a</b>. Daraus macht sie gezielte Übungen.</p>
-    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel und Endungen – bei anderen Wörtern verhört sich das Handy zu oft.
+    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter und Endungen – bei anderen Wörtern verhört sich das Handy zu oft.
     War etwas kein typischer Fehler, nimm ihn mit <b>✕</b> heraus.</div>
     ${liste.length ? `<button class="btn voll" id="tfAlle">🎯 Alle typischen Fehler üben</button>` : ""}
     <div class="liste" style="margin-top:12px">${liste.length ? liste.map((m) => `

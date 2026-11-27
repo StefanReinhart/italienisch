@@ -26,6 +26,8 @@ window.HINWEISE = {
   "wb:in": "in bei Ländern und Regionen: in Italia, in Toscana. Bei vielen Orten im Alltag: in centro, in ufficio, in banca, in farmacia, in città, in montagna, in vacanza. Bei Verkehrsmitteln: in macchina, in treno, in aereo. Mit Artikel verschmilzt es: nel (in + il), nella (in + la).",
   "lk_l1:Non sono di qui.": "di = von, aus. Mit essere drückt di die Herkunft aus: Sono di Monaco (ich bin aus München), Di dove sei? (Woher bist du?). qui = hier. Wörtlich: Ich bin nicht von hier.",
   "lk_l1:Le presento Anna.": "Ja: Le = Ihnen (höfliche Sie-Form, großgeschrieben möglich). Le presento = ich stelle Ihnen vor. Zu Freunden: Ti presento Anna (dir).",
+  "lk_l1:Questo è mio marito.": "Beim Vorstellen sagt man questo / questa (das hier, dieser): Questo è mio marito, Questa è mia moglie. Lui è mio marito heißt „Er ist mein Mann“ – das sagt man, wenn schon klar ist, von wem die Rede ist. Ohne Artikel, weil Familie in der Einzahl: mio marito (nicht il mio marito).",
+  "lk_l1:Lui è mio marito.": "lui = er. So spricht man über jemanden, von dem schon die Rede ist. Zum Vorstellen sagt man dagegen: Questo è mio marito (Das ist mein Mann).",
   "lk_l1:Puoi ripetere, per favore?": "puoi = du kannst. Höflich (Sie): Può ripetere, per favore? = Können Sie das bitte wiederholen? (può = Sie können / er kann).",
   "p_verstaendigung:Più piano, per favore.": "Wörtlich: Mehr langsam, bitte. più = mehr, piano = langsam (auch: leise). So bildet man „-er“: più grande = größer, più caro = teurer.",
   // Erste Wörter

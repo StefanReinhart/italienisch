@@ -38,6 +38,7 @@ Molto piacere! | Sehr erfreut!
 Il piacere è mio. | Ganz meinerseits.
 Questo è mio marito. | Das ist mein Mann.
 Questa è mia moglie. | Das ist meine Frau.
+Lui è mio marito. | Er ist mein Mann.
 Ti presento Anna. | Ich stelle dir Anna vor.
 Le presento Anna. | Ich stelle Ihnen Anna vor.
 un po' | ein bisschen

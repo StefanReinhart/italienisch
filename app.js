@@ -338,7 +338,7 @@ function zahlenAlsWorte(text, deutsch) {
   return String(text).replace(/(\d)[.'’ ](?=\d{3}\b)/g, "$1").replace(/\d+/g, (z) => (deutsch ? zahlwortDe(+z) : zahlMitAkzent(+z)));
 }
 function normWort(w) {
-  let s = w.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+  let s = w.replace(/>/g, "i").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
   if (/^\d+$/.test(s)) s = zahlwort(+s);
   return s;
 }
@@ -391,7 +391,7 @@ function vergleiche(ziel, gesagt) {
 
 // ---------- Eingetippte Antwort prüfen (Deutsch → Italienisch) ----------
 const ohneAkzente = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
-const saeubern = (s) => zahlenAlsWorte(s).toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, " ").replace(/'\s*/g, "'").replace(/\s+/g, " ").trim();
+const saeubern = (s) => zahlenAlsWorte(String(s).replace(/>/g, "ì")).toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, " ").replace(/'\s*/g, "'").replace(/\s+/g, " ").trim();
 const ARTIKEL_RE = /^(il |lo |la |i |gli |le |l')/;
 // „Was?“ gibt es dreimal: che cosa / cosa / che (Cos'è = Che cos'è). Steht auf einer Seite cosa oder che cosa am Anfang,
 // gelten alle drei Formen als gleich. Nur dann – sonst könnte „che“ auch „welche“ heißen (Che ore sono?).
@@ -517,6 +517,11 @@ function akzentLeisten() {
   gruppen.forEach((felder, ort) => {
     let aktiv = felder[0];
     felder.forEach((f) => ["focus", "click", "input"].forEach((ev) => f.addEventListener(ev, () => (aktiv = f))));
+    // Manche Handy-Tastaturen geben beim langen Drücken auf i ein „>“ aus – das wird sofort zu ì
+    felder.forEach((f) => f.addEventListener("input", () => {
+      if (!f.value.includes(">")) return;
+      const pos = f.selectionStart; f.value = f.value.replace(/>/g, "ì"); try { f.setSelectionRange(pos, pos); } catch (e) {}
+    }));
     const leiste = document.createElement("div");
     leiste.className = "akzente";
     leiste.innerHTML = AKZENTE.map((a) => `<button type="button" data-akzent="${a}" tabindex="-1">${a}</button>`).join("");

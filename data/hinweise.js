@@ -196,7 +196,7 @@ window.HINWEISE = {
   "lk_l1:Come va?": "Wörtlich: Wie geht's? – locker, für du und Sie. Antworten: Bene! · Tutto bene. · Così così. Förmlicher: Come sta?",
   "lk_l1:È la prima volta in Italia.": "È = es ist (das „es“ fällt im Italienischen weg). la prima volta = das erste Mal; volta = Mal, nicht Zeit (Zeit = tempo).",
   "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole (vuole dire geht auch). Bedeutet genau dasselbe wie Che cosa significa? – beide Antworten zählen als richtig.",
-  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più lentamente = langsamer. Mit du: Puoi parlare più lentamente?",
+  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più = mehr: più lentamente heißt wörtlich „mehr langsam“ = langsamer. So bildet man im Italienischen fast jeden Vergleich: più grande (größer), più caro (teurer), più piccolo (kleiner). Mit non … più heißt es „nicht mehr“: Non ho più tempo. Mit du: Puoi parlare più lentamente?",
   "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",
   "lk_l1:Prego, si accomodi.": "Bitte setzen Sie sich / kommen Sie herein (accomodarsi). Sie-Aufforderung: -are-Verben enden hier auf -i – si accomodi, nicht si accomoda (= er/sie nimmt Platz). Zu „du“: Accomodati!",

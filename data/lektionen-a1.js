@@ -302,6 +302,9 @@ l6: {
     "kleidung:la gonna", "kleidung:il vestito", "kleidung:il cappotto", "kleidung:i vestiti", "farben:grigio", "farben:marrone", "farben:rosa", "farben:arancione", "farben:lungo", "farben:corto",
     "p_einkaufen:Vorrei questo.", "p_einkaufen:Sto solo guardando.", "p_einkaufen:Avete una taglia più grande?", "p_einkaufen:A che ora chiudete?"],
   neu: `
+È troppo caro. Ha qualcosa di più economico? | Das ist zu teuer. Haben Sie etwas Günstigeres?
+più piccolo | kleiner
+Non ho più tempo. | Ich habe keine Zeit mehr.
 il commesso | der Verkäufer
 la commessa | die Verkäuferin
 il camerino | die Umkleidekabine

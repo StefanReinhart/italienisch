@@ -922,6 +922,7 @@ function karteZeigen() {
       ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
     sitzung = null; return;
   }
+  if (sitzung.rueck != null) return karteRueckblick();
   const { k, r } = sitzung.liste[sitzung.pos];
   const itDe = r === "it-de";
   const vorne = itDe ? k.it : k.de, hinten = itDe ? k.de : k.it;
@@ -958,7 +959,17 @@ function karteZeigen() {
       : tippen
         ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button>${SR ? `<button class="btn zweit" id="ksprechen" title="Antwort sprechen" style="flex:0 0 64px">🎤</button>` : ""}<button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
         : `<div class="reihe" style="margin-top:14px"><button class="btn" id="aufdecken">Aufdecken</button>${SR ? `<button class="btn zweit" id="ksprechen">🎤 Antwort sprechen</button>` : ""}</div>`}
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="kZurueck" ${(sitzung.verlauf || []).length ? "" : "disabled"}>‹ Zurück</button>
+      <button class="btn zweit" id="kWeiter" ${sitzung.pos < sitzung.liste.length - 1 ? "" : "disabled"}>Überspringen ›</button>
+    </div>
   `);
+  // Zurück = die zuletzt bewerteten Karten noch einmal ansehen · Überspringen = diese Karte ans Ende der Runde
+  document.getElementById("kZurueck").onclick = () => { sitzung.rueck = sitzung.verlauf.length - 1; karteZeigen(); };
+  document.getElementById("kWeiter").onclick = () => {
+    sitzung.liste.push(sitzung.liste.splice(sitzung.pos, 1)[0]);
+    sitzung.aufgedeckt = false; sitzung.eingabe = null; karteZeigen();
+  };
   if (!sitzung.aufgedeckt && itDe && S.einstellungen.automatischVorlesen) sprich(k.it);
   if (sitzung.aufgedeckt && !itDe && S.einstellungen.automatischVorlesen) sprich(k.it);
   const auf = document.getElementById("aufdecken");
@@ -995,9 +1006,33 @@ function karteZeigen() {
       bewerte(k.id, r, n);
       if (n === 4) toast("🏆 Gemerkt – kommt erst in einem halben Jahr wieder.");
     } else geuebt();
+    (sitzung.verlauf = sitzung.verlauf || []).push({ k, r, n, eingabe: sitzung.eingabe && sitzung.eingabe.eingabe });
     if (n === 0) sitzung.liste.push({ k, r }); else sitzung.fertig++;
     sitzung.pos++; sitzung.aufgedeckt = false; sitzung.eingabe = null; karteZeigen();
   }));
+}
+
+// Schon bewertete Karte noch einmal ansehen (nur anschauen – die Bewertung bleibt, wie sie war)
+function karteRueckblick() {
+  const i = sitzung.rueck, { k, r, n, eingabe } = sitzung.verlauf[i], itDe = r === "it-de";
+  const namen = ["🔁 Nochmal", "Schwer", "Gut", "Leicht", "🏆 Kann ich sicher"];
+  zeige(`
+    ${fortschrittsLeiste(Math.min(sitzung.fertig + 1, sitzung.gesamt), sitzung.gesamt)}
+    <div class="karte">
+      ${nussBtn(k.id)}
+      <span class="leise">Schon bewertet: <b>${namen[n]}</b></span>
+      <div class="wort">${esc(itDe ? k.it : k.de)}</div>
+      <div class="trenner"></div>
+      ${eingabe ? `<div class="leise">Deine Antwort: <b>${esc(eingabe)}</b></div>` : ""}
+      <div class="loesung">${esc(itDe ? k.de : k.it)}</div>${lautBtn(k.it)}${hinweisHtml(k)}
+    </div>
+    <p class="leise" style="text-align:center">Rückblick – mit „Weiter“ geht es zurück zur aktuellen Karte.</p>
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="kZurueck" ${i ? "" : "disabled"}>‹ Zurück</button>
+      <button class="btn" id="kWeiter">Weiter ›</button>
+    </div>`);
+  document.getElementById("kZurueck").onclick = () => { sitzung.rueck = i - 1; karteZeigen(); };
+  document.getElementById("kWeiter").onclick = () => { sitzung.rueck = i + 1 < sitzung.verlauf.length ? i + 1 : null; karteZeigen(); };
 }
 
 // ---------- Grammatik ----------
@@ -1159,17 +1194,38 @@ function quizZeigen() {
     <div class="frage">${a.frage}</div>
     ${antwortHtml}
     <div id="rueck"></div>
-    ${a.nichtGewusst ? `<div class="reihe"><button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button></div>` : ""}`);
-  if (a.beimStart) a.beimStart();
-  let beantwortet = false, richtigGezaehlt = false;
-  const aufloesen = (ok, text, gewaehlt) => {
+    ${a.nichtGewusst ? `<div class="reihe"><button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button></div>` : ""}
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="qZurueck" ${quiz.pos ? "" : "disabled"}>‹ Zurück</button>
+      <button class="btn zweit" id="qWeiter" ${a._erg || quiz.pos < quiz.aufgaben.length - 1 ? "" : "disabled"}>${a._erg ? "Weiter ›" : "Überspringen ›"}</button>
+    </div>`);
+  // Zurück = vorige Aufgabe ansehen (schon beantwortet: nur anschauen) · Überspringen = Aufgabe ans Ende
+  document.getElementById("qZurueck").onclick = () => { quiz.pos--; quizZeigen(); };
+  document.getElementById("qWeiter").onclick = () => {
+    if (!a._erg) quiz.aufgaben.push(quiz.aufgaben.splice(quiz.pos, 1)[0]); else quiz.pos++;
+    quizZeigen();
+  };
+  const rueckblick = !!a._erg;
+  if (a.beimStart && !rueckblick) a.beimStart();
+  let beantwortet = rueckblick, richtigGezaehlt = false;
+  const aufloesen = (ok, text, gewaehlt, still) => {
     $app.querySelectorAll("[data-o]").forEach((x) => { if (x.dataset.o === a.richtig) x.classList.add("richtig"); });
     if (gewaehlt && !ok) gewaehlt.classList.add("falsch");
-    if (a.sprechen) sprich(a.sprechen);
+    if (a.sprechen && !still) sprich(a.sprechen);
+    if (!still) a._erg = { ok, text, wahl: gewaehlt && gewaehlt.dataset ? gewaehlt.dataset.o : null, eingabe: feldWert() };
     document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${text} <b>${esc(a.erklaerung)}</b></div>
       <button class="btn voll" id="weiter">Weiter</button>`;
     document.getElementById("weiter").onclick = () => { quiz.pos++; quizZeigen(); };
+    const qw = document.getElementById("qWeiter"); if (qw) { qw.disabled = false; qw.textContent = "Weiter ›"; }
   };
+  const feldWert = () => { const f = document.getElementById("qtipp"); return f ? f.value : null; };
+  // Schon beantwortete Aufgabe (über „Zurück“): Ergebnis wieder anzeigen, nichts neu werten
+  if (rueckblick) {
+    const e = a._erg, f = document.getElementById("qtipp");
+    if (f) { f.value = e.eingabe || ""; f.disabled = true; }
+    aufloesen(e.ok, e.text, e.wahl ? [...$app.querySelectorAll("[data-o]")].find((x) => x.dataset.o === e.wahl) : null, true);
+    const ngb = document.getElementById("nichtGewusst"); if (ngb) { ngb.disabled = true; if (e.ng) ngb.textContent = "✓ Gemerkt – kommt öfter wieder"; }
+  }
   $app.querySelectorAll("[data-o]").forEach((b) => (b.onclick = () => {
     if (beantwortet) return; beantwortet = true;
     const ok = b.dataset.o === a.richtig;
@@ -1216,6 +1272,7 @@ function quizZeigen() {
     ng.disabled = true; ng.textContent = "✓ Gemerkt – kommt öfter wieder";
     if (!beantwortet || richtigGezaehlt) a.nichtGewusst(); // falsche Antwort ist schon als Fehler gezählt
     if (!beantwortet) { beantwortet = true; aufloesen(false, "🙈 Kein Problem – so ist es richtig:"); }
+    if (a._erg) a._erg.ng = true;
     else if (richtigGezaehlt) { quiz.punkte--; richtigGezaehlt = false; } // geraten zählt nicht als gewusst
     toast("Gemerkt – kommt öfter wieder.");
   };
@@ -1664,13 +1721,14 @@ function gespraechZeigen() {
       </div>
       ${g.tippGezeigt ? `<div class="meldung info">💡 Zum Beispiel: <b>${esc(q.b)}</b><br><span class="leise">${esc(q.bde)}</span></div>` : `<button class="btn zweit voll" id="tipp">💡 Beispielantwort zeigen</button>`}`}
     <div class="reihe">
-      ${e ? `<button class="btn zweit" id="nochmalAntworten">Nochmal antworten</button>` : ""}
-      <button class="btn" id="naechste">${e ? "Nächste Frage ›" : "Überspringen ›"}</button>
-    </div>
-    <div class="reihe" style="margin-top:0">
       ${g.nichtGewusst
         ? `<button class="btn zweit voll" disabled>✓ Gemerkt – kommt öfter wieder</button>`
         : `<button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button>`}
+    </div>
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="gZurueck" ${g.pos ? "" : "disabled"}>‹ Zurück</button>
+      ${e ? `<button class="btn zweit" id="nochmalAntworten">🔁 Nochmal</button>` : ""}
+      <button class="btn${e ? "" : " zweit"}" id="naechste">${e ? "Weiter ›" : "Überspringen ›"}</button>
     </div>`);
   if (!g.vorgelesen) { g.vorgelesen = true; setTimeout(() => sprich(q.f), 300); }
   const auswerten = (texte) => {
@@ -1684,7 +1742,17 @@ function gespraechZeigen() {
   klick("textZeigen", () => { g.textGezeigt = true; gespraechZeigen(); });
   klick("deZeigen", () => { g.deGezeigt = true; gespraechZeigen(); });
   klick("tipp", () => { g.tippGezeigt = true; gespraechZeigen(); sprich(q.b); });
-  klick("naechste", () => { g.pos++; neueFrage(); gespraechZeigen(); });
+  // Vor und zurück: der Stand jeder Frage (Antwort, Ergebnis …) wird gemerkt und beim Zurückkommen wieder angezeigt
+  const FELDER = ["ergebnis", "gewertet", "korrigiert", "textGezeigt", "deGezeigt", "tippGezeigt", "vorgelesen", "status", "nichtGewusst", "alsRichtigGezaehlt"];
+  const wechseln = (neu) => {
+    g.staende = g.staende || {};
+    g.staende[g.pos] = Object.fromEntries(FELDER.map((f) => [f, g[f]]));
+    g.pos = neu; neueFrage();
+    if (g.staende[neu]) Object.assign(g, g.staende[neu], { vorgelesen: true });
+    gespraechZeigen();
+  };
+  klick("naechste", () => wechseln(g.pos + 1));
+  klick("gZurueck", () => wechseln(g.pos - 1));
   klick("nichtGewusst", () => {
     g.nichtGewusst = true;
     if (!g.gewertet) { g.gewertet = true; gBewerte(q.key, false); }

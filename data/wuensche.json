@@ -11,5 +11,11 @@
   "de": "Kannst du etwas langsamer sprechen?",
   "nachricht": "Karte zu langsamer, beide Möglichkeiten lentamente und piano",
   "zeit": "2026-11-27"
+ },
+ {
+  "typ": "nachricht",
+  "id": "allgemein",
+  "nachricht": "Karten neu und wiederholen: ich dachte eher zwei Kacheln, eine für Wiederholung eine für neue Karten kennenlernen. Dann 10 neue Karten",
+  "zeit": "2026-11-27 22:57"
  }
 ]

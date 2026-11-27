@@ -179,6 +179,8 @@ l4: {
   kern: ["personen:la famiglia", "personen:il padre", "personen:la madre", "personen:il figlio", "personen:la figlia", "personen:il fratello", "personen:la sorella", "personen:il marito", "personen:la moglie", "personen:il nonno", "personen:la nonna", "personen:lo zio", "personen:la zia", "personen:il cugino", "personen:i genitori", "personen:il bambino", "personen:la bambina", "personen:il ragazzo", "personen:la ragazza", "personen:l'uomo", "personen:la donna", "farben:grande", "farben:piccolo", "farben:giovane", "farben:vecchio", "farben:bello",
     "personen:il signore", "personen:la signora", "farben:felice", "farben:nuovo", "wetter:il cane", "wetter:il gatto", "haus:la casa"],
   neu: `
+un'amica | eine Freundin
+Ho un'amica a Roma e un amico a Milano. | Ich habe eine Freundin in Rom und einen Freund in Mailand.
 la nipote | die Enkelin / die Nichte
 il fidanzato | der feste Freund / der Verlobte
 la fidanzata | die feste Freundin / die Verlobte

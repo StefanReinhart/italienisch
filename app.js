@@ -420,10 +420,16 @@ function wasVarianten(t, karte) {
   return ["cosa " + rest, "che cosa " + rest, "che " + rest].map(passt);
 }
 const istWasFrage = (karte) => wasVarianten(karte.it, karte).length > 0;
+// „tuo / tua“: auch ohne Schrägstrich („tuo tua“, „tuo, tua“) und jede Form allein („tuo“) gilt als richtig
+function zielFormen(z) {
+  if (!z.includes("/")) return [z];
+  const teile = z.split("/").map((t) => t.trim()).filter(Boolean);
+  return [z, teile.join(" "), ...teile];
+}
 function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
   if (!e) return { stufe: "falsch", text: "Keine Antwort eingegeben." };
-  const ziele = gleicheZiele(karte);
+  const ziele = gleicheZiele(karte).flatMap(zielFormen);
   let best = { stufe: "falsch", wert: 0 };
   ziele.forEach((z) => {
     const zs = saeubern(z);
@@ -1564,7 +1570,7 @@ function sprechenZeigen() {
       ergebnis: (alternativen) => {
         // die Variante nehmen, die dem Zielsatz am nächsten kommt – aus dem Gedächtnis zählen auch gleichbedeutende Sätze
         // (z. B. „Che cosa vuol dire?“ statt „Che cosa significa?“); bei Gleichstand gewinnt der Satz der Karte
-        const ziele = verdeckt ? gleicheZiele(k) : [k.it];
+        const ziele = verdeckt ? gleicheZiele(k).flatMap(zielFormen) : zielFormen(k.it);
         const beste = alternativen.flatMap((t) => ziele.map((z) => ({ t, z, v: vergleiche(z, t) }))).sort((a, b) => b.v.prozent - a.v.prozent)[0];
         sprechen.ergebnis = { ...beste.v, text: beste.t, ziel: beste.z };
         if (verdeckt && beste.v.prozent < 100) fehlerAusText(beste.z, beste.t, true); // z. B. „vicino di“ statt „vicino a“ merken

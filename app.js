@@ -1453,14 +1453,18 @@ function sprechenZeigen() {
     </div>
     ${ergebnisHtml}
     <div class="reihe">
-      <button class="btn zweit" id="zurueckK" ${sprechen.pos ? "" : "disabled"}>‹ Vorheriger</button>
-      <button class="btn" id="weiterK">${letzter ? "Fertig ✓" : "Nächster ›"}</button>
-    </div>
-    <div class="reihe" style="margin-top:0">
       ${sprechen.nichtGewusst
         ? `<button class="btn zweit voll" disabled>✓ Gemerkt – kommt öfter wieder</button>`
         : `<button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button>`}
+    </div>
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="zurueckK" ${sprechen.pos ? "" : "disabled"}>‹ Zurück</button>
+      ${e ? `<button class="btn zweit" id="nochmalS">🔁 Nochmal</button>` : ""}
+      <button class="btn" id="weiterK">${letzter ? "Fertig ✓" : "Weiter ›"}</button>
     </div>`);
+  // Nochmal sprechen: Ergebnis wegräumen und gleich wieder zuhören (zählt nicht noch einmal für den Lernstand)
+  const ns = document.getElementById("nochmalS");
+  if (ns) ns.onclick = () => { sprechen.ergebnis = null; sprechen.status = ""; sprechenZeigen(); document.getElementById("mikro").click(); };
   const zeigen = document.getElementById("zeigen");
   if (zeigen) zeigen.onclick = () => {
     sprechen.gezeigt = true;

@@ -7,8 +7,26 @@ l1: {
   kern: ["grundwoerter:ciao", "grundwoerter:buongiorno", "grundwoerter:buonasera", "grundwoerter:buonanotte", "grundwoerter:arrivederci", "grundwoerter:grazie", "grundwoerter:prego", "grundwoerter:per favore", "grundwoerter:scusi", "grundwoerter:sì", "grundwoerter:no", "personen:io", "personen:tu", "personen:lui", "personen:lei", "personen:noi", "personen:voi", "personen:loro", "fragen:come", "fragen:dove", "fragen:chi", "fragen:che cosa", "personen:l'amico", "personen:l'amica", "freizeit:il nome", "grundwoerter:anche",
     "p_begruessung:Ciao, come stai?", "p_begruessung:Buongiorno, come sta?", "p_begruessung:Sto bene, grazie.", "p_begruessung:Non c'è male.", "p_begruessung:E tu?", "p_begruessung:Come ti chiami?", "p_begruessung:Mi chiamo Marco.", "p_begruessung:Piacere!", "p_begruessung:Di dove sei?", "p_begruessung:Sono tedesco.", "p_begruessung:A presto!", "p_begruessung:A domani!", "p_verstaendigung:Parlo un po' di italiano.", "p_verstaendigung:Non capisco.",
     "grundwoerter:va bene", "grundwoerter:scusa", "personen:il signore", "personen:la signora", "p_begruessung:Buona giornata!", "p_verstaendigung:Come si dice in italiano?", "p_verstaendigung:Che cosa significa?", "p_verstaendigung:Non lo so.", "p_verstaendigung:Sto imparando l'italiano.",
-    "p_begruessung:Sono di Berlino.", "p_verstaendigung:Parla tedesco?"],
+    "p_begruessung:Sono di Berlino.", "p_verstaendigung:Parla tedesco?",
+    "p_begruessung:Quanti anni hai?", "lk_l2:Quanti anni ha?", "lk_l4:Sei sposato?", "lk_l4:Hai figli?", "lk_l4:Hai fratelli o sorelle?",
+    "lk_l4:Sono sposato e ho due figli.", "lk_l2:Ho due figli, un maschio e una femmina.", "lk_l8:Sono in pensione."],
   neu: `
+Chi è? | Wer ist das?
+Chi è lui? | Wer ist er?
+Chi è lei? | Wer ist sie?
+Chi sono? | Wer sind sie?
+Questi sono i miei figli. | Das sind meine Kinder.
+Come si chiamano i tuoi figli? | Wie heißen deine Kinder?
+Si chiamano Luca e Sara. | Sie heißen Luca und Sara.
+Quanti anni hanno? | Wie alt sind sie?
+Non ho figli. | Ich habe keine Kinder.
+Sono sposata. | Ich bin verheiratet. (Frau)
+Ho una sorella e un fratello. | Ich habe eine Schwester und einen Bruder.
+Di dove siete? | Woher kommt ihr?
+Siamo tedeschi. | Wir sind Deutsche.
+Dove lavori? | Wo arbeitest du?
+Che cosa fai nel tempo libero? | Was machst du in deiner Freizeit?
+Mi piace leggere e viaggiare. | Ich lese und reise gern.
 Il mio nome è Anna. | Mein Name ist Anna.
 il cognome | der Nachname
 Come ti chiami di cognome? | Wie heißt du mit Nachnamen?
@@ -104,13 +122,15 @@ Arrivederci, a presto! | Auf Wiedersehen, bis bald!
 Ci vediamo! | Wir sehen uns!
 `,
   grammatikPlus: [{ luecke: "fragewoerter" }],
-  fragenPlus: ["Come si chiama?", "Che lavoro fai?", "Ti piace l'Italia?"],
+  fragenPlus: ["Come si chiama?", "Che lavoro fai?", "Dove lavori?", "Quanti anni hai?", "Sei sposato?", "Hai figli?", "Hai fratelli o sorelle?", "Che cosa fai nel tempo libero?", "Ti piace l'Italia?"],
   erklaerungPlus: `<p><b>Fragewörter:</b> <i>come</i> (wie) · <i>dove</i> (wo) · <i>di dove</i> (woher) · <i>chi</i> (wer) · <i>che cosa</i> (was) · <i>quando</i> (wann) · <i>quanto</i> (wie viel) · <i>perché</i> (warum).</p>
 <p><b>„Was?“ gibt es dreimal – alle richtig:</b> <i>Che cosa prendi?</i> (vollständig) · <i>Cosa prendi?</i> (im Alltag am häufigsten) · <i>Che prendi?</i> (ganz umgangssprachlich). Vor <i>è</i> wird zusammengezogen: <i>Cos'è?</i> = Was ist das?</p>
 <p><b>Verneinen:</b> einfach <b>non</b> vor das Verb: <i>Non sono italiano.</i> = Ich bin kein Italiener. <i>Non capisco.</i> = Ich verstehe nicht.</p>
 <p><b>Andere vorstellen:</b> <i>Questo è il mio amico Paolo.</i> (Mann) · <i>Questa è la mia amica Giulia.</i> (Frau) · <i>Lui si chiama Paolo. / Lei si chiama Giulia.</i> Antwort: <i>Piacere di conoscerti!</i> (du) bzw. <i>Piacere di conoscerLa!</i> (Sie).</p>
 <p><b>Herkunft – Mann / Frau:</b> <i>tedesco / tedesca</i>, <i>italiano / italiana</i>, <i>austriaco / austriaca</i>, <i>svizzero / svizzera</i>. <i>Sono di Monaco</i> (Stadt) · <i>Vengo dalla Germania</i> (Land mit Artikel).</p>
-<p><b>Du oder Sie?</b> <i>Possiamo darci del tu?</i> = Können wir uns duzen? – Fragen mit Sie benutzen die Form von „er/sie“: <i>Che lavoro fa Lei? Dove abita Lei?</i></p>`
+<p><b>Du oder Sie?</b> <i>Possiamo darci del tu?</i> = Können wir uns duzen? – Fragen mit Sie benutzen die Form von „er/sie“: <i>Che lavoro fa Lei? Dove abita Lei?</i></p>
+<p><b>Mehr über dich erzählen:</b> <i>Quanti anni hai?</i> (Alter) · <i>Sei sposato/sposata?</i> · <i>Hai figli?</i> – <i>Sì, ho due figli.</i> / <i>Non ho figli.</i> · <i>Come si chiamano i tuoi figli?</i> – <i>Si chiamano Luca e Sara.</i> · <i>Che cosa fai nel tempo libero?</i> – <i>Mi piace leggere.</i> Mehr zur Familie in Lektion 4.</p>
+<p><b>Wer ist das?</b> <i>Chi è?</i> · <i>Chi è lui / lei?</i> · <i>Questi sono i miei figli.</i> (mehrere: questi).</p>`
 },
 l2: {
   kern: ["zahlen:uno", "zahlen:due", "zahlen:tre", "zahlen:quattro", "zahlen:cinque", "zahlen:sei", "zahlen:sette", "zahlen:otto", "zahlen:nove", "zahlen:dieci", "zahlen:undici", "zahlen:dodici", "zahlen:quindici", "zahlen:venti", "zahlen:ventuno", "zahlen:trenta", "zahlen:quaranta", "zahlen:cinquanta", "zahlen:sessanta", "zahlen:settanta", "zahlen:ottanta", "zahlen:novanta", "zahlen:cento", "zahlen:mille", "fragen:quanti", "fragen:quanto", "zeit:l'anno",

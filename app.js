@@ -1003,7 +1003,9 @@ function karteZeigen() {
       start: () => { ksp.classList.add("hoert"); ksp.textContent = "🎤 …"; if (status) status.textContent = `Ich höre zu – sag die Antwort auf ${itDe ? "Deutsch" : "Italienisch"}.`; },
       ergebnis: (alternativen) => {
         const b = besteSprachAntwort(alternativen, k, itDe);
-        sitzung.eingabe = { ...b.r, eingabe: "🎤 " + b.t }; sitzung.aufgedeckt = true; karteZeigen();
+        sitzung.eingabe = { ...b.r, eingabe: "🎤 " + b.t };
+        if (!itDe && !["richtig", "akzent"].includes(b.r.stufe)) fehlerAusText(k.it, b.t, true); // typische Verwechslung merken
+        sitzung.aufgedeckt = true; karteZeigen();
       },
       fehler: (text) => { if (status) status.textContent = text; ksp.textContent = tippen ? "🎤" : "🎤 Antwort sprechen"; },
       ende: () => ksp.classList.remove("hoert")
@@ -1565,6 +1567,7 @@ function sprechenZeigen() {
         const ziele = verdeckt ? gleicheZiele(k) : [k.it];
         const beste = alternativen.flatMap((t) => ziele.map((z) => ({ t, z, v: vergleiche(z, t) }))).sort((a, b) => b.v.prozent - a.v.prozent)[0];
         sprechen.ergebnis = { ...beste.v, text: beste.t, ziel: beste.z };
+        if (verdeckt && beste.v.prozent < 100) fehlerAusText(beste.z, beste.t, true); // z. B. „vicino di“ statt „vicino a“ merken
         sprechen.status = beste.v.prozent >= 90 ? "Sehr gut! Noch einmal oder weiter." : "Hör dir die richtige Aussprache an und versuch es noch einmal.";
         const a = S.aussprache[k.id] || { versuche: 0, bester: 0, letzter: 0 };
         a.versuche++; a.letzter = beste.v.prozent; a.bester = Math.max(a.bester, beste.v.prozent);
@@ -1759,6 +1762,7 @@ function gespraechZeigen() {
   const auswerten = (texte) => {
     const r = pruefeAntwort(q, texte);
     g.ergebnis = r;
+    if (r.stufe !== "richtig") fehlerAusText(q.b, r.text, true); // z. B. „Abito vicino di Monaco“ → „di statt a“ (nur wenn der Satz der Beispielantwort ähnelt)
     if (!g.gewertet) { g.gewertet = true; g.alsRichtigGezaehlt = r.stufe === "richtig"; gBewerte(q.key, g.alsRichtigGezaehlt); } else geuebt();
     gespraechZeigen();
     setTimeout(() => sprich(r.stufe === "richtig" ? "Bravo!" : q.b), 400);
@@ -2795,12 +2799,18 @@ function fehlerMerken(falsch, richtig, beispiel) {
   S.fehlerMuster[key] = m;
 }
 // Eingetippten Satz mit der Lösung vergleichen und die verwechselten Wörter merken
-function fehlerAusText(loesung, eingabe) {
+// nurGrammatik: beim Sprechen und bei freien Antworten nur Präpositionen, Artikel und Endungen merken –
+// andere Wörter können sich das Handy verhört oder man frei anders gewählt haben (Mi chiamo Stefan statt Marco)
+function fehlerAusText(loesung, eingabe, nurGrammatik) {
   if (!eingabe || !loesung) return;
   const v = vergleiche(loesung, eingabe);
+  if (nurGrammatik && v.prozent < 50) return; // kaum etwas verstanden – kein verlässlicher Vergleich
   const falsche = v.woerter.filter((w) => (w.art === "falsch" || w.art === "fast") && w.gehoert);
   if (falsche.length > 2) return; // ganz anderer Satz – keine einzelne Verwechslung
-  falsche.forEach((w) => fehlerMerken(w.gehoert, w.wort, loesung));
+  falsche.forEach((w) => {
+    if (nurGrammatik && musterArt(musterNorm(w.gehoert), musterNorm(w.wort)) === "Wort") return;
+    fehlerMerken(w.gehoert, w.wort, loesung);
+  });
 }
 const fehlerMusterListe = () => Object.entries(S.fehlerMuster).filter(([, m]) => !m.geloescht).map(([key, m]) => ({ key, ...m }))
   .sort((a, b) => b.anzahl - a.anzahl || b.zuletzt - a.zuletzt);
@@ -2841,7 +2851,7 @@ function typFehlerSeite() {
   const liste = fehlerMusterListe();
   zeige(`
     <p>Hier sammelt die App <b>automatisch</b>, welche Wörter du verwechselst – z. B. <b>di</b> statt <b>a</b>. Daraus macht sie gezielte Übungen.</p>
-    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben und beim Eintippen (nicht beim Sprechen – da verhört sich das Handy zu oft).
+    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel und Endungen – bei anderen Wörtern verhört sich das Handy zu oft.
     War etwas kein typischer Fehler, nimm ihn mit <b>✕</b> heraus.</div>
     ${liste.length ? `<button class="btn voll" id="tfAlle">🎯 Alle typischen Fehler üben</button>` : ""}
     <div class="liste" style="margin-top:12px">${liste.length ? liste.map((m) => `

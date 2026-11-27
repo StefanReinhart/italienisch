@@ -279,3 +279,5 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .akzente { display: flex; gap: 6px; justify-content: center; margin: 6px 0 2px; }
 .akzente button { min-width: 40px; height: 38px; border-radius: 10px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-size: 20px; cursor: pointer; touch-action: manipulation; }
 .akzente button:active { background: var(--gruen-hell); }
+.frage { position: relative; }
+.frage > .nuss { position: absolute; top: 4px; right: 4px; }

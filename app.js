@@ -1243,7 +1243,7 @@ function quizZeigen() {
     ? `<div class="reihe" style="flex-wrap:nowrap;margin-top:0"><input type="text" id="qtipp" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Antwort eintippen …" style="margin:0;flex:1">${SR && !a.keinMikro ? `<button class="btn zweit" id="qsprechen" title="Antwort sprechen" style="flex:none">🎤</button>` : ""}<button class="btn" id="qpruefen" style="flex:none">Prüfen</button></div><div id="qstatus" class="leise"></div>`
     : `<div class="optionen${a.zwei ? " zwei" : ""}">${a.optionen.map((o) => `<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
   zeige(`${fortschrittsLeiste(quiz.pos + 1, quiz.aufgaben.length)}
-    <div class="frage">${a.frage}</div>
+    <div class="frage">${a.karte ? nussBtn(a.karte.id) : ""}${a.frage}</div>
     ${antwortHtml}
     <div id="rueck"></div>
     ${a.nichtGewusst ? `<div class="reihe"><button class="btn zweit voll" id="nichtGewusst" style="border-color:var(--rot);color:var(--rot)">🙈 Nicht gewusst – öfter üben</button></div>` : ""}
@@ -1299,8 +1299,11 @@ function quizZeigen() {
     const pruefen = () => {
       if (beantwortet || !feld.value.trim()) return;
       beantwortet = true; feld.disabled = true;
-      const e = saeubern(feld.value), z = saeubern(a.richtig);
-      const ok = e === z || ohneAkzente(e) === ohneAkzente(z);
+      // „tuo / tua“ gilt auch als „tuo tua“ oder „tuo“; bei Was-Fragen zählen che / cosa / che cosa gleich
+      const e = saeubern(feld.value), formen = zielFormen(a.richtig).map(saeubern);
+      const genau = formen.some((z) => z === e || wasGleich(e, z));
+      const ok = genau || formen.some((z) => ohneAkzente(e) === ohneAkzente(z) || wasGleich(ohneAkzente(e), ohneAkzente(z)));
+      const z = genau ? e : formen[0];
       if (!ok && !a.deutsch) { if (a.richtig.split(" ").length <= 3) fehlerMerken(feld.value, a.richtig, a.erklaerung); else fehlerAusText(a.richtig, feld.value); }
       if (ok) { quiz.punkte++; richtigGezaehlt = true; }
       if (a.beiAntwort) a.beiAntwort(ok); else geuebt();
@@ -1340,18 +1343,25 @@ function quizZeigen() {
 
 // Satzbau
 let satz = null;
-function satzbauStart(pool) {
+function satzbauStart(pool, verlauf) {
   pool = pool && pool.length ? pool : SAETZE_LISTE;
   const s = gewichtetZiehen(pool, (x) => gGewicht("satz:" + x.it), 1)[0];
   const woerter = s.it.replace(/[.?!]$/, "").split(" ");
   let gemischt = mischen(woerter.map((w, i) => ({ w, i })));
   if (gemischt.every((x, i) => x.i === i)) gemischt = gemischt.reverse();
-  satz = { s, woerter, gemischt, gewaehlt: [], geprueft: false, pool };
+  satz = { s, woerter, gemischt, gewaehlt: [], geprueft: false, pool, verlauf: verlauf || [], rueck: null };
   satzbauZeigen();
+}
+// Nächster Satz: der jetzige kommt in den Verlauf (für „Zurück“)
+function satzbauWeiter() {
+  const fertig = satz.geprueft;
+  const verlauf = fertig ? satz.verlauf.concat({ s: satz.s, richtig: satz.richtig, sicher: satz.sicher }) : satz.verlauf;
+  satzbauStart(satz.pool === SAETZE_LISTE ? null : schwacheSaetze(), verlauf);
 }
 function satzbauZeigen() {
   setzeKopf("Satzbau", "grammatik");
   if (!satz) return satzbauStart();
+  if (satz.rueck != null) return satzbauRueckblick();
   const { s, gemischt, gewaehlt, geprueft } = satz;
   const benutzt = new Set(gewaehlt);
   const fertig = gewaehlt.length === gemischt.length;
@@ -1363,12 +1373,35 @@ function satzbauZeigen() {
     <div id="rueck">${geprueft ? `<div class="meldung ${richtig ? "gut" : "schlecht"}">${richtig ? "✅ Richtig!" : "❌ Nicht ganz. Richtig ist:"}<br><b>${esc(s.it)}</b></div>` : ""}</div>
     <div class="reihe">
       ${geprueft ? `<button class="btn" id="neu">Nächster Satz</button>${lautBtn(s.it)}` : `<button class="btn" id="pruefen" ${fertig ? "" : "disabled"}>Prüfen</button><button class="btn zweit" id="leeren">Zurücksetzen</button>`}
+    </div>
+    ${geprueft && richtig ? (satz.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in ein paar Monaten wieder</button>` : `<button class="btn zweit voll b-sicher" id="sbSicher">🏆 Kann ich sicher <small>kommt erst in ein paar Monaten wieder</small></button>`) : ""}
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="sbZurueck" ${satz.verlauf.length ? "" : "disabled"}>‹ Zurück</button>
+      <button class="btn${geprueft ? "" : " zweit"}" id="sbWeiter">${geprueft ? "Weiter ›" : "Überspringen ›"}</button>
     </div>`);
   $app.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { if (satz.geprueft) return; satz.gewaehlt.push(+b.dataset.k); satzbauZeigen(); }));
   $app.querySelectorAll("[data-weg]").forEach((b) => (b.onclick = () => { if (satz.geprueft) return; satz.gewaehlt.splice(+b.dataset.weg, 1); satzbauZeigen(); }));
-  const p = document.getElementById("pruefen"); if (p) p.onclick = () => { satz.geprueft = true; gBewerte("satz:" + s.it, richtig); satzbauZeigen(); sprich(s.it); };
+  const p = document.getElementById("pruefen"); if (p) p.onclick = () => { satz.geprueft = true; satz.richtig = richtig; gBewerte("satz:" + s.it, richtig); satzbauZeigen(); sprich(s.it); };
   const l = document.getElementById("leeren"); if (l) l.onclick = () => { satz.gewaehlt = []; satzbauZeigen(); };
-  const n = document.getElementById("neu"); if (n) n.onclick = () => satzbauStart(satz.pool === SAETZE_LISTE ? null : schwacheSaetze());
+  const n = document.getElementById("neu"); if (n) n.onclick = satzbauWeiter;
+  document.getElementById("sbWeiter").onclick = satzbauWeiter;
+  document.getElementById("sbZurueck").onclick = () => { satz.rueck = satz.verlauf.length - 1; satzbauZeigen(); };
+  const sk = document.getElementById("sbSicher");
+  if (sk) sk.onclick = () => { gSicher("satz:" + s.it); satz.sicher = true; toast("🏆 Gemerkt – kommt erst in ein paar Monaten wieder."); satzbauZeigen(); };
+}
+// Schon gelöste Sätze noch einmal ansehen
+function satzbauRueckblick() {
+  const i = satz.rueck, v = satz.verlauf[i];
+  zeige(`
+    <div class="frage"><div class="leise">Schon gelöst:</div><div style="font-size:22px;font-weight:600">${esc(v.s.de)}</div></div>
+    <div class="meldung ${v.richtig ? "gut" : "schlecht"}">${v.richtig ? "✅ Richtig" : "❌ Nicht ganz"}${v.sicher ? " · 🏆 sicher" : ""}<br><b>${esc(v.s.it)}</b> ${lautBtn(v.s.it, true)}</div>
+    <p class="leise" style="text-align:center">Rückblick – mit „Weiter“ geht es zurück zum aktuellen Satz.</p>
+    <div class="reihe sprechleiste">
+      <button class="btn zweit" id="sbZurueck" ${i ? "" : "disabled"}>‹ Zurück</button>
+      <button class="btn" id="sbWeiter">Weiter ›</button>
+    </div>`);
+  document.getElementById("sbZurueck").onclick = () => { satz.rueck = i - 1; satzbauZeigen(); };
+  document.getElementById("sbWeiter").onclick = () => { satz.rueck = i + 1 < satz.verlauf.length ? i + 1 : null; satzbauZeigen(); };
 }
 
 // ---------- Hören ----------
@@ -1408,7 +1441,7 @@ function diktatAufgabe(k) {
     frage: `<div class="leise">Hör zu und schreib auf Italienisch:</div>
       <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
     beimStart: () => setTimeout(() => sprich(k.it), 250),
-    sicher: () => bewerte(k.id, "it-de", 4),
+    sicher: () => bewerte(k.id, "it-de", 4), karte: k, nachHtml: hinweisHtml(k), // Erklärung der Karte nach der Antwort
     beiAntwort: (ok) => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", ok); geuebt(); },
     nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); }
   };
@@ -1421,7 +1454,7 @@ function hoerAufgabe(k, pool) {
     deutsch: true, optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
     beimStart: () => setTimeout(() => sprich(k.it), 250),
     // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
-    sicher: () => bewerte(k.id, "it-de", 4),
+    sicher: () => bewerte(k.id, "it-de", 4), karte: k, nachHtml: hinweisHtml(k), // Erklärung der Karte nach der Antwort
     beiAntwort: (ok) => { if (ok && istNeu(k.id, "it-de")) bewerte(k.id, "it-de", 2); else { rueckmeldung(k.id, "it-de", ok); geuebt(); } },
     nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
   };
@@ -1562,7 +1595,7 @@ function sprechenZeigen() {
       <div style="font-size:20px">${esc(k.de)}</div>
       <div class="trenner"></div>
       ${zeigeItalienisch ? `<div class="wort" style="font-size:28px">${esc(k.it)}</div>` : ""}
-      ${zeigeItalienisch && verdeckt ? auchRichtigHtml(k) : ""}
+      ${zeigeItalienisch && (verdeckt || e) ? (verdeckt ? hinweisHtml(k) : hinweisHtmlOhne(k)) : ""}
       ${zeigeLautsprecher ? `<div class="reihe" style="justify-content:center;margin:4px 0">${lautBtn(k.it)}${langsamBtn(k.it)}</div>` : ""}
       ${zeigeItalienisch ? "" : `<button class="btn zweit" id="zeigen">${verdeckt ? "Lösung zeigen" : "Text zeigen"}</button>`}
     </div>
@@ -2258,13 +2291,14 @@ function lektionStarten(L, schritt) {
     const gram = ausTopf(grammatikTopf(L.grammatik, L.themen), Math.round(GEMISCHT_ANZAHL * 0.4));
     const gew = (k) => (istNeu(k.id, "it-de") ? 0.3 : gewicht(k.id, "it-de"));
     const nDiktat = Math.round(GEMISCHT_ANZAHL * 0.2);
-    const gezogen = gewichtetZiehen(karten, gew, GEMISCHT_ANZAHL - gram.length);
+    const typ = typFehlerEinstreuen(2); // zwei Aufgaben zu den eigenen typischen Fehlern
+    const gezogen = gewichtetZiehen(karten, gew, GEMISCHT_ANZAHL - gram.length - typ.length);
     // Diktat nur mit bekannten Karten (sonst ist es Raten)
     const fuerDiktat = gezogen.filter((k) => !istNeu(k.id, "it-de")).slice(0, nDiktat);
     const hoeren = gezogen.filter((k) => !fuerDiktat.includes(k)).map((k) => hoerAufgabe(k, karten)).concat(fuerDiktat.map(diktatAufgabe));
     // merken, was falsch war (für die Liste am Ende)
     const falsch = [];
-    const aufgaben = mischen(hoeren.concat(gram)).map((a) => {
+    const aufgaben = mischen(hoeren.concat(gram, typ)).map((a) => {
       const merk = () => { if (a.erklaerung && !falsch.includes(a.erklaerung)) falsch.push(a.erklaerung); };
       const bA = a.beiAntwort, nG = a.nichtGewusst;
       return { ...a, beiAntwort: (ok) => { if (!ok) merk(); if (bA) bA(ok); else geuebt(); }, nichtGewusst: nG ? () => { merk(); nG(); } : undefined };
@@ -2306,6 +2340,7 @@ const begonneneLektionen = () => LEKTION_LISTE.filter((L) => { const st = lStand
 const HEUTE_GEMISCHT = 10;
 const HEUTE_FRAGEN = 5;
 const HEUTE_TYPFEHLER = 8;
+const HEUTE_NUESSE = 10;
 function heuteGemischtAufgaben() {
   const lek = begonneneLektionen(); if (!lek.length) return [];
   // Grammatik: reihum aus jeder begonnenen Lektion (jede Lektion = eine Gruppe), Schwaches bevorzugt
@@ -2315,8 +2350,9 @@ function heuteGemischtAufgaben() {
   // Hören: Wörter dieser Lektionen, die schon einmal dran waren – fällige und schwache bevorzugt
   const karten = [...new Map(lek.flatMap(lektionKarten).map((k) => [k.id, k])).values()];
   const bekannt = karten.filter((k) => !istNeu(k.id, "it-de"));
-  const hoeren = gewichtetZiehen(bekannt.length >= 4 ? bekannt : karten, (k) => gewicht(k.id, "it-de"), HEUTE_GEMISCHT - gram.length).map((k) => hoerAufgabe(k, karten));
-  return mischen(gram.concat(hoeren));
+  const typ = typFehlerEinstreuen(1); // eine Aufgabe zu den eigenen typischen Fehlern
+  const hoeren = gewichtetZiehen(bekannt.length >= 4 ? bekannt : karten, (k) => gewicht(k.id, "it-de"), HEUTE_GEMISCHT - gram.length - typ.length).map((k) => hoerAufgabe(k, karten));
+  return mischen(gram.concat(hoeren, typ));
 }
 // Die zwei Lektionsschritte für heute ({ L, s }):
 //  A = Fortschritt: nächster offener Schritt der vordersten aktiven Lektion
@@ -2343,6 +2379,7 @@ function heuteSchritte() {
   const nFehler = Math.min(15, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
   const nSaetze = heuteSaetze().length;
   const nTyp = fehlerMusterListe().length;
+  const nNuss = Math.min(HEUTE_NUESSE, nussListe().length * richtungenFuer(S.einstellungen.richtung).length);
   // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
   const st = heuteStand(), alleDurch = !aktiveLektionen().length;
   const [sA, sB] = heuteLektionsSchritte();
@@ -2356,6 +2393,7 @@ function heuteSchritte() {
       text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
     { id: "typfehler", sym: "🔀", name: "Typische Fehler", leer: !nTyp, text: nTyp ? `${HEUTE_TYPFEHLER} Aufgaben zu deinen häufigsten Verwechslungen, z. B. ${fehlerMusterListe()[0].falsch} statt ${fehlerMusterListe()[0].richtig}` : "keine gesammelt – sehr gut!" },
+    { id: "nuesse", sym: NUSS_ICON, name: "Harte Nüsse", leer: !nNuss, text: nNuss ? `${nNuss} Karten, die du mit ${NUSS_ICON} markiert hast` : "keine markiert" },
     { id: "saetze", sym: "🎤", name: "Sätze sprechen", leer: !nSaetze, text: nSaetze ? `${nSaetze} Sätze auf Italienisch sagen – ohne Hilfe, aus dem Gedächtnis` : "noch keine Sätze – erst ein paar Karten lernen" },
     { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
       text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
@@ -2440,6 +2478,13 @@ function heuteStarten(id) {
   if (id === "karten") {
     const { liste, neue } = heuteKartenRunde();
     sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
+    return geheZu("karte");
+  }
+  if (id === "nuesse") {
+    const richt = richtungenFuer(S.einstellungen.richtung);
+    const liste = mischen(nussListe().flatMap((k) => richt.map((r) => ({ k, r })))).slice(0, HEUTE_NUESSE);
+    if (!liste.length) { heuteAktiv = null; return heuteMenue(); }
+    sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
     return geheZu("karte");
   }
   if (id === "typfehler") {
@@ -2937,7 +2982,7 @@ function musterBausteine(m, r, f) {
     const richtig = amAnfang ? gross(r) : r;
     return musterWerten({
       frage: `<div class="leise">${esc(k.de)}</div><div class="gross" style="font-size:24px">${esc(satz).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
-      optionen: opts, richtig, zwei: true, sprechen: k.it, erklaerung: k.it,
+      optionen: opts, richtig, zwei: true, sprechen: k.it, erklaerung: k.it, karte: k,
       beiAntwort: (ok) => { if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", ok); geuebt(); }
     }, m);
   }));
@@ -2976,6 +3021,15 @@ function typFehlerSeite(arg) {
     if (!musterNorm(f) || !musterNorm(r) || musterNorm(f) === musterNorm(r)) return toast("Bitte beide Felder ausfüllen (falsch und richtig).");
     fehlerMerken(f, r, ""); speichern(); toast("Eingetragen."); ohneSprung(() => typFehlerSeite());
   };
+}
+// Ein paar Aufgaben zu den häufigsten typischen Fehlern – zum Einstreuen in „Gemischt“
+function typFehlerEinstreuen(n) {
+  const ms = mischen(fehlerMusterListe().slice(0, 5));
+  const aus = [];
+  for (const m of ms) { if (aus.length >= n) break; aus.push(...musterAufgaben(m, 1)); }
+  // nur wenige typische Fehler: mehrere Aufgaben zum selben Fehler (andere Sätze)
+  if (aus.length < n && ms.length) musterAufgaben(ms[0], n).forEach((a) => { if (aus.length < n && !aus.some((x) => x.erklaerung === a.erklaerung)) aus.push(a); });
+  return aus.slice(0, n);
 }
 function musterUeben(ms, titel) {
   const aufgaben = mischen(ms.flatMap((m) => musterAufgaben(m, ms.length > 1 ? 4 : 12))).slice(0, 15);
@@ -3193,7 +3247,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "fehlerMuster", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "fehlerMuster", "rueckGesehen", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -3208,6 +3262,7 @@ function zusammenfuehren(lokal, fern) {
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
   lokal.nuesse = mische(lokal.nuesse, fern.nuesse, juenger);
   lokal.fehlerMuster = mische(lokal.fehlerMuster, fern.fehlerMuster, juenger);
+  if ((fern.rueckGesehen || "") > (lokal.rueckGesehen || "")) lokal.rueckGesehen = fern.rueckGesehen; // gelesene Rückmeldungen
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
   // Statistik: je Tag und Gerät – vom selben Gerät gilt der weitere Stand
   lokal.statistik = mische(lokal.statistik, fern.statistik, (a, b) => mische(a, b, (x, y) => (y.w + y.n > x.w + x.n ? y : x)));

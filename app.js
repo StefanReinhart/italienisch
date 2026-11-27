@@ -503,7 +503,35 @@ function abgelaufen(eltern) {
 }
 // Neue Seite → nach oben. Beim Auswählen/Umschalten auf derselben Seite (ohneSprung) bleibt die Seite stehen.
 let scrollBehalten = false;
-function zeige(html) { const y = window.scrollY; $app.innerHTML = html; window.scrollTo(0, scrollBehalten ? y : 0); }
+function zeige(html) { const y = window.scrollY; $app.innerHTML = html; akzentLeisten(); window.scrollTo(0, scrollBehalten ? y : 0); }
+// Unter jedem italienischen Eingabefeld: à è é ì ò ù zum Antippen (nicht jede Handy-Tastatur hat Akzente)
+const AKZENTE = ["à", "è", "é", "ì", "ò", "ù"];
+function akzentLeisten() {
+  // Felder in derselben Zeile (z. B. „falsch“ / „richtig“) teilen sich eine Leiste – sie schreibt ins zuletzt benutzte Feld
+  const gruppen = new Map();
+  $app.querySelectorAll('input[lang="it"]').forEach((feld) => {
+    const ort = feld.closest(".reihe") || feld;
+    if (!gruppen.has(ort)) gruppen.set(ort, []);
+    gruppen.get(ort).push(feld);
+  });
+  gruppen.forEach((felder, ort) => {
+    let aktiv = felder[0];
+    felder.forEach((f) => ["focus", "click", "input"].forEach((ev) => f.addEventListener(ev, () => (aktiv = f))));
+    const leiste = document.createElement("div");
+    leiste.className = "akzente";
+    leiste.innerHTML = AKZENTE.map((a) => `<button type="button" data-akzent="${a}" tabindex="-1">${a}</button>`).join("");
+    // pointerdown statt click: so bleibt das Feld fokussiert und die Tastatur offen
+    leiste.addEventListener("pointerdown", (e) => {
+      const b = e.target.closest("[data-akzent]"), feld = felder.includes(document.activeElement) ? document.activeElement : aktiv; if (!b || feld.disabled) return;
+      e.preventDefault();
+      const a = b.dataset.akzent, s = feld.selectionStart ?? feld.value.length, ende = feld.selectionEnd ?? s;
+      feld.value = feld.value.slice(0, s) + a + feld.value.slice(ende);
+      feld.focus(); feld.setSelectionRange(s + 1, s + 1);
+      feld.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    ort.insertAdjacentElement("afterend", leiste);
+  });
+}
 function ohneSprung(fn) { scrollBehalten = true; try { fn(); } finally { scrollBehalten = false; } }
 const lautBtn = (text, klein) => `<button class="lautsprecher${klein ? " klein" : ""}" data-sprich="${esc(text)}" aria-label="Vorlesen">🔊</button>`;
 const langsamBtn = (text) => `<button class="lautsprecher" data-sprich="${esc(text)}" data-langsam="1" aria-label="Langsam vorlesen">🐢</button>`;
@@ -2935,7 +2963,7 @@ function typFehlerSeite(arg) {
     <details class="hilfe" style="margin-top:12px"><summary>Wie kommt ein Fehler hierher?</summary>
     <p>Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen und bei Frage &amp; Antwort nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter, Verbformen (è / fa …) und Endungen – bei anderen Wörtern verhört sich das Handy zu oft. Herausnehmen kannst du einen Fehler auf seiner Seite.</p></details>
     <h2>Selbst eintragen</h2>
-    <div class="reihe" style="flex-wrap:nowrap;align-items:center"><input id="tfF" placeholder="falsch, z. B. di" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"><span>statt</span><input id="tfR" placeholder="richtig, z. B. a" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"></div>
+    <div class="reihe" style="flex-wrap:nowrap;align-items:center"><input id="tfF" lang="it" placeholder="falsch, z. B. di" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"><span>statt</span><input id="tfR" lang="it" placeholder="richtig, z. B. a" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"></div>
     <button class="btn zweit voll" id="tfDazu">➕ Eintragen</button>`);
   const alle = document.getElementById("tfAlle"); if (alle) alle.onclick = () => musterUeben(liste.slice(0, 8), "Typische Fehler");
   document.getElementById("tfDazu").onclick = () => {

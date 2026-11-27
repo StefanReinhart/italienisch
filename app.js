@@ -394,8 +394,25 @@ const wasGleich = (a, b) => (WAS_RE.test(a) || WAS_RE.test(b)) && wasNorm(a) ===
 // Alle italienischen Einträge mit derselben deutschen Bedeutung zählen als richtig (z. B. Che cosa significa? = Che cosa vuol dire?)
 // … plus die von Claude bestätigten weiteren Antworten (data/hinweise.js). Die Karte selbst steht vorn.
 function gleicheZiele(karte) {
-  return [...new Set([karte.it].concat(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it), (window.KARTEN_ALTERNATIVEN || {})[karte.id] || []))];
+  const roh = [karte.it].concat(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it), (window.KARTEN_ALTERNATIVEN || {})[karte.id] || []);
+  const alle = roh.concat(roh.flatMap((t) => wasVarianten(t, karte)));
+  const gesehen = new Set();
+  return alle.filter((t) => { const n = t.toLowerCase(); return !gesehen.has(n) && gesehen.add(n); });
 }
+// „Was …?“-Fragen gibt es dreimal: cosa (am häufigsten) · che cosa (vollständig) · che (locker).
+// „Che …“ allein nur, wenn die deutsche Seite mit „Was“ anfängt – sonst kann che auch „welche“ heißen (Che ore sono?).
+function wasVarianten(t, karte) {
+  const m = t.match(/^(che cosa |cosa |che cos'|cos'|che )(.*)$/i);
+  if (!m) return [];
+  const vor = m[1].toLowerCase(), rest = m[2];
+  if (vor === "che " && !/^was\b/i.test(karte.de)) return [];
+  if (!rest.trim() || /^cos/i.test(rest) || /^was für\b/i.test(karte.de)) return []; // „che cosa“ allein, „Che bella giornata!“ (= Was für …)
+  const gross = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const passt = (s) => (/^[A-ZÀ-Ý]/.test(t) ? gross(s) : s);
+  if (vor === "che cos'" || vor === "cos'") return ["cos'" + rest, "che cos'" + rest].map(passt);
+  return ["cosa " + rest, "che cosa " + rest, "che " + rest].map(passt);
+}
+const istWasFrage = (karte) => wasVarianten(karte.it, karte).length > 0;
 function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
   if (!e) return { stufe: "falsch", text: "Keine Antwort eingegeben." };
@@ -2725,9 +2742,13 @@ function antwortZurPruefung(q, text) {
 // Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
 function auchRichtigHtml(k) {
   if (!KARTE_NACH_ID[k.id]) return "";
-  const andere = gleicheZiele(k).filter((z) => z !== k.it);
+  // zuerst die che/cosa-Formen desselben Satzes, dann andere Sätze mit gleicher Bedeutung
+  const eigene = wasVarianten(k.it, k).filter((z) => z.toLowerCase() !== k.it.toLowerCase());
+  const andere = [...new Set(eigene.concat(gleicheZiele(k)))].filter((z) => z.toLowerCase() !== k.it.toLowerCase());
   if (!andere.length) return "";
-  return `<div class="auchrichtig">✅ Auch richtig: ${andere.slice(0, 4).map((z) => `<b>${esc(z)}</b>`).join(" · ")}${andere.length > 4 ? " …" : ""}</div>`;
+  const apo = /^(che )?cos'/i.test(k.it);
+  const was = !eigene.length ? "" : `<div class="wastipp">💬 ${apo ? "<b>Cos'è?</b> ist im Gespräch üblich · <b>Che cos'è?</b> ist etwas vollständiger – beides passt immer." : "<b>cosa</b> sagt man im Gespräch am häufigsten · <b>che cosa</b> ist etwas vollständiger und passt immer · <b>che</b> allein ist locker, eher umgangssprachlich."}</div>`;
+  return `<div class="auchrichtig">✅ Auch richtig: ${andere.slice(0, 4).map((z) => `<b>${esc(z)}</b>`).join(" · ")}${andere.length > 4 ? " …" : ""}</div>${was}`;
 }
 function hinweisHtml(k, klein) {
   const auch = klein ? "" : auchRichtigHtml(k);

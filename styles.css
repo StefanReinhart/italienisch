@@ -263,3 +263,4 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .walnuss { width: 1.1em; height: 1.1em; vertical-align: -0.18em; display: inline-block; }
 .nuss .walnuss { width: 30px; height: 30px; display: block; }
 .auchrichtig { font-size: 14px; color: var(--gruen); margin: 2px 0; }
+.wastipp { font-size: 13px; color: var(--grau); margin: 0 0 4px; }

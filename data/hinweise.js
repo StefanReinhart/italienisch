@@ -12,7 +12,9 @@ window.ABGELEHNTE_ANTWORTEN = {
 // Format:  "kennung": ["andere richtige Antwort", …],
 window.KARTEN_ALTERNATIVEN = {
   "lk_l1:Cos'è?": ["Cos'è questo?", "Che cos'è questo?", "Che cos'è?"],
-  "lk_l1:Loro sono amici.": ["Sono amici."]
+  "lk_l1:Loro sono amici.": ["Sono amici."],
+  "lk_l1:Che cosa vuol dire?": ["Che cosa vuole dire?", "Cosa vuol dire?", "Cosa vuole dire?", "Che vuol dire?", "Cosa significa?", "Che significa?"],
+  "p_verstaendigung:Che cosa significa?": ["Cosa significa?", "Che significa?", "Cosa vuol dire?", "Cosa vuole dire?", "Che cosa vuole dire?", "Che vuol dire?"]
 };
 window.KARTEN_ALTERNATIVEN_DE = {
 };
@@ -193,7 +195,7 @@ window.HINWEISE = {
   "lk_l1:Anch'io sono tedesco.": "anche + io = anch'io (ich auch). Das „auch“ steht vor dem Wort, auf das es sich bezieht. Eine Frau sagt: Anch'io sono tedesca.",
   "lk_l1:Come va?": "Wörtlich: Wie geht's? – locker, für du und Sie. Antworten: Bene! · Tutto bene. · Così così. Förmlicher: Come sta?",
   "lk_l1:È la prima volta in Italia.": "È = es ist (das „es“ fällt im Italienischen weg). la prima volta = das erste Mal; volta = Mal, nicht Zeit (Zeit = tempo).",
-  "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole. Genauso: Cosa significa?",
+  "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole (vuole dire geht auch). Bedeutet genau dasselbe wie Che cosa significa? – beide Antworten zählen als richtig.",
   "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più lentamente = langsamer. Mit du: Puoi parlare più lentamente?",
   "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",

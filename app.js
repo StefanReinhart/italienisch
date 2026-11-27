@@ -391,12 +391,15 @@ const ARTIKEL_RE = /^(il |lo |la |i |gli |le |l')/;
 const WAS_RE = /^(che cosa |cosa |che cos'|cos')/;
 const wasNorm = (s) => s.replace(/^che cos'/, "cos'").replace(/^(che cosa|cosa|che) /, "§ ");
 const wasGleich = (a, b) => (WAS_RE.test(a) || WAS_RE.test(b)) && wasNorm(a) === wasNorm(b);
+// Alle italienischen Einträge mit derselben deutschen Bedeutung zählen als richtig (z. B. Che cosa significa? = Che cosa vuol dire?)
+// … plus die von Claude bestätigten weiteren Antworten (data/hinweise.js). Die Karte selbst steht vorn.
+function gleicheZiele(karte) {
+  return [...new Set([karte.it].concat(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it), (window.KARTEN_ALTERNATIVEN || {})[karte.id] || []))];
+}
 function pruefeEingabe(eingabe, karte) {
   const e = saeubern(eingabe);
   if (!e) return { stufe: "falsch", text: "Keine Antwort eingegeben." };
-  // Alle italienischen Einträge mit derselben deutschen Bedeutung zählen als richtig
-  // … plus die von Claude bestätigten weiteren Antworten (data/hinweise.js)
-  const ziele = [...new Set(ALLE_KARTEN.filter((k) => k.de === karte.de).map((k) => k.it).concat(karte.it, (window.KARTEN_ALTERNATIVEN || {})[karte.id] || []))];
+  const ziele = gleicheZiele(karte);
   let best = { stufe: "falsch", wert: 0 };
   ziele.forEach((z) => {
     const zs = saeubern(z);
@@ -1410,6 +1413,7 @@ function sprechenZeigen() {
       <div><b>${urteil}</b></div>
       <div class="woerter">${e.woerter.map((w) => `<span class="w-${w.art}">${esc(w.wort)}${(w.art === "fast" || w.art === "falsch") ? `<small>gehört: ${esc(w.gehoert)}</small>` : ""}</span>`).join("")}</div>
       ${e.extra.length ? `<p class="leise">Zusätzlich gehört: ${esc(e.extra.join(" "))}</p>` : ""}
+      ${e.ziel && e.ziel !== k.it && e.prozent >= 80 ? `<p class="meldung gut" style="margin:6px 0">✅ Auch richtig – du hast eine andere Variante gesagt: <b>${esc(e.ziel)}</b></p>` : ""}
       <p class="leise">Verstanden wurde: „${esc(e.text)}“</p>
       <div class="legende"><span class="l-ok">richtig</span><span class="l-fast">fast</span><span class="l-falsch">falsch</span><span class="l-fehlt">fehlt</span></div>
     </div>`;
@@ -1453,9 +1457,11 @@ function sprechenZeigen() {
     zuhoeren({
       start: () => { mikro.classList.add("hoert"); status.textContent = "Ich höre zu … jetzt sprechen!"; },
       ergebnis: (alternativen) => {
-        // die Variante nehmen, die dem Zielsatz am nächsten kommt
-        const beste = alternativen.map((t) => ({ t, v: vergleiche(k.it, t) })).sort((a, b) => b.v.prozent - a.v.prozent)[0];
-        sprechen.ergebnis = { ...beste.v, text: beste.t };
+        // die Variante nehmen, die dem Zielsatz am nächsten kommt – aus dem Gedächtnis zählen auch gleichbedeutende Sätze
+        // (z. B. „Che cosa vuol dire?“ statt „Che cosa significa?“); bei Gleichstand gewinnt der Satz der Karte
+        const ziele = verdeckt ? gleicheZiele(k) : [k.it];
+        const beste = alternativen.flatMap((t) => ziele.map((z) => ({ t, z, v: vergleiche(z, t) }))).sort((a, b) => b.v.prozent - a.v.prozent)[0];
+        sprechen.ergebnis = { ...beste.v, text: beste.t, ziel: beste.z };
         sprechen.status = beste.v.prozent >= 90 ? "Sehr gut! Noch einmal oder weiter." : "Hör dir die richtige Aussprache an und versuch es noch einmal.";
         const a = S.aussprache[k.id] || { versuche: 0, bester: 0, letzter: 0 };
         a.versuche++; a.letzter = beste.v.prozent; a.bester = Math.max(a.bester, beste.v.prozent);

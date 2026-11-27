@@ -33,7 +33,8 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
 4b. Einträge mit `"typ": "gespraech"` sind ALLE Antworten aus „Frage & Antwort“ (`id` = Kennung der Frage, `frage`,
    `antwort`, `stufe` = wie die App sie bewertet hat). Für jede eine Rückmeldung in `data/rueckmeldungen.js` schreiben
    (`window.RUECKMELDUNGEN["dialog:…"]`, Liste mit `{ datum, antwort, text, besser, besserDe }`):
-   - `text`: kurz und freundlich – was gut war, was falsch war (Grammatik, Wortwahl, Akzente), auf Deutsch.
+   - `text`: kurz und freundlich – was gut war, was falsch war (Grammatik, Wortwahl), auf Deutsch. Fehlende Akzente
+     (si statt sì) NICHT bemängeln – der Nutzer hat am Handy keinen leichten Zugang zu Akzenten; die App wertet das ohnehin als richtig.
    - `besser`: eine ausführlichere, natürliche Antwort auf A1/A2-Niveau, die auf seiner Antwort aufbaut; `besserDe` = Übersetzung.
    - **Datenschutz:** Die Dateien sind öffentlich. Echte Namen, Adressen, Orte o. Ä. aus seinen Antworten NICHT
      übernehmen – durch Platzhalter ersetzen (z. B. „a nome Rossi“, „Monaco“ ist ok, Familiennamen nicht).

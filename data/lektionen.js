@@ -3,7 +3,7 @@
 // grammatik = Übungen: { verben: [...] }  { artikel: true }  { ce: true }  { zahlen: true }  { luecke: "<Satz-Set aus grammatik.js>" }
 // dialog   = ID aus dialoge.js     fragen = Fragen aus gespraech.js (genauer Text)     szene = Claude-Rollenspiel (ID aus app.js)
 window.LEKTIONEN = [
-{ id: "l1", titel: "Begrüßen & Vorstellen", icon: "👋", ziel: "Du kannst grüßen, dich vorstellen und sagen, woher du kommst.",
+{ id: "l1", titel: "Begrüßen & Vorstellen", icon: "👋", ziel: "Du kannst grüßen, dich und andere vorstellen und sagen, woher du kommst, wo du wohnst und was du arbeitest.",
   themen: ["grundwoerter", "p_begruessung"], grammatik: [{ verben: ["essere"] }], dialog: "conoscersi", szene: "kennenlernen",
   fragen: ["Come ti chiami?", "Come stai?", "Di dove sei?", "Dove abiti?", "Parli italiano?"],
   erklaerung: `<p><b>Grüßen:</b> <i>Ciao</i> (hallo/tschüss, unter Bekannten) · <i>Buongiorno</i> (guten Tag) · <i>Buonasera</i> (ab Nachmittag) · <i>Arrivederci</i> (auf Wiedersehen).</p>

@@ -1426,6 +1426,7 @@ function sprechenZeigen() {
       <div style="font-size:20px">${esc(k.de)}</div>
       <div class="trenner"></div>
       ${zeigeItalienisch ? `<div class="wort" style="font-size:28px">${esc(k.it)}</div>` : ""}
+      ${zeigeItalienisch && verdeckt ? auchRichtigHtml(k) : ""}
       ${zeigeLautsprecher ? `<div class="reihe" style="justify-content:center;margin:4px 0">${lautBtn(k.it)}${langsamBtn(k.it)}</div>` : ""}
       ${zeigeItalienisch ? "" : `<button class="btn zweit" id="zeigen">${verdeckt ? "Lösung zeigen" : "Text zeigen"}</button>`}
     </div>
@@ -2721,7 +2722,19 @@ function antwortZurPruefung(q, text) {
   toast("Gemerkt: Diese Antwort gilt ab jetzt als richtig. Claude prüft sie bei der nächsten Bearbeitung.", 4500);
   clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 2000);
 }
+// Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
+function auchRichtigHtml(k) {
+  if (!KARTE_NACH_ID[k.id]) return "";
+  const andere = gleicheZiele(k).filter((z) => z !== k.it);
+  if (!andere.length) return "";
+  return `<div class="auchrichtig">✅ Auch richtig: ${andere.slice(0, 4).map((z) => `<b>${esc(z)}</b>`).join(" · ")}${andere.length > 4 ? " …" : ""}</div>`;
+}
 function hinweisHtml(k, klein) {
+  const auch = klein ? "" : auchRichtigHtml(k);
+  if (auch) return auch + hinweisHtmlOhne(k, klein);
+  return hinweisHtmlOhne(k, klein);
+}
+function hinweisHtmlOhne(k, klein) {
   const h = hinweisZu(k.id);
   const offen = (S.wuensche || []).filter((w) => w.id === k.id && w.typ !== "antwort" && !w.erledigt).length;
   const frage = `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">${h ? "✉️ Frage an Claude" : "❓ Erklärung wünschen / Frage stellen"}</button>`;

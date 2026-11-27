@@ -51,7 +51,7 @@ benissimo | sehr gut
 male | schlecht (wie: mir geht es schlecht)
 insieme | zusammen
 volentieri | gern
-lentamente | langsam
+lentamente | langsam (wie man etwas tut: langsam fahren)
 separatamente | getrennt
 basta | genug, es reicht
 vorrei | ich hätte gern, ich möchte (von volere)
@@ -67,7 +67,7 @@ la fretta | die Eile
 la ragione | der Grund; die Vernunft (aver ragione = recht haben)
 il maschio | der Junge; männlich
 la femmina | das Mädchen; weiblich
-il gioco | das Spiel
+il gioco | das Spiel (zum Spielen, z. B. Brettspiel)
 la giornata | der Tag (wie er verläuft)
 la serata | der Abend (wie er verläuft)
 la volta | das Mal
@@ -76,7 +76,7 @@ l'oliva | die Olive
 l'olio d'oliva | das Olivenöl
 la passeggiata | der Spaziergang
 la persona | die Person
-il posto | der Platz
+il posto | der Platz (Sitzplatz, Stelle)
 l'andata | die Hinfahrt
 il ritorno | die Rückfahrt (andata e ritorno = hin und zurück)
 il rumore | der Lärm
@@ -101,7 +101,7 @@ libero | frei
 pieno | voll; satt
 pronto | fertig, bereit; hallo (am Telefon)
 vegetariano | vegetarisch
-lento | langsam
+lento | langsam (Eigenschaft: ein langsamer Zug)
 consigliare | empfehlen
 costare | kosten
 significare | bedeuten

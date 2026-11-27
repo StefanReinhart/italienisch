@@ -303,7 +303,7 @@ la città | die Stadt
 il paese | das Dorf / das Land
 la strada | die Straße
 la via | die Straße (Adresse)
-la piazza | der Platz
+la piazza | der Platz (in der Stadt)
 il centro | das Zentrum
 la chiesa | die Kirche
 il museo | das Museum
@@ -471,7 +471,7 @@ il cinema | das Kino
 il teatro | das Theater
 lo sport | der Sport
 il calcio | der Fußball
-la partita | das Spiel
+la partita | das Spiel (Match, z. B. Fußballspiel)
 la canzone | das Lied
 la foto | das Foto
 la lingua | die Sprache

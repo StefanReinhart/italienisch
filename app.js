@@ -506,7 +506,7 @@ $app.addEventListener("click", (e) => {
   if (b) { e.stopPropagation(); sprich(b.dataset.sprich, b.dataset.langsam === "1"); }
   // Kachel eines Wortes / einer Phrase antippen (nicht den Lautsprecher) → Detailseite
   const kw = e.target.closest("[data-wort]");
-  // Walnuss antippen: Karte zu den harten Nüssen legen oder wieder herausnehmen
+  // Kastanie antippen: Karte zu den harten Nüssen legen oder wieder herausnehmen
   const nb = e.target.closest("[data-nuss]");
   if (nb) { e.stopPropagation(); nussUmschalten(nb.dataset.nuss); }
   if (kw && !b && !nb) geheZu("wort/" + kw.dataset.wort);
@@ -2672,7 +2672,7 @@ function fehlerMenue() {
     ${karten.length + gram.length + saetze.length + fragen.length + sprechenListe.length === 0 ? `<div class="meldung gut">🎉 Im Moment gibt es keine Fehler zu wiederholen. Üb erst ein bisschen – Fehler sammeln sich hier automatisch.</div>` : ""}
     <div class="liste">
       ${zeile("fKarten", "🗂️", "Vokabeln & Phrasen", karten.length, "Karten (beide Richtungen)")}
-      <button class="zeile" data-gehe="nuesse"><span class="sym">${WALNUSS}</span><span class="mitte">Harte Nüsse<small>${nussListe().length ? `<b>${nussListe().length}</b> Karten, die du selbst markiert hast` : "noch keine – auf einer Karte ${WALNUSS} antippen"}</small></span><span class="pfeil">›</span></button>
+      <button class="zeile" data-gehe="nuesse"><span class="sym">${NUSS_ICON}</span><span class="mitte">Harte Nüsse<small>${nussListe().length ? `<b>${nussListe().length}</b> Karten, die du selbst markiert hast` : "noch keine – auf einer Karte ${NUSS_ICON} antippen"}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="typfehler"><span class="sym">🔀</span><span class="mitte">Typische Fehler<small>${fehlerMusterListe().length ? `<b>${fehlerMusterListe().length}</b> Verwechslungen, z. B. ${esc(fehlerMusterListe()[0].falsch)} statt ${esc(fehlerMusterListe()[0].richtig)} – gezielt üben` : "was du verwechselst, z. B. di statt a – sammelt sich von selbst"}</small></span><span class="pfeil">›</span></button>
       <button class="zeile" data-gehe="schwierig"><span class="sym">😬</span><span class="mitte">Schwierigste Karten<small>Was am häufigsten falsch war – zum Ansehen</small></span><span class="pfeil">›</span></button>
       ${zeile("fGram", "📘", "Grammatik", gram.length, "Verbformen, Artikel, c'è / ci sono")}
@@ -2693,16 +2693,15 @@ function fehlerMenue() {
 }
 
 // ---------- Harte Nüsse: von Hand markierte Karten ----------
-// Walnuss als kleines Bild (es gibt kein Walnuss-Emoji)
-const WALNUSS = `<svg class="walnuss" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12.5" rx="8.5" ry="10" fill="#b27b45" stroke="#6b4423" stroke-width="1.3"/><path d="M12 2.6v19.8" stroke="#6b4423" stroke-width="1.4"/><path d="M8.2 6c1.6 1 1.6 2.5 0 3.5s-1.6 2.5 0 3.5-1.6 2.5 0 3.5M15.8 6c-1.6 1-1.6 2.5 0 3.5s1.6 2.5 0 3.5 1.6 2.5 0 3.5" fill="none" stroke="#6b4423" stroke-width="1.1" stroke-linecap="round"/></svg>`;
-// Rein: die Walnuss auf einer Karte antippen. Raus: 3-mal hintereinander richtig (egal in welcher Übung) oder Haken in der Liste wegnehmen.
-const NUSS_RAUS = 3;
+// Symbol der harten Nüsse: eine Kastanie
+const NUSS_ICON = "🌰";
+// Rein: die Kastanie auf einer Karte antippen. Raus: nur von Hand (Haken in der Liste wegnehmen oder auf der Karte nochmal antippen).
 const istNuss = (id) => !!(S.nuesse[id] && S.nuesse[id].drin);
 const nussListe = () => Object.keys(S.nuesse).filter((id) => istNuss(id) && KARTE_NACH_ID[id]).map((id) => KARTE_NACH_ID[id]);
 function nussBtn(id) {
   if (!KARTE_NACH_ID[id]) return "";
   const an = istNuss(id);
-  return `<button class="nuss${an ? " an" : ""}" data-nuss="${esc(id)}" aria-pressed="${an}" title="${an ? "Ist bei den harten Nüssen – antippen zum Herausnehmen" : "Zu den harten Nüssen legen"}">${WALNUSS}</button>`;
+  return `<button class="nuss${an ? " an" : ""}" data-nuss="${esc(id)}" aria-pressed="${an}" title="${an ? "Ist bei den harten Nüssen – antippen zum Herausnehmen" : "Zu den harten Nüssen legen"}">${NUSS_ICON}</button>`;
 }
 function nussSetzen(id, drin) {
   const alt = S.nuesse[id] || {};
@@ -2713,15 +2712,14 @@ function nussUmschalten(id) {
   const an = !istNuss(id);
   nussSetzen(id, an);
   document.querySelectorAll("[data-nuss]").forEach((x) => { if (x.dataset.nuss === id) { x.classList.toggle("an", an); x.setAttribute("aria-pressed", an); } });
-  toast(an ? `Zu den harten Nüssen gelegt. ${NUSS_RAUS}-mal hintereinander richtig, dann ist sie geknackt.` : "Aus den harten Nüssen genommen.", 2500);
+  toast(an ? "🌰 Zu den harten Nüssen gelegt." : "Aus den harten Nüssen genommen.", 2500);
 }
-// Normaler Lernweg: jede Antwort zählt mit – 3-mal hintereinander richtig = geknackt
+// Jede Antwort zählt mit (nur zur Info: „zuletzt 3 × hintereinander richtig“) – ausgetragen wird nur von Hand
 function nussLernen(id, ok) {
   const n = S.nuesse[id]; if (!n || !n.drin) return;
   n.zuletzt = Date.now();
   if (!ok) { n.serie = 0; return; }
   n.serie = (n.serie || 0) + 1;
-  if (n.serie >= NUSS_RAUS) { n.drin = false; n.serie = 0; n.geknackt = Date.now(); setTimeout(() => toast("Harte Nuss geknackt! Die Karte ist aus der Liste."), 50); }
 }
 const nussGemerkt = new Set(); // auf der Nüsse-Seite abgewählt: bleibt sichtbar, bis man die Seite verlässt
 function nuesseSeite() {
@@ -2732,15 +2730,15 @@ function nuesseSeite() {
   const anzahl = nussListe().length;
   const fehlerText = (id) => { const f = RICHTUNGEN.reduce((s, r) => s + ((zustand(id, r) || {}).falsch || 0), 0); return f ? ` · ${f} × falsch` : ""; };
   zeige(`
-    <p>Deine <b>harten Nüsse</b>: Karten, die du selbst mit ${WALNUSS} markiert hast. Hier übst du nur sie.</p>
-    <div class="meldung info">ℹ️ <b>Rein:</b> auf einer Karte (beim Üben oder im Wörterbuch) auf ${WALNUSS} tippen.<br>
-    <b>Raus:</b> von selbst, wenn du die Karte <b>${NUSS_RAUS}-mal hintereinander richtig</b> hast – egal in welcher Übung. Oder hier den Haken wegnehmen.</div>
-    <button class="btn voll" id="nLos" ${anzahl ? "" : "disabled"}>${WALNUSS} Harte Nüsse üben (${anzahl})</button>
+    <p>Deine <b>harten Nüsse</b>: Karten, die du selbst mit ${NUSS_ICON} markiert hast. Hier übst du nur sie.</p>
+    <div class="meldung info">ℹ️ <b>Rein:</b> auf einer Karte (beim Üben oder im Wörterbuch) auf ${NUSS_ICON} tippen.<br>
+    <b>Raus:</b> nur von Hand – hier den Haken wegnehmen oder auf der Karte nochmal auf ${NUSS_ICON} tippen.</div>
+    <button class="btn voll" id="nLos" ${anzahl ? "" : "disabled"}>${NUSS_ICON} Harte Nüsse üben (${anzahl})</button>
     <div class="liste" style="margin-top:12px">${liste.length ? liste.map((k) => {
       const an = istNuss(k.id), n = S.nuesse[k.id] || {};
-      const noch = an ? `noch ${NUSS_RAUS - (n.serie || 0)} × richtig bis geknackt` : "herausgenommen";
+      const noch = an ? (n.serie ? `zuletzt ${n.serie} × hintereinander richtig` : "noch nicht richtig seit dem Markieren") : "herausgenommen";
       return `<button class="zeile${an ? " aktiv" : ""}" data-nzeile="${esc(k.id)}"><span class="mitte">${esc(k.it)}<small>${esc(k.de)} · ${noch}${fehlerText(k.id)}</small></span><span class="haken haken-gross" role="checkbox" aria-checked="${an}">${an ? "✓" : ""}</span></button>`;
-    }).join("") : `<p class="leise">Noch keine harten Nüsse. Tipp beim Üben auf ${WALNUSS}, wenn eine Karte einfach nicht sitzen will – oder schau in die Liste der schwierigsten Karten.</p>`}</div>
+    }).join("") : `<p class="leise">Noch keine harten Nüsse. Tipp beim Üben auf ${NUSS_ICON}, wenn eine Karte einfach nicht sitzen will – oder schau in die Liste der schwierigsten Karten.</p>`}</div>
     <button class="btn zweit voll" data-gehe="schwierig" style="margin-top:10px">😬 Schwierigste Karten ansehen</button>`);
   $app.querySelectorAll("[data-nzeile]").forEach((b) => (b.onclick = () => {
     const id = b.dataset.nzeile, an = !istNuss(id);
@@ -2771,7 +2769,7 @@ function schwierigSeite() {
   const liste = schwierigsteKarten();
   const rText = (z, name) => (z ? `${name} ${z.falsch} × falsch · ${z.richtig || 0} × richtig` : "");
   zeige(`
-    <p>Die Karten, die du <b>am häufigsten falsch</b> hattest – oben die schwierigsten. Antippen zeigt die Erklärung, ${WALNUSS} legt sie zu den harten Nüssen.</p>
+    <p>Die Karten, die du <b>am häufigsten falsch</b> hattest – oben die schwierigsten. Antippen zeigt die Erklärung, ${NUSS_ICON} legt sie zu den harten Nüssen.</p>
     <div class="liste">${liste.length ? liste.map((s, i) => `<div class="eintrag kachel-wort" data-wort="${encodeURIComponent(s.k.id)}" role="button" tabindex="0">
       <div class="rang leise">${i + 1}.</div>
       <div class="mitte"><div class="it">${esc(s.k.it)}</div><div class="de">${esc(s.k.de)}</div>

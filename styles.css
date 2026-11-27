@@ -261,7 +261,7 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .karte > .nuss { position: absolute; top: 4px; right: 4px; }
 .kachel-wort .rang { min-width: 26px; font-weight: 700; }
 .walnuss { width: 1.1em; height: 1.1em; vertical-align: -0.18em; display: inline-block; }
-.nuss .walnuss { width: 30px; height: 30px; display: block; }
+.nuss { font-size: 28px; }
 .auchrichtig { font-size: 14px; color: var(--gruen); margin: 2px 0; }
 .wastipp { font-size: 13px; color: var(--grau); margin: 0 0 4px; }
 /* Sprechen: Zurück / Nochmal / Weiter bleiben unten immer sichtbar, auch wenn das Ergebnis lang ist */

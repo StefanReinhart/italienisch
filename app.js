@@ -244,6 +244,12 @@ function gBewerte(key, ok) {
   else { g.falsch++; g.intervall = 0; g.faellig = Date.now(); }
   S.grammatik[key] = g; geuebt();
 }
+// „Kann ich sicher“ bei Grammatik und Fragen: sofort auf den längsten Abstand (120 Tage)
+function gSicher(key) {
+  const g = S.grammatik[key] || { intervall: 0, faellig: 0, richtig: 0, falsch: 0 };
+  g.zuletzt = Date.now(); g.intervall = 120; g.faellig = startDesTages(Date.now() + 120 * TAG);
+  S.grammatik[key] = g; speichern();
+}
 function gGewicht(key) {
   const g = S.grammatik[key];
   if (!g) return 1.5;                                   // noch nie geübt
@@ -1068,7 +1074,7 @@ function ceAufgabe(x) {
   return {
     frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
     optionen, richtig: x.a, zwei: true, sprechen: ganz, erklaerung: ganz,
-    beiAntwort: (ok) => gBewerte("ce:" + x.s, ok)
+    beiAntwort: (ok) => gBewerte("ce:" + x.s, ok), sicher: () => gSicher("ce:" + x.s)
   };
 }
 // Übung "Verben im Satz": Verbform selbst eintippen
@@ -1078,7 +1084,7 @@ function vsatzAufgabe(x) {
   return {
     frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div><div class="leise">Verb: <b>${esc(x.inf)}</b> (${esc(v.de)})</div>`,
     tippen: true, richtig, sprechen: ganz, erklaerung: ganz,
-    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false), sicher: () => gSicher(key)
   };
 }
 function vsatzStart() {
@@ -1151,12 +1157,12 @@ function verbAufgabe(v, p) {
   const falsche = mischen([...new Set(formen.filter((f) => f !== richtig))]).slice(0, 3);
   return { frage: `<div class="leise">${esc(v.inf)} = ${esc(v.de)}</div><div class="gross">${PERSONEN[p]} ___</div><div class="leise">(${PERSONEN_DE[p]})</div>`,
     optionen: mischen([richtig, ...falsche]), richtig, sprechen: `${PERSONEN[p].split("/")[0]} ${richtig}`, erklaerung: `${PERSONEN[p]} ${richtig}`,
-    beiAntwort: (ok) => gBewerte(key, ok) };
+    beiAntwort: (ok) => gBewerte(key, ok), sicher: () => gSicher(key) };
 }
 const artikelAufgabe = (a) => ({
   frage: `<div class="leise">Welcher Artikel passt?</div><div class="gross">___ ${esc(a.nomen)}</div>`,
   optionen: ["il", "lo", "la", "l'", "i", "gli", "le"], richtig: a.artikel, sprechen: a.ganz,
-  erklaerung: `${a.ganz} = ${a.de}`, zwei: true, beiAntwort: (ok) => gBewerte("art:" + a.ganz, ok)
+  erklaerung: `${a.ganz} = ${a.de}`, zwei: true, beiAntwort: (ok) => gBewerte("art:" + a.ganz, ok), sicher: () => gSicher("art:" + a.ganz)
 });
 function artikelStart() {
   const aufgaben = gewichtetZiehen(ARTIKEL_NOMEN, (a) => gGewicht("art:" + a.ganz), 10).map(artikelAufgabe);
@@ -1213,9 +1219,15 @@ function quizZeigen() {
     if (gewaehlt && !ok) gewaehlt.classList.add("falsch");
     if (a.sprechen && !still) sprich(a.sprechen);
     if (!still) a._erg = { ok, text, wahl: gewaehlt && gewaehlt.dataset ? gewaehlt.dataset.o : null, eingabe: feldWert() };
+    // „Kann ich sicher“ nur nach einer richtigen Antwort (wie bei den Karteikarten)
+    const sicherKnopf = ok && a.sicher && !(a._erg && a._erg.ng)
+      ? (a._erg && a._erg.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in Monaten wieder</button>` : `<button class="btn zweit voll b-sicher" id="qSicher">🏆 Kann ich sicher <small>kommt erst in Monaten wieder</small></button>`)
+      : "";
     document.getElementById("rueck").innerHTML = `<div class="meldung ${ok ? "gut" : "schlecht"}">${text} <b>${esc(a.erklaerung)}</b></div>
-      <button class="btn voll" id="weiter">Weiter</button>`;
+      <button class="btn voll" id="weiter">Weiter</button>${sicherKnopf}`;
     document.getElementById("weiter").onclick = () => { quiz.pos++; quizZeigen(); };
+    const qs = document.getElementById("qSicher");
+    if (qs) qs.onclick = () => { a.sicher(); a._erg.sicher = true; speichern(); toast("🏆 Gemerkt – kommt erst in ein paar Monaten wieder."); quiz.pos++; quizZeigen(); };
     const qw = document.getElementById("qWeiter"); if (qw) { qw.disabled = false; qw.textContent = "Weiter ›"; }
   };
   const feldWert = () => { const f = document.getElementById("qtipp"); return f ? f.value : null; };
@@ -1348,6 +1360,7 @@ function diktatAufgabe(k) {
     frage: `<div class="leise">Hör zu und schreib auf Italienisch:</div>
       <div class="mitte-zentriert" style="margin:8px 0;flex-direction:row;justify-content:center">${lautBtn(k.it)}${langsamBtn(k.it)}</div>`,
     beimStart: () => setTimeout(() => sprich(k.it), 250),
+    sicher: () => bewerte(k.id, "it-de", 4),
     beiAntwort: (ok) => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", ok); geuebt(); },
     nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); }
   };
@@ -1360,6 +1373,7 @@ function hoerAufgabe(k, pool) {
     optionen: mischen([k.de, ...falsche]), richtig: k.de, erklaerung: `${k.it} = ${k.de}`,
     beimStart: () => setTimeout(() => sprich(k.it), 250),
     // Neue Phrase richtig erkannt → als Karteikarte aufnehmen (wie "Gut": kommt in 2 Tagen wieder)
+    sicher: () => bewerte(k.id, "it-de", 4),
     beiAntwort: (ok) => { if (ok && istNeu(k.id, "it-de")) bewerte(k.id, "it-de", 2); else { rueckmeldung(k.id, "it-de", ok); geuebt(); } },
     nichtGewusst: () => { if (zustand(k.id, "it-de")) rueckmeldung(k.id, "it-de", false); else bewerte(k.id, "it-de", 0); }
   };
@@ -1509,6 +1523,7 @@ function sprechenZeigen() {
       <div id="status" class="leise">${esc(sprechen.status || (verdeckt && !zeigeItalienisch ? "Tippe aufs Mikrofon und sag den Satz auf Italienisch." : "Erst anhören, dann aufs Mikrofon tippen und nachsprechen."))}</div>
     </div>
     ${ergebnisHtml}
+    ${verdeckt && e && e.prozent >= 80 && !sprechen.nichtGewusst ? (sprechen.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in einem halben Jahr wieder</button>` : `<button class="btn zweit voll b-sicher" id="sSicher">🏆 Kann ich sicher <small>kommt erst in einem halben Jahr wieder</small></button>`) : ""}
     <div class="reihe">
       ${sprechen.nichtGewusst
         ? `<button class="btn zweit voll" disabled>✓ Gemerkt – kommt öfter wieder</button>`
@@ -1520,6 +1535,8 @@ function sprechenZeigen() {
       <button class="btn" id="weiterK">${letzter ? "Fertig ✓" : "Weiter ›"}</button>
     </div>`);
   // Nochmal sprechen: Ergebnis wegräumen und gleich wieder zuhören (zählt nicht noch einmal für den Lernstand)
+  const ssk = document.getElementById("sSicher");
+  if (ssk) ssk.onclick = () => { bewerte(k.id, "de-it", 4); sprechen.sicher = true; speichern(); toast("🏆 Gemerkt – kommt erst in einem halben Jahr wieder."); sprechenZeigen(); };
   const ns = document.getElementById("nochmalS");
   if (ns) ns.onclick = () => { sprechen.ergebnis = null; sprechen.status = ""; sprechenZeigen(); document.getElementById("mikro").click(); };
   const zeigen = document.getElementById("zeigen");
@@ -1562,7 +1579,7 @@ function sprechenZeigen() {
       ende: () => mikro.classList.remove("hoert")
     });
   };
-  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechen.nichtGewusst = false; sprechen.nichtOk = false; sprechenZeigen(); };
+  const wechsel = (pos) => { sprechen.pos = pos; sprechen.ergebnis = null; sprechen.status = ""; sprechen.gezeigt = false; sprechen.gewertet = false; sprechen.vorgelesen = false; sprechen.nichtGewusst = false; sprechen.nichtOk = false; sprechen.sicher = false; sprechenZeigen(); };
   // Von Hand als "nicht gewusst" markieren: zählt als Fehler für "selbst sagen" und für die Auswahl beim Sprechen
   const ng = document.getElementById("nichtGewusst");
   if (ng) ng.onclick = () => {
@@ -1674,7 +1691,7 @@ function gespraechMenue() {
   document.getElementById("alle").onclick = () => starten(ALLE_FRAGEN, 10);
   $app.querySelectorAll("[data-gthema]").forEach((b) => (b.onclick = () => { const t = GESPRAECH_THEMEN.find((x) => x.id === b.dataset.gthema); starten(t.fragen, t.fragen.length); }));
 }
-function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "", nichtGewusst: false, alsRichtigGezaehlt: false }); }
+function neueFrage() { Object.assign(gespraech, { ergebnis: null, gewertet: false, korrigiert: false, textGezeigt: false, deGezeigt: false, tippGezeigt: false, vorgelesen: false, status: "", nichtGewusst: false, alsRichtigGezaehlt: false, sicher: false }); }
 function gespraechZeigen() {
   if (!gespraech) return abgelaufen("gespraech");
   setzeKopf("Frage & Antwort", "gespraech");
@@ -1697,6 +1714,7 @@ function gespraechZeigen() {
       <div class="leise">${esc(q.bde)}</div>
       <div class="reihe" style="justify-content:center">${lautBtn(q.b)}${langsamBtn(q.b)}</div>
       ${e.stufe !== "richtig" && !g.korrigiert ? `<button class="btn zweit voll" id="warRichtig">Meine Antwort war richtig</button>` : ""}
+      ${e.stufe === "richtig" && !g.nichtGewusst ? (g.sicher ? `<button class="btn zweit voll b-sicher" disabled>🏆 Gemerkt – kommt erst in ein paar Monaten wieder</button>` : `<button class="btn zweit voll b-sicher" id="gSicher">🏆 Kann ich sicher <small>kommt erst in ein paar Monaten wieder</small></button>`) : ""}
     </div>`;
   }
   zeige(`
@@ -1743,7 +1761,7 @@ function gespraechZeigen() {
   klick("deZeigen", () => { g.deGezeigt = true; gespraechZeigen(); });
   klick("tipp", () => { g.tippGezeigt = true; gespraechZeigen(); sprich(q.b); });
   // Vor und zurück: der Stand jeder Frage (Antwort, Ergebnis …) wird gemerkt und beim Zurückkommen wieder angezeigt
-  const FELDER = ["ergebnis", "gewertet", "korrigiert", "textGezeigt", "deGezeigt", "tippGezeigt", "vorgelesen", "status", "nichtGewusst", "alsRichtigGezaehlt"];
+  const FELDER = ["ergebnis", "gewertet", "korrigiert", "textGezeigt", "deGezeigt", "tippGezeigt", "vorgelesen", "status", "nichtGewusst", "alsRichtigGezaehlt", "sicher"];
   const wechseln = (neu) => {
     g.staende = g.staende || {};
     g.staende[g.pos] = Object.fromEntries(FELDER.map((f) => [f, g[f]]));
@@ -1767,6 +1785,7 @@ function gespraechZeigen() {
     if (!g.ergebnis) sprich(q.b);
   });
   klick("nochmalAntworten", () => { g.ergebnis = null; g.status = ""; gespraechZeigen(); });
+  klick("gSicher", () => { gSicher(q.key); g.sicher = true; toast("🏆 Gemerkt – kommt erst in ein paar Monaten wieder."); gespraechZeigen(); });
   klick("warRichtig", () => {
     g.korrigiert = true;
     const st = S.grammatik[q.key]; if (st) { st.falsch = Math.max(0, st.falsch - 1); speichern(); }
@@ -1907,7 +1926,7 @@ function lueckeAufgabe(setId, x) {
   return {
     frage: `<div class="leise">${esc(x.de)}</div><div class="gross" style="font-size:24px">${esc(x.s).replace(/___/g, "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>`,
     optionen, richtig: x.a, zwei: optionen.length !== 3, sprechen: ganz, erklaerung: lueckeFuellen(x.s, x.a),
-    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false), sicher: () => gSicher(key)
   };
 }
 const ZAHLEN_POOL = Array.from({ length: 101 }, (_, i) => i).concat([200, 500, 1000]);
@@ -1918,7 +1937,7 @@ function zahlAufgabe(n) {
   return {
     frage: `<div class="leise">Wie heißt diese Zahl auf Italienisch?</div><div class="gross" style="font-size:44px">${n}</div>`,
     optionen, richtig: zahlMitAkzent(n), sprechen: zahlMitAkzent(n), erklaerung: `${n} = ${zahlMitAkzent(n)}`,
-    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false)
+    beiAntwort: (ok) => gBewerte(key, ok), nichtGewusst: () => gBewerte(key, false), sicher: () => gSicher(key)
   };
 }
 // Übungs-Topf einer Lektion (oder einer einzelnen Übung): Liste von { key, bau }

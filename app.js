@@ -2810,7 +2810,19 @@ function musterArt(f, r) {
   if (PRAEP_WOERTER.has(f) && PRAEP_WOERTER.has(r)) return "Präposition";
   if (ARTIKEL_WOERTER.has(f) && ARTIKEL_WOERTER.has(r)) return "Artikel";
   if (f.slice(0, 3) === r.slice(0, 3) && f.length > 2 && r.length > 2) return "Endung / Form";
+  if (verbFormenSet().has(normWort(f)) && verbFormenSet().has(normWort(r))) return "Verb"; // z. B. „è caldo“ statt „fa caldo“
   return "Wort";
+}
+// Alle Formen der bekannten Verben (Präsens + Grundform) – damit auch Verwechslungen wie è / fa erkannt werden
+function verbFormenSet() {
+  if (!verbFormenSet.s) {
+    const s = new Set();
+    ALLE_VERBEN.forEach((v) => { s.add(normWort(v.inf)); try { konjugiere(v).forEach((x) => x.split(/\s+/).forEach((w) => s.add(normWort(w)))); } catch (e) {} });
+    ["c'è", "ci sono", "ho", "hai", "ha", "è"].forEach((w) => s.add(normWort(w)));
+    PRONOMEN_WOERTER.forEach((w) => s.delete(w)); // „mi chiamo“ → nur das Verb zählt
+    verbFormenSet.s = s;
+  }
+  return verbFormenSet.s;
 }
 const musterNorm = (s) => String(s || "").toLowerCase().replace(/[’`´]/g, "'").replace(/[.,!?;:¿¡"«»()]/g, "").replace(/\s+/g, " ").trim();
 function fehlerMerken(falsch, richtig, beispiel) {
@@ -2845,7 +2857,8 @@ function fehlerAusText(loesung, eingabe, nurGrammatik) {
     for (let i = 0; i < Z.length - 1; i++) if (klein(Z[i].n) && ohne(Z, i) === gs) return fehlerMerken(Z[i + 1].zeigen, Z[i].zeigen + " " + Z[i + 1].zeigen, loesung);
   }
   const v = vergleiche(loesung, eingabe);
-  if (nurGrammatik && v.prozent < 50) return; // kaum etwas verstanden – kein verlässlicher Vergleich
+  // kaum etwas passt → kein verlässlicher Vergleich (fehlende Wörter wie „oggi“ sind egal, aber mind. ein Wort muss stimmen)
+  if (nurGrammatik && (!v.woerter.some((w) => w.art === "ok") || v.extra.length > 2)) return;
   const falsche = v.woerter.filter((w) => (w.art === "falsch" || w.art === "fast") && w.gehoert);
   if (falsche.length > 2) return; // ganz anderer Satz – keine einzelne Verwechslung
   falsche.forEach((w) => {
@@ -2920,7 +2933,7 @@ function typFehlerSeite(arg) {
         <small>${musterArt(m.falsch, m.richtig)} · ${m.anzahl} ×${hinweisZu(fehlerId(m)) ? " · 💡" : ""}</small></span><span class="pfeil">›</span></button>`).join("")
       : `<p class="leise">Noch keine typischen Fehler gesammelt. Sie erscheinen hier, sobald du etwas verwechselst.</p>`}</div>
     <details class="hilfe" style="margin-top:12px"><summary>Wie kommt ein Fehler hierher?</summary>
-    <p>Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter und Endungen – bei anderen Wörtern verhört sich das Handy zu oft. Herausnehmen kannst du einen Fehler auf seiner Seite.</p></details>
+    <p>Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen und bei Frage &amp; Antwort nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter, Verbformen (è / fa …) und Endungen – bei anderen Wörtern verhört sich das Handy zu oft. Herausnehmen kannst du einen Fehler auf seiner Seite.</p></details>
     <h2>Selbst eintragen</h2>
     <div class="reihe" style="flex-wrap:nowrap;align-items:center"><input id="tfF" placeholder="falsch, z. B. di" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"><span>statt</span><input id="tfR" placeholder="richtig, z. B. a" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"></div>
     <button class="btn zweit voll" id="tfDazu">➕ Eintragen</button>`);

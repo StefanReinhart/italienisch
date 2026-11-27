@@ -597,6 +597,7 @@ l11: {
     "p_alltag:Che tempo fa?", "p_alltag:Fa caldo.", "p_alltag:Fa freddo.",
     "wetter:la nuvola", "wetter:il cielo", "freizeit:la canzone", "freizeit:la foto", "freizeit:il lavoro", "grundwoerter:ieri"],
   neu: `
+Il caffè è caldo, ma fuori fa freddo. | Der Kaffee ist heiß, aber draußen ist es kalt.
 il tempo libero | die Freizeit
 l'hobby | das Hobby
 la spesa | der Einkauf (fare la spesa = einkaufen)

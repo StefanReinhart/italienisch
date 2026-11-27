@@ -2263,6 +2263,7 @@ function heuteKartenRunde() {
 const begonneneLektionen = () => LEKTION_LISTE.filter((L) => { const st = lStand(L.id); return st.bestanden || st.schritte.length; });
 const HEUTE_GEMISCHT = 10;
 const HEUTE_FRAGEN = 5;
+const HEUTE_TYPFEHLER = 8;
 function heuteGemischtAufgaben() {
   const lek = begonneneLektionen(); if (!lek.length) return [];
   // Grammatik: reihum aus jeder begonnenen Lektion (jede Lektion = eine Gruppe), Schwaches bevorzugt
@@ -2299,6 +2300,7 @@ function heuteSchritte() {
   const lek = begonneneLektionen();
   const nFehler = Math.min(15, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
   const nSaetze = heuteSaetze().length;
+  const nTyp = fehlerMusterListe().length;
   // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
   const st = heuteStand(), alleDurch = !aktiveLektionen().length;
   const [sA, sB] = heuteLektionsSchritte();
@@ -2311,6 +2313,7 @@ function heuteSchritte() {
     { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
       text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
     { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
+    { id: "typfehler", sym: "🔀", name: "Typische Fehler", leer: !nTyp, text: nTyp ? `${HEUTE_TYPFEHLER} Aufgaben zu deinen häufigsten Verwechslungen, z. B. ${fehlerMusterListe()[0].falsch} statt ${fehlerMusterListe()[0].richtig}` : "keine gesammelt – sehr gut!" },
     { id: "saetze", sym: "🎤", name: "Sätze sprechen", leer: !nSaetze, text: nSaetze ? `${nSaetze} Sätze auf Italienisch sagen – ohne Hilfe, aus dem Gedächtnis` : "noch keine Sätze – erst ein paar Karten lernen" },
     { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
       text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
@@ -2396,6 +2399,12 @@ function heuteStarten(id) {
     const { liste, neue } = heuteKartenRunde();
     sitzung = { liste, pos: 0, neuKeys: new Set(neue.map((x) => schluessel(x.k.id, x.r))), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute" };
     return geheZu("karte");
+  }
+  if (id === "typfehler") {
+    const ms = fehlerMusterListe().slice(0, 5);
+    const aufgaben = mischen(ms.flatMap((m) => musterAufgaben(m, 4))).slice(0, HEUTE_TYPFEHLER);
+    if (!aufgaben.length) { heuteAktiv = null; toast("Zu deinen typischen Fehlern gibt es noch keine passenden Übungssätze.", 3000); return heuteMenue(); }
+    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Typische Fehler", nochmal: "heute" });
   }
   if (id === "saetze") {
     const liste = heuteSaetze();

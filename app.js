@@ -2890,8 +2890,9 @@ function musterBausteine(m, r, f) {
 }
 // In der gezielten Übung mitzählen, wie oft hintereinander richtig
 function musterWerten(a, m) {
-  const bA = a.beiAntwort, key = m.falsch + "→" + m.richtig, h = hinweisZu(fehlerId(m));
-  if (h) a = { ...a, nachHtml: `<div class="hinweis">💡 ${esc(h)}</div>` }; // Erklärung zum typischen Fehler gleich nach der Antwort
+  const bA = a.beiAntwort, key = m.falsch + "→" + m.richtig;
+  // Nach der Antwort: Erklärung zum typischen Fehler – oder, wenn es noch keine gibt, der Knopf, um eine anzufordern
+  a = { ...a, nachHtml: `<div class="tf-erkl">${hinweisHtml({ id: fehlerId(m) })}</div>` };
   return { ...a, beiAntwort: (ok) => {
     const x = S.fehlerMuster[key];
     if (x) { x.serie = ok ? (x.serie || 0) + 1 : 0; x.zuletzt = Date.now(); }
@@ -3042,7 +3043,7 @@ function hinweisHtml(k, klein) {
 function hinweisHtmlOhne(k, klein) {
   const h = hinweisZu(k.id);
   const offen = (S.wuensche || []).filter((w) => w.id === k.id && w.typ !== "antwort" && !w.erledigt).length;
-  const frage = `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">${h ? "✉️ Frage an Claude" : "❓ Erklärung wünschen / Frage stellen"}</button>`;
+  const frage = `<button class="wunsch${klein ? " klein" : ""}" data-wunsch="${esc(k.id)}">${h ? "✉️ Frage an Claude" : String(k.id).startsWith("fehler:") ? "💡 Erklärung anfordern" : "❓ Erklärung wünschen / Frage stellen"}</button>`;
   if (h) return `<div class="hinweis${klein ? " klein" : ""}">💡 ${esc(h)}</div>${frage}`;
   if (offen) return `<div class="leise" style="font-size:13px">✓ Schon an Claude geschickt</div>${frage}`;
   return frage;

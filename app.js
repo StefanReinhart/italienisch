@@ -2899,45 +2899,54 @@ function musterWerten(a, m) {
     if (bA) bA(ok); else geuebt();
   } };
 }
-function typFehlerSeite() {
+function typFehlerSeite(arg) {
+  if (arg) return typFehlerDetail(decodeURIComponent(arg));
   setzeKopf("Typische Fehler", "fehler");
   const liste = fehlerMusterListe();
   zeige(`
-    <p>Hier sammelt die App <b>automatisch</b>, welche Wörter du verwechselst – z. B. <b>di</b> statt <b>a</b>. Daraus macht sie gezielte Übungen.</p>
-    <div class="meldung info">ℹ️ Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter und Endungen – bei anderen Wörtern verhört sich das Handy zu oft.
-    War etwas kein typischer Fehler, nimm ihn mit <b>✕</b> heraus.</div>
+    <p>Hier sammelt die App <b>automatisch</b>, welche Wörter du verwechselst – z. B. <b>di</b> statt <b>a</b>. Antippen zeigt Beispiele und Erklärung.</p>
     ${liste.length ? `<button class="btn voll" id="tfAlle">🎯 Alle typischen Fehler üben</button>` : ""}
     <div class="liste" style="margin-top:12px">${liste.length ? liste.map((m) => `
-      <div class="eintrag tf-zeile">
-        <div class="mitte">
-          <div class="it"><span class="tf-falsch">${esc(m.falsch)}</span> statt <b>${esc(m.richtig)}</b> <small class="leise">· ${musterArt(m.falsch, m.richtig)}</small></div>
-          <div class="de">${m.anzahl} × passiert${m.serie ? ` · zuletzt ${m.serie} × hintereinander richtig` : ""}</div>
-          ${m.beispiele.length ? `<div class="ministand">z. B. ${esc(m.beispiele[0])}</div>` : ""}
-          <div class="tf-erkl">${hinweisHtml({ id: fehlerId(m) })}</div>
-          <button class="btn zweit" data-tfueben="${esc(m.key)}" style="margin-top:6px;padding:6px 12px;min-height:0">🎯 Üben</button>
-        </div>
-        <button class="tf-weg" data-tfweg="${esc(m.key)}" title="Kein typischer Fehler – herausnehmen" aria-label="Herausnehmen">✕</button>
-      </div>`).join("") : `<p class="leise">Noch keine typischen Fehler gesammelt. Sie erscheinen hier, sobald du etwas verwechselst.</p>`}</div>
+      <button class="zeile" data-gehe="typfehler/${encodeURIComponent(m.key)}"><span class="mitte"><span class="tf-falsch">${esc(m.falsch)}</span> statt <b>${esc(m.richtig)}</b>
+        <small>${musterArt(m.falsch, m.richtig)} · ${m.anzahl} ×${hinweisZu(fehlerId(m)) ? " · 💡" : ""}</small></span><span class="pfeil">›</span></button>`).join("")
+      : `<p class="leise">Noch keine typischen Fehler gesammelt. Sie erscheinen hier, sobald du etwas verwechselst.</p>`}</div>
+    <details class="hilfe" style="margin-top:12px"><summary>Wie kommt ein Fehler hierher?</summary>
+    <p>Gesammelt wird bei Auswahl-Aufgaben, beim Eintippen und beim Sprechen ganzer Sätze (z. B. „Abito vicino <b>di</b> Monaco“ → di statt a). Beim Sprechen nur Präpositionen, Artikel, Fürwörter (lui, questo, mio …), Fragewörter und Endungen – bei anderen Wörtern verhört sich das Handy zu oft. Herausnehmen kannst du einen Fehler auf seiner Seite.</p></details>
     <h2>Selbst eintragen</h2>
-    <p class="leise">Dir ist selbst ein Fehler aufgefallen? Trag ihn ein:</p>
     <div class="reihe" style="flex-wrap:nowrap;align-items:center"><input id="tfF" placeholder="falsch, z. B. di" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"><span>statt</span><input id="tfR" placeholder="richtig, z. B. a" autocomplete="off" autocapitalize="off" style="margin:0;flex:1;min-width:0"></div>
     <button class="btn zweit voll" id="tfDazu">➕ Eintragen</button>`);
-  const ueben = (ms, titel) => {
-    const aufgaben = mischen(ms.flatMap((m) => musterAufgaben(m, ms.length > 1 ? 4 : 12))).slice(0, 15);
-    if (!aufgaben.length) return toast("Dazu gibt es noch keine passenden Übungssätze.", 3000);
-    quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "typfehler", titel, nochmal: "typfehler" });
-  };
-  $app.querySelectorAll("[data-tfueben]").forEach((b) => (b.onclick = () => { const m = liste.find((x) => x.key === b.dataset.tfueben); ueben([m], `${m.falsch} statt ${m.richtig}`); }));
-  $app.querySelectorAll("[data-tfweg]").forEach((b) => (b.onclick = () => {
-    const m = S.fehlerMuster[b.dataset.tfweg]; if (!m) return;
-    m.geloescht = true; m.zuletzt = Date.now(); speichern();
-    toast(`„${m.falsch} statt ${m.richtig}“ herausgenommen.`); ohneSprung(typFehlerSeite);
-  }));
-  const alle = document.getElementById("tfAlle"); if (alle) alle.onclick = () => ueben(liste.slice(0, 8), "Typische Fehler");
+  const alle = document.getElementById("tfAlle"); if (alle) alle.onclick = () => musterUeben(liste.slice(0, 8), "Typische Fehler");
   document.getElementById("tfDazu").onclick = () => {
     const f = document.getElementById("tfF").value, r = document.getElementById("tfR").value;
     if (!musterNorm(f) || !musterNorm(r) || musterNorm(f) === musterNorm(r)) return toast("Bitte beide Felder ausfüllen (falsch und richtig).");
-    fehlerMerken(f, r, ""); speichern(); toast("Eingetragen."); ohneSprung(typFehlerSeite);
+    fehlerMerken(f, r, ""); speichern(); toast("Eingetragen."); ohneSprung(() => typFehlerSeite());
+  };
+}
+function musterUeben(ms, titel) {
+  const aufgaben = mischen(ms.flatMap((m) => musterAufgaben(m, ms.length > 1 ? 4 : 12))).slice(0, 15);
+  if (!aufgaben.length) return toast("Dazu gibt es noch keine passenden Übungssätze.", 3000);
+  quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "typfehler", titel, nochmal: "typfehler" });
+}
+// Ein typischer Fehler im Detail: Beispiele, Erklärung, Üben, Herausnehmen
+function typFehlerDetail(key) {
+  const roh = S.fehlerMuster[key];
+  if (!roh || roh.geloescht) return ersetzeDurch("typfehler");
+  const m = { key, ...roh };
+  setzeKopf("Typischer Fehler", "typfehler");
+  zeige(`
+    <div class="karte" style="min-height:auto">
+      <div class="wort" style="font-size:28px"><span class="tf-falsch">${esc(m.falsch)}</span> statt ${esc(m.richtig)}</div>
+      <div class="leise">${musterArt(m.falsch, m.richtig)} · ${m.anzahl} × passiert${m.serie ? ` · zuletzt ${m.serie} × hintereinander richtig` : ""}</div>
+    </div>
+    ${m.beispiele.length ? `<h2>Beispiele</h2><div class="liste">${m.beispiele.map((b) => `<div class="eintrag">${lautBtn(b, true)}<div class="mitte"><div class="it">${esc(b)}</div></div></div>`).join("")}</div>` : ""}
+    <h2>Erklärung</h2>
+    <div class="tf-erkl">${hinweisHtml({ id: fehlerId(m) })}</div>
+    <button class="btn voll" id="tfUeben" style="margin-top:14px">🎯 Üben – Sätze mit ${esc(m.richtig)} und mit ${esc(m.falsch)}</button>
+    <button class="btn zweit voll" id="tfWeg" style="margin-top:8px">✕ Kein typischer Fehler – herausnehmen</button>`);
+  document.getElementById("tfUeben").onclick = () => musterUeben([m], `${m.falsch} statt ${m.richtig}`);
+  document.getElementById("tfWeg").onclick = () => {
+    roh.geloescht = true; roh.zuletzt = Date.now(); speichern();
+    toast(`„${m.falsch} statt ${m.richtig}“ herausgenommen.`); ersetzeDurch("typfehler");
   };
 }
 
@@ -3496,7 +3505,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    fehler: fehlerMenue, typfehler: typFehlerSeite, nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

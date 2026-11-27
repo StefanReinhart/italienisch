@@ -2821,9 +2821,21 @@ function fehlerAusText(loesung, eingabe, nurGrammatik) {
 }
 const fehlerMusterListe = () => Object.entries(S.fehlerMuster).filter(([, m]) => !m.geloescht).map(([key, m]) => ({ key, ...m }))
   .sort((a, b) => b.anzahl - a.anzahl || b.zuletzt - a.zuletzt);
-// Gezielte Übung zu einem Fehler: passende Lückensätze und Karten, in denen das richtige Wort vorkommt
+// Gezielte Übung zu einem Fehler: Sätze mit BEIDEN Wörtern gemischt – mal ist „a“ richtig, mal „di“ –,
+// damit man den Unterschied lernt und nicht einfach immer das eine Wort nimmt
 function musterAufgaben(m, n = 12) {
-  const r = m.richtig, f = m.falsch, aufgaben = [];
+  const hin = mischen(musterBausteine(m, m.richtig, m.falsch)), her = mischen(musterBausteine(m, m.falsch, m.richtig));
+  const aus = [];
+  // abwechselnd aus beiden Richtungen; reicht eine nicht, füllt die andere auf
+  for (let i = 0; aus.length < n && (hin.length || her.length); i++) {
+    const quelle = (i % 2 === 0 && hin.length) || !her.length ? hin : her;
+    aus.push(quelle.shift());
+  }
+  return mischen(aus).map((bau) => bau());
+}
+// Aufgaben, bei denen „r“ die richtige Lösung ist und „f“ zur Auswahl steht
+function musterBausteine(m, r, f) {
+  const aufgaben = [];
   const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   Object.entries(LUECKEN).forEach(([setId, set]) => set.saetze.forEach((x) => {
     const opt = (x.o || set.optionen || []).map(musterNorm);
@@ -2842,7 +2854,7 @@ function musterAufgaben(m, n = 12) {
       beiAntwort: (ok) => { if (zustand(k.id, "de-it")) rueckmeldung(k.id, "de-it", ok); geuebt(); }
     }, m);
   }));
-  return mischen(aufgaben).slice(0, n).map((bau) => bau());
+  return aufgaben;
 }
 // In der gezielten Übung mitzählen, wie oft hintereinander richtig
 function musterWerten(a, m) {

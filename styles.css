@@ -303,3 +303,10 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .blase.claude { margin-right: auto; background: var(--karte); border: 1px solid var(--rand); }
 .blase.wartet { opacity: .8; }
 .postpaar.neu .blase.claude { border-color: var(--blau); box-shadow: 0 0 0 2px var(--blau); }
+/* Postfach-Archiv */
+.post-archiv { padding: 4px 12px; min-height: 0; font-size: 15px; margin-left: auto; display: block; }
+.post-wahl { display: flex; gap: 10px; align-items: flex-start; border-radius: 16px; padding: 4px 6px; cursor: pointer; }
+.post-wahl .postpaar { flex: 1; margin: 4px 0; min-width: 0; }
+.post-wahl .haken { margin-top: 10px; }
+.post-wahl.an { background: var(--gruen-hell); }
+.post-wahl.an .haken { background: var(--gruen); border-color: var(--gruen); color: #fff; }

@@ -64,6 +64,7 @@ const STANDARD = {
   aussprache: {},      // id → { versuche, bester, letzter }
   nuesse: {},          // id → { drin, seit, serie, zuletzt } – „harte Nüsse“ (von Hand markiert)
   eigeneKarten: {},    // „eigen:<it>“ → { it, de, gruppe, lektion } – per Knopf aus Claudes Vorschlägen
+  postStatus: {},      // Postfach: Kennung → { status: "archiv" | "geloescht", zuletzt }
   fehlerMuster: {},    // „di→a“ → { falsch, richtig, anzahl, beispiele, … } – typische Verwechslungen
   lektionen: {},       // Lektions-ID → { schritte }  (alte Stände: bestanden = früherer Abschluss-Check)
   wuensche: [],        // Wunschliste: Erklärungen { id, it, de, zeit, gesendet } und Antworten zur Prüfung { typ: "antwort", … }
@@ -94,7 +95,7 @@ function umstellen(roh) {
     s.einstellungen.richtung = "beide"; // neu: beide Richtungen üben
     s.version = 2;
   }
-  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.eigeneKarten = s.eigeneKarten || {}; s.fehlerMuster = s.fehlerMuster || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
+  s.grammatik = s.grammatik || {}; s.aussprache = s.aussprache || {}; s.nuesse = s.nuesse || {}; s.eigeneKarten = s.eigeneKarten || {}; s.postStatus = s.postStatus || {}; s.fehlerMuster = s.fehlerMuster || {}; s.lektionen = s.lektionen || {}; s.wuensche = s.wuensche || [];
   if (!s.einstellungen.sprechenModus) s.einstellungen.sprechenModus = s.einstellungen.sprechenVerdeckt ? "gedaechtnis" : "zeigen";
   // 25.11.2026: neuer Richtwert 25 neue Karten pro Tag (vorher 10) – einmalig umstellen, falls noch der alte Wert eingestellt ist
   if (!s.einstellungen.neu25) { if (s.einstellungen.neueProTag === 10) s.einstellungen.neueProTag = 25; s.einstellungen.neu25 = true; }
@@ -3253,16 +3254,16 @@ function nachrichtSenden(text) {
 }
 // „2026-11-27 16:40“ – Ortszeit, gut sortierbar
 const jetztText = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
-// Alle Einträge des Postfachs, neueste zuerst
+// Alle Einträge des Postfachs, neueste zuerst – jeder mit fester Kennung (für Archiv / Löschen)
 function postEintraege() {
   const aus = [], eingang = postEingang(), g = S.rueckGesehen || "";
   const beantwortet = new Set(eingang.map((p) => (p.bezug || "").trim()).filter(Boolean));
   // Claudes Antworten auf Nachrichten
-  eingang.forEach((p) => aus.push({ zeit: p.datum, neu: (p.datum || "") > g, du: p.bezug, claude: postAntwortHtml(p) }));
+  eingang.forEach((p) => aus.push({ key: "p|" + p.datum + "|" + (p.bezug || ""), zeit: p.datum, neu: (p.datum || "") > g, du: p.bezug, claude: postAntwortHtml(p) }));
   // Rückmeldungen zu Frage & Antwort
   alleRueckmeldungen().forEach((r) => {
     const f = (ALLE_FRAGEN.find((q) => q.key === r.key) || {}).f || "";
-    aus.push({ zeit: r.datum, neu: (r.datum || "") > g, du: `Frage & Antwort – „${f}“: ${r.antwort}`, claude: rueckmeldungHtml(r) });
+    aus.push({ key: "r|" + r.key + "|" + r.datum + "|" + r.antwort, zeit: r.datum, neu: (r.datum || "") > g, du: `Frage & Antwort – „${f}“: ${r.antwort}`, claude: rueckmeldungHtml(r) });
   });
   // eigene Nachrichten und Fragen: beantwortet (Erklärung bei der Karte) oder noch offen
   let offeneAntworten = 0;
@@ -3273,7 +3274,7 @@ function postEintraege() {
     const z = w.typ === "nachricht" ? null : wunschZiel(w.id);
     const du = w.typ === "nachricht" ? w.nachricht : `${w.nachricht ? w.nachricht : "Erklärung gewünscht"} – zu „${z ? z.it : w.it || w.id}“`;
     const h = !w.typ && !w.nachricht && hinweisZu(w.id);
-    aus.push({ zeit: postZeit(w), neu: !!h && !w.gelesen, du, w,
+    aus.push({ key: "w|" + wunschSchluessel(w), zeit: postZeit(w), neu: !!h && !w.gelesen, du, w,
       claude: h ? `<div class="hinweis">💡 ${esc(h)}</div>${KARTE_NACH_ID[w.id] || WB_NACH_ID[w.id] ? `<button class="btn zweit rm-karte" data-wort="${encodeURIComponent(w.id)}">Zur Karte ›</button>` : ""}` : null });
   });
   aus.sort((a, b) => String(b.zeit || "").localeCompare(String(a.zeit || "")));
@@ -3285,9 +3286,27 @@ function postAntwortHtml(p) {
     ${(p.karten || []).length ? `<div class="rm-teile">${p.karten.map((v) => `<div class="rm-teil">
       <span><b>${esc(v.it)}</b> ${lautBtn(v.it, true)}<br><span class="leise">${esc(v.de)}</span></span>${karteKnopf({ gruppe: p.gruppe, lektion: p.lektion, ...v }, "Karte")}</div>`).join("")}</div>` : ""}`;
 }
+// Archiv / gelöscht: S.postStatus[kennung] = { status: "archiv" | "geloescht" | "", zuletzt }
+const postStatus = (key) => ((S.postStatus || {})[key] || {}).status || "";
+function postStatusSetzen(keys, status) {
+  S.postStatus = S.postStatus || {};
+  keys.forEach((k) => (S.postStatus[k] = { status, zuletzt: Date.now() }));
+  speichern();
+}
+// Ein Nachrichten-Paar (deine Nachricht + Claudes Antwort)
+function postPaarHtml(e, extra) {
+  return `<div class="postpaar${e.neu ? " neu" : ""}">
+    ${e.du ? `<div class="blase du"><div class="leise">Du · ${postDatum(e.zeit)}</div>${esc(e.du)}</div>` : ""}
+    ${e.claude ? `<div class="blase claude"><div class="leise">Claude${e.du ? "" : " · " + postDatum(e.zeit)}${e.neu ? " · <b>neu</b>" : ""}</div>${e.claude}</div>`
+      : `<div class="blase claude wartet"><span class="leise">⏳ Claude antwortet mit einer der nächsten Versionen.</span></div>`}
+    ${extra || ""}
+  </div>`;
+}
 function postfachSeite() {
   setzeKopf("Postfach", "start");
-  const { aus, offeneAntworten } = postEintraege();
+  const { aus: alle, offeneAntworten } = postEintraege();
+  const aus = alle.filter((e) => !postStatus(e.key));
+  const imArchiv = alle.filter((e) => postStatus(e.key) === "archiv").length;
   zeige(`
     <div class="postschreiben">
       <textarea id="postText" rows="3" placeholder="Nachricht an Claude – z. B. „Mache eine Karte: Haben Sie einen Tisch für zwei Personen?“">${esc(postEntwurf)}</textarea>
@@ -3295,12 +3314,10 @@ function postfachSeite() {
       <button class="btn voll" id="postSenden">✉️ Senden</button>
       ${githubSchluessel() ? "" : `<p class="leise">Ohne GitHub-Schlüssel bleiben Nachrichten auf diesem Gerät – siehe Einstellungen.</p>`}
     </div>
+    <button class="btn zweit voll" data-gehe="postarchiv">🗄️ Archiv${imArchiv ? ` (${imArchiv})` : ""}</button>
     ${offeneAntworten ? `<p class="leise">⏳ ${offeneAntworten} Antwort${offeneAntworten === 1 ? "" : "en"} aus „Frage &amp; Antwort“ warte${offeneAntworten === 1 ? "t" : "n"} auf Claudes Rückmeldung.</p>` : ""}
-    ${aus.length ? aus.map((e) => `<div class="postpaar${e.neu ? " neu" : ""}">
-      ${e.du ? `<div class="blase du"><div class="leise">Du · ${postDatum(e.zeit)}</div>${esc(e.du)}</div>` : ""}
-      ${e.claude ? `<div class="blase claude"><div class="leise">Claude${e.neu ? " · <b>neu</b>" : ""}</div>${e.claude}</div>`
-        : `<div class="blase claude wartet"><span class="leise">⏳ Claude antwortet mit einer der nächsten Versionen.</span></div>`}
-    </div>`).join("") : `<p class="leise">Noch keine Nachrichten. Schreib oben einfach los – Claude antwortet hier.</p>`}`);
+    ${aus.length ? aus.map((e) => postPaarHtml(e, e.claude ? `<button class="btn zweit post-archiv" data-archiv="${esc(e.key)}">🗄️ Archivieren</button>` : "")).join("")
+      : `<p class="leise">Keine Nachrichten im Postfach. Schreib oben einfach los – Claude antwortet hier.</p>`}`);
   const feld = document.getElementById("postText");
   feld.oninput = () => (postEntwurf = feld.value);
   $app.querySelectorAll("[data-vorschlag]").forEach((b) => (b.onclick = () => {
@@ -3311,6 +3328,7 @@ function postfachSeite() {
     if (!feld.value.trim()) return toast("Bitte erst eine Nachricht eintippen.");
     if (nachrichtSenden(feld.value)) { postEntwurf = ""; ohneSprung(postfachSeite); }
   };
+  $app.querySelectorAll("[data-archiv]").forEach((b) => (b.onclick = () => { postStatusSetzen([b.dataset.archiv], "archiv"); toast("🗄️ Ins Archiv gelegt."); ohneSprung(postfachSeite); }));
   // Angezeigtes gilt als gelesen
   const neuste = [...alleRueckmeldungen().map((r) => r.datum), ...postEingang().map((p) => p.datum)].filter(Boolean).sort().pop();
   let geaendert = false;
@@ -3320,6 +3338,40 @@ function postfachSeite() {
   postSymbol();
 }
 let postEntwurf = "";
+// Archiv: Nachrichten markieren und löschen oder zurück ins Postfach holen
+const postMarkiert = new Set();
+function postArchivSeite() {
+  setzeKopf("Archiv", "postfach");
+  const liste = postEintraege().aus.filter((e) => postStatus(e.key) === "archiv");
+  [...postMarkiert].forEach((k) => { if (!liste.some((e) => e.key === k)) postMarkiert.delete(k); });
+  const n = postMarkiert.size;
+  zeige(`
+    ${liste.length ? `<div class="reihe" style="margin-top:0">
+      <button class="btn zweit" id="paAlle">${n === liste.length ? "☐ Keine markieren" : "☑ Alle markieren"}</button>
+      <button class="btn zweit" id="paZurueck" ${n ? "" : "disabled"}>↩️ Ins Postfach</button>
+      <button class="btn rot" id="paLoeschen" ${n ? "" : "disabled"}>🗑️ Löschen${n ? ` (${n})` : ""}</button>
+    </div>
+    <p class="leise">Tippe auf eine Nachricht, um sie zu markieren.</p>
+    ${liste.map((e) => `<div class="post-wahl${postMarkiert.has(e.key) ? " an" : ""}" data-markier="${esc(e.key)}">
+      <span class="haken haken-gross" role="checkbox" aria-checked="${postMarkiert.has(e.key)}">${postMarkiert.has(e.key) ? "✓" : ""}</span>
+      ${postPaarHtml({ ...e, neu: false })}</div>`).join("")}`
+    : `<p class="leise">Das Archiv ist leer. Im Postfach legst du gelesene Nachrichten mit „🗄️ Archivieren“ hier ab.</p>`}`);
+  $app.querySelectorAll("[data-markier]").forEach((d) => (d.onclick = (ev) => {
+    if (ev.target.closest("button, a")) return; // Knöpfe in der Nachricht (🔊, ➕ …) nicht als Markieren werten
+    const k = d.dataset.markier; postMarkiert.has(k) ? postMarkiert.delete(k) : postMarkiert.add(k);
+    ohneSprung(postArchivSeite);
+  }));
+  const alle = document.getElementById("paAlle");
+  if (alle) alle.onclick = () => { if (postMarkiert.size === liste.length) postMarkiert.clear(); else liste.forEach((e) => postMarkiert.add(e.key)); ohneSprung(postArchivSeite); };
+  const zur = document.getElementById("paZurueck");
+  if (zur) zur.onclick = () => { postStatusSetzen([...postMarkiert], ""); toast(`↩️ ${postMarkiert.size} zurück ins Postfach.`); postMarkiert.clear(); ohneSprung(postArchivSeite); };
+  const del = document.getElementById("paLoeschen");
+  if (del) del.onclick = () => {
+    const m = postMarkiert.size;
+    if (!confirm(`${m} Nachricht${m === 1 ? "" : "en"} endgültig löschen? Das lässt sich nicht rückgängig machen.`)) return;
+    postStatusSetzen([...postMarkiert], "geloescht"); toast(`🗑️ ${m} gelöscht.`); postMarkiert.clear(); ohneSprung(postArchivSeite);
+  };
+}
 
 // Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
 function auchRichtigHtml(k) {
@@ -3394,7 +3446,7 @@ function schluesselWarnung() {
 // pro Karte/Aufgabe gilt der zuletzt geübte Stand, Tage und Lektionsschritte werden vereinigt.
 const SYNC_API = "https://api.github.com/repos/StefanReinhart/italienisch", SYNC_ZWEIG = "lernstand", SYNC_DATEI = "lernstand.json";
 let syncSha = null, syncTimer = null, syncLaeuft = false, syncLetzterInhalt = null, syncStatus = "";
-const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "eigeneKarten", "fehlerMuster", "rueckGesehen", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
+const SYNC_FELDER = ["karten", "grammatik", "aussprache", "nuesse", "eigeneKarten", "postStatus", "fehlerMuster", "rueckGesehen", "lektionen", "eigeneAntworten", "claudeFehler", "tage", "neueHeute", "heute", "statistik", "verlauf"];
 // Inhalt als Text mit sortierten Schlüsseln – so erkennt die App zuverlässig „nichts Neues“ und lädt nicht unnötig hoch
 const sortiert = (x) => (Array.isArray(x) ? x.map(sortiert) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, sortiert(x[k])])) : x);
 const syncInhalt = (s) => JSON.stringify(sortiert(Object.fromEntries(SYNC_FELDER.map((f) => [f, s[f]]))));
@@ -3409,6 +3461,7 @@ function zusammenfuehren(lokal, fern) {
   lokal.aussprache = mische(lokal.aussprache, fern.aussprache, (a, b) => ((b.versuche || 0) > (a.versuche || 0) ? b : a));
   lokal.nuesse = mische(lokal.nuesse, fern.nuesse, juenger);
   lokal.eigeneKarten = mische(lokal.eigeneKarten, fern.eigeneKarten, juenger);
+  lokal.postStatus = mische(lokal.postStatus, fern.postStatus, juenger);
   lokal.fehlerMuster = mische(lokal.fehlerMuster, fern.fehlerMuster, juenger);
   if ((fern.rueckGesehen || "") > (lokal.rueckGesehen || "")) lokal.rueckGesehen = fern.rueckGesehen; // gelesene Rückmeldungen
   lokal.tage = mische(lokal.tage, fern.tage, (a, b) => Math.max(a || 0, b || 0));
@@ -3787,7 +3840,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    rueckmeldungen: postfachSeite, postfach: postfachSeite, fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    rueckmeldungen: postfachSeite, postfach: postfachSeite, postarchiv: postArchivSeite, fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

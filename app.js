@@ -2784,6 +2784,13 @@ function schwierigSeite() {
 const PRAEP_WOERTER = new Set("a in di da su con per tra fra al allo alla all' ai agli alle del dello della dell' dei degli delle dal dallo dalla dall' dai dagli dalle nel nello nella nell' nei negli nelle sul sullo sulla sull' sui sugli sulle ad".split(" "));
 const ARTIKEL_WOERTER = new Set("il lo la l' i gli le un uno una un'".split(" "));
 function musterArt(f, r) {
+  // ein Wort zu viel oder zu wenig: „il mio“ statt „mio“, „vicino Monaco“ statt „vicino a Monaco“
+  const [lang, kurz] = f.split(" ").length > r.split(" ").length ? [f, r] : [r, f];
+  if (lang !== kurz && lang.endsWith(" " + kurz)) {
+    const extra = lang.slice(0, -kurz.length - 1);
+    if (ARTIKEL_WOERTER.has(extra)) return lang === f ? "Artikel zu viel" : "Artikel fehlt";
+    if (PRAEP_WOERTER.has(extra)) return lang === f ? "Präposition zu viel" : "Präposition fehlt";
+  }
   if (PRAEP_WOERTER.has(f) && PRAEP_WOERTER.has(r)) return "Präposition";
   if (ARTIKEL_WOERTER.has(f) && ARTIKEL_WOERTER.has(r)) return "Artikel";
   if (f.slice(0, 3) === r.slice(0, 3) && f.length > 2 && r.length > 2) return "Endung / Form";
@@ -2810,6 +2817,17 @@ function fehlerMerken(falsch, richtig, beispiel) {
 // andere Wörter können sich das Handy verhört oder man frei anders gewählt haben (Mi chiamo Stefan statt Marco)
 function fehlerAusText(loesung, eingabe, nurGrammatik) {
   if (!eingabe || !loesung) return;
+  // Ein kleines Wort (Artikel/Präposition) zu viel oder vergessen? z. B. „Questo è il mio marito“ → „il mio“ statt „mio“
+  const Z = woerterVon(loesung), G = woerterVon(eingabe), klein = (w) => ARTIKEL_WOERTER.has(w) || PRAEP_WOERTER.has(w);
+  const ohne = (L, i) => L.filter((_, j) => j !== i).map((x) => x.n).join(" ");
+  if (G.length === Z.length + 1) {
+    const zs = Z.map((x) => x.n).join(" ");
+    for (let j = 0; j < G.length - 1; j++) if (klein(G[j].n) && ohne(G, j) === zs) return fehlerMerken(G[j].zeigen + " " + G[j + 1].zeigen, G[j + 1].zeigen, loesung);
+  }
+  if (Z.length === G.length + 1) {
+    const gs = G.map((x) => x.n).join(" ");
+    for (let i = 0; i < Z.length - 1; i++) if (klein(Z[i].n) && ohne(Z, i) === gs) return fehlerMerken(Z[i + 1].zeigen, Z[i].zeigen + " " + Z[i + 1].zeigen, loesung);
+  }
   const v = vergleiche(loesung, eingabe);
   if (nurGrammatik && v.prozent < 50) return; // kaum etwas verstanden – kein verlässlicher Vergleich
   const falsche = v.woerter.filter((w) => (w.art === "falsch" || w.art === "fast") && w.gehoert);
@@ -2842,7 +2860,14 @@ function musterBausteine(m, r, f) {
     if (musterNorm(x.a) === r && opt.includes(f)) aufgaben.push(() => musterWerten(lueckeAufgabe(setId, x), m));
   }));
   const wortRe = new RegExp("(^|[\\s'’])(" + r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?=[\\s.,!?;:]|$)", "i");
-  ALLE_KARTEN.filter((k) => k.it.split(/\s+/).length >= 2 && k.it.split(/\s+/).length <= 12 && wortRe.test(k.it)).forEach((k) => aufgaben.push(() => {
+  // Bei „il mio“ statt „mio“: Sätze mit „mio“ nur, wenn davor NICHT schon „il“ steht (sonst wäre „il mio“ die Lösung)
+  const vorwort = f.endsWith(" " + r) ? f.slice(0, -r.length - 1).toLowerCase() : null;
+  const passt = (k) => {
+    if (k.it.split(/\s+/).length < 2 || k.it.split(/\s+/).length > 12 || k.it.includes("/")) return false;
+    const t = k.it.match(wortRe); if (!t) return false;
+    return !vorwort || !k.it.slice(0, t.index + t[1].length).toLowerCase().trimEnd().endsWith(vorwort);
+  };
+  ALLE_KARTEN.filter(passt).forEach((k) => aufgaben.push(() => {
     const treffer = k.it.match(wortRe), start = treffer.index + treffer[1].length;
     const satz = k.it.slice(0, start) + "___" + k.it.slice(start + treffer[2].length);
     const amAnfang = start === 0;

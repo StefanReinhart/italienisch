@@ -22,8 +22,17 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      `HINWEISE` (data/hinweise.js, Block „Erklärungen zu typischen Fehlern“) eintragen: kurz, mit Merkhilfe und
      Beispielen für BEIDE Wörter. Die Kennung ist immer „fehler:“ + beide Wörter alphabetisch sortiert, mit „ / “.
      Passen neue Beispielsätze, auch als Karten aufnehmen.
-   - Einträge mit `"typ": "nachricht"` (`id: "allgemein"`) sind freie Nachrichten aus den Einstellungen
-     (Wünsche, Fragen, Fehlermeldungen): umsetzen bzw. beantworten; wenn unklar oder größer, den Nutzer erst fragen.
+   - Einträge mit `"typ": "nachricht"` (`id: "allgemein"`) sind Nachrichten aus dem **Postfach** der App (Wünsche,
+     Fragen, „Mache eine Karte: …“, Fehlermeldungen): umsetzen bzw. beantworten; wenn unklar oder größer, erst im
+     Chat nachfragen.
+   - **Antwort ins Postfach:** Auf JEDE Nachricht mit Text (`typ: "nachricht"` und Karten-/Fehler-Fragen mit
+     `nachricht`) eine Antwort in `data/postfach.js` (`window.POSTFACH`) schreiben:
+     `{ datum: "JJJJ-MM-TT HH:MM", bezug: "<genau der Text aus nachricht>", text, karten, gruppe, lektion }`.
+     `bezug` muss exakt der Nachrichtentext sein (daran hängt die App die Antwort an die Nachricht). Bei „Mache eine
+     Karte: …“: die Karte(n) in `karten` vorschlagen (`{ it, de }`, natürliches Italienisch, ggf. du- und Sie-Form)
+     mit passender `gruppe` (p_restaurant, p_reisen, p_einkaufen, p_weg, p_alltag, p_begruessung …) und `lektion`
+     – der Nutzer übernimmt sie per ➕ und sie kommen sofort dran. Alle Antworten stehen lassen (Verlauf).
+     Bei reinen Erklärungs-Wünschen ohne Text reicht der Hinweis in hinweise.js (die App zeigt ihn im Postfach an).
 4. Einträge mit `"typ": "antwort"` sind Antworten aus „Frage & Antwort“, die der Nutzer selbst als richtig
    markiert hat (`id` = Kennung der Frage, z. B. `dialog:Che cosa prendi?`, `frage`, `antwort`). Prüfen:
    - **Richtig:** in `data/gespraech.js` bei dieser Frage ein passendes, möglichst allgemeines Antwortmuster

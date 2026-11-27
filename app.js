@@ -1768,7 +1768,7 @@ function gespraechMenue() {
     <p>Die App stellt eine Frage auf Italienisch – du antwortest auf Italienisch, gesprochen 🎤 oder getippt.</p>
     <div class="meldung info">ℹ️ Die App kennt für jede Frage typische Antworten (z. B. „Mi chiamo …“ mit beliebigem Namen). Eine ungewöhnliche, aber richtige Antwort erkennt sie vielleicht nicht – dann tippst du auf „Meine Antwort war richtig“.</div>
     ${umschalter("gtext", S.einstellungen.gespraechText ? "ja" : "nein", [["ja", "Frage lesen + hören"], ["nein", "Frage nur hören"]])}
-    <button class="btn zweit voll" data-gehe="rueckmeldungen" style="margin-bottom:10px">💬 Rückmeldungen von Claude${neueRueckmeldungen() ? ` – <b>${neueRueckmeldungen()} neu</b>` : alleRueckmeldungen().length ? ` (${alleRueckmeldungen().length})` : ""}</button>
+    <button class="btn zweit voll" data-gehe="rueckmeldungen" style="margin-bottom:10px">📬 Postfach – Rückmeldungen von Claude${neueNachrichten() ? ` – <b>${neueNachrichten()} neu</b>` : ""}</button>
     <button class="btn voll" id="alle">🎲 10 Fragen aus allen Themen</button>
     <h2>Themen</h2>
     <div class="liste">${GESPRAECH_THEMEN.map((t) => `<button class="zeile" data-gthema="${t.id}"><span class="sym">💬</span><span class="mitte">${esc(t.thema)}<small>${t.fragen.length} Fragen${z(f(t.fragen))}</small></span><span class="pfeil">›</span></button>`).join("")}</div>`);
@@ -3215,47 +3215,111 @@ function rueckmeldungHtml(r) {
 const alleRueckmeldungen = () => Object.entries(window.RUECKMELDUNGEN || {}).flatMap(([key, liste]) => liste.map((r) => ({ key, ...r })))
   .sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
 const neueRueckmeldungen = () => alleRueckmeldungen().filter((r) => (r.datum || "") > (S.rueckGesehen || "")).length;
-// Deine Fragen aus dem Postkasten, die Claude inzwischen beantwortet hat (die Antwort steht als 💡 bei der Karte)
-const beantworteteFragen = () => (S.wuensche || []).filter((w) => !w.typ && hinweisZu(w.id))
-  .sort((a, b) => (b.zeit || "").localeCompare(a.zeit || ""));
-const neueNachrichten = () => neueRueckmeldungen() + beantworteteFragen().filter((w) => !w.gelesen).length;
-// Symbol 💬 oben in der Kopfleiste: Anzahl neuer Nachrichten
+// ---------- Postfach: Nachrichten an Claude schreiben und Claudes Antworten lesen – alles in einem Verlauf ----------
+// Ausgang: S.wuensche (freie Nachrichten, Fragen zu Karten/Fehlern, Antworten aus Frage & Antwort) → data/wuensche.json
+// Eingang: data/postfach.js (Antworten auf Nachrichten), data/rueckmeldungen.js (zu Frage & Antwort), Erklärungen (💡 bei Karten)
+const POST_VORSCHLAEGE = [
+  ["🗂️", "Mache eine Karte: "],
+  ["💡", "Erkläre mir: "],
+  ["⚖️", "Was ist der Unterschied zwischen … und …?"],
+  ["✅", "Ist „…“ auch richtig?"],
+  ["🎯", "Ich möchte mehr üben: "]
+];
+const postZeit = (x) => x.zeitpunkt || x.datum || x.zeit || "";
+const postDatum = (d) => { if (!d) return ""; const [tag, uhr] = String(d).replace("T", " ").split(" "); return tag.split("-").reverse().join(".") + (uhr ? " " + uhr.slice(0, 5) : ""); };
+const postEingang = () => (window.POSTFACH || []).slice();
+const beantworteteFragen = () => (S.wuensche || []).filter((w) => !w.typ && !w.nachricht && hinweisZu(w.id));
+function neueNachrichten() {
+  const g = S.rueckGesehen || "";
+  return alleRueckmeldungen().filter((r) => (r.datum || "") > g).length
+    + postEingang().filter((p) => (p.datum || "") > g).length
+    + beantworteteFragen().filter((w) => !w.gelesen).length;
+}
+// 💬 oben in der Kopfleiste: Anzahl neuer Nachrichten
 function postSymbol() {
   const b = document.getElementById("post"); if (!b) return;
   const n = neueNachrichten(), z = document.getElementById("postZahl");
   z.hidden = !n; z.textContent = n > 9 ? "9+" : n;
-  b.onclick = () => {
-    if (!neueRueckmeldungen() && beantworteteFragen().some((w) => !w.gelesen)) nachrichtenTab = "fragen"; else if (neueRueckmeldungen()) nachrichtenTab = "antworten";
-    geheZu("rueckmeldungen");
-  };
+  b.onclick = () => geheZu("postfach");
 }
-function rueckmeldungenSeite() {
-  setzeKopf("Nachrichten von Claude", "start");
-  const liste = alleRueckmeldungen(), fragen = beantworteteFragen(), frage = (key) => (ALLE_FRAGEN.find((q) => q.key === key) || {}).f || "";
-  const datum = (d) => (d ? d.slice(0, 10).split("-").reverse().join(".") : "");
-  const neuR = (r) => (r.datum || "") > (S.rueckGesehen || ""), tab = nachrichtenTab;
+function nachrichtSenden(text) {
+  text = String(text || "").trim(); if (!text) return false;
+  const w = { typ: "nachricht", id: "allgemein", nachricht: text, zeit: new Date().toISOString().slice(0, 10), zeitpunkt: jetztText(), gesendet: false };
+  if ((S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) return false;
+  S.wuensche = (S.wuensche || []).concat(w); speichern();
+  toast(githubSchluessel() ? "Gesendet – die Antwort kommt mit der nächsten Version ins Postfach." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät – siehe Einstellungen.)", 4000);
+  clearTimeout(wunschHinzufuegen._t); wunschHinzufuegen._t = setTimeout(wuenscheSenden, 1500);
+  return true;
+}
+// „2026-11-27 16:40“ – Ortszeit, gut sortierbar
+const jetztText = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+// Alle Einträge des Postfachs, neueste zuerst
+function postEintraege() {
+  const aus = [], eingang = postEingang(), g = S.rueckGesehen || "";
+  const beantwortet = new Set(eingang.map((p) => (p.bezug || "").trim()).filter(Boolean));
+  // Claudes Antworten auf Nachrichten
+  eingang.forEach((p) => aus.push({ zeit: p.datum, neu: (p.datum || "") > g, du: p.bezug, claude: postAntwortHtml(p) }));
+  // Rückmeldungen zu Frage & Antwort
+  alleRueckmeldungen().forEach((r) => {
+    const f = (ALLE_FRAGEN.find((q) => q.key === r.key) || {}).f || "";
+    aus.push({ zeit: r.datum, neu: (r.datum || "") > g, du: `Frage & Antwort – „${f}“: ${r.antwort}`, claude: rueckmeldungHtml(r) });
+  });
+  // eigene Nachrichten und Fragen: beantwortet (Erklärung bei der Karte) oder noch offen
+  let offeneAntworten = 0;
+  (S.wuensche || []).forEach((w) => {
+    if (w.typ === "antwort") return;
+    if (w.typ === "gespraech") { if (!alleRueckmeldungen().some((r) => r.key === w.id && musterNorm(r.antwort) === musterNorm(w.antwort))) offeneAntworten++; return; }
+    if (w.nachricht && beantwortet.has(w.nachricht.trim())) return; // Antwort steht schon oben
+    const z = w.typ === "nachricht" ? null : wunschZiel(w.id);
+    const du = w.typ === "nachricht" ? w.nachricht : `${w.nachricht ? w.nachricht : "Erklärung gewünscht"} – zu „${z ? z.it : w.it || w.id}“`;
+    const h = !w.typ && !w.nachricht && hinweisZu(w.id);
+    aus.push({ zeit: postZeit(w), neu: !!h && !w.gelesen, du, w,
+      claude: h ? `<div class="hinweis">💡 ${esc(h)}</div>${KARTE_NACH_ID[w.id] || WB_NACH_ID[w.id] ? `<button class="btn zweit rm-karte" data-wort="${encodeURIComponent(w.id)}">Zur Karte ›</button>` : ""}` : null });
+  });
+  aus.sort((a, b) => String(b.zeit || "").localeCompare(String(a.zeit || "")));
+  return { aus, offeneAntworten };
+}
+// Claudes Antwort auf eine Nachricht, ggf. mit Karten-Vorschlägen zum Übernehmen
+function postAntwortHtml(p) {
+  return `<div>${esc(p.text).replace(/\n/g, "<br>")}</div>
+    ${(p.karten || []).length ? `<div class="rm-teile">${p.karten.map((v) => `<div class="rm-teil">
+      <span><b>${esc(v.it)}</b> ${lautBtn(v.it, true)}<br><span class="leise">${esc(v.de)}</span></span>${karteKnopf({ gruppe: p.gruppe, lektion: p.lektion, ...v }, "Karte")}</div>`).join("")}</div>` : ""}`;
+}
+function postfachSeite() {
+  setzeKopf("Postfach", "start");
+  const { aus, offeneAntworten } = postEintraege();
   zeige(`
-    ${umschalter("ntab", tab, [["antworten", `Zu deinen Antworten${liste.some(neuR) ? " •" : ""}`], ["fragen", `Zu deinen Fragen${fragen.some((w) => !w.gelesen) ? " •" : ""}`]])}
-    ${tab === "antworten" ? `
-      <p class="leise">Deine Antworten bei „Frage &amp; Antwort“ gehen automatisch in den Postkasten. Claude schreibt eine Rückmeldung und einen Vorschlag für eine ausführlichere Antwort – mit ➕ übernimmst du ihn als Karte.</p>
-      ${liste.length ? liste.map((r) => `<div class="karte nachricht${neuR(r) ? " neu" : ""}">
-        <div><b>${esc(frage(r.key))}</b> ${lautBtn(frage(r.key), true)}</div>${rueckmeldungHtml(r)}</div>`).join("")
-        : `<p class="leise">Noch keine Rückmeldungen. Beantworte ein paar Fragen – die Rückmeldungen kommen mit einer der nächsten Versionen.</p>`}`
-    : `
-      <p class="leise">Fragen, die du bei einer Karte oder einem typischen Fehler gestellt hast – mit Claudes Antwort.</p>
-      ${fragen.length ? fragen.map((w) => { const z = wunschZiel(w.id); return `<div class="karte nachricht${w.gelesen ? "" : " neu"}">
-        <div class="leise">${datum(w.zeit)} · ${esc(z ? z.it : w.it || w.id)}</div>
-        <div>${w.nachricht ? `Deine Frage: <b>${esc(w.nachricht)}</b>` : "Du hast eine Erklärung gewünscht."}</div>
-        <div class="hinweis">💡 ${esc(hinweisZu(w.id))}</div>
-        ${KARTE_NACH_ID[w.id] || WB_NACH_ID[w.id] ? `<button class="btn zweit" data-wort="${encodeURIComponent(w.id)}" style="align-self:flex-start;padding:6px 12px;min-height:0">Zur Karte ›</button>` : ""}</div>`; }).join("")
-        : `<p class="leise">Noch keine beantworteten Fragen. Stell eine Frage bei einer Karte („❓ Erklärung wünschen / Frage stellen“) – die Antwort erscheint hier und bei der Karte.</p>`}`}`);
-  $app.querySelectorAll("#ntab button").forEach((b) => (b.onclick = () => { nachrichtenTab = b.dataset.w; ohneSprung(rueckmeldungenSeite); }));
-  // was angezeigt wurde, gilt als gelesen
-  if (tab === "antworten" && liste.length && neuR(liste[0])) { S.rueckGesehen = liste[0].datum; speichern(); }
-  if (tab === "fragen" && fragen.some((w) => !w.gelesen)) { fragen.forEach((w) => (w.gelesen = true)); speichern(); }
+    <div class="postschreiben">
+      <textarea id="postText" rows="3" placeholder="Nachricht an Claude – z. B. „Mache eine Karte: Haben Sie einen Tisch für zwei Personen?“">${esc(postEntwurf)}</textarea>
+      <div class="postvorschlaege">${POST_VORSCHLAEGE.map(([sym, t]) => `<button class="chip" data-vorschlag="${esc(t)}">${sym} ${esc(t.replace(/:\s*$/, " …"))}</button>`).join("")}</div>
+      <button class="btn voll" id="postSenden">✉️ Senden</button>
+      ${githubSchluessel() ? "" : `<p class="leise">Ohne GitHub-Schlüssel bleiben Nachrichten auf diesem Gerät – siehe Einstellungen.</p>`}
+    </div>
+    ${offeneAntworten ? `<p class="leise">⏳ ${offeneAntworten} Antwort${offeneAntworten === 1 ? "" : "en"} aus „Frage &amp; Antwort“ warte${offeneAntworten === 1 ? "t" : "n"} auf Claudes Rückmeldung.</p>` : ""}
+    ${aus.length ? aus.map((e) => `<div class="postpaar${e.neu ? " neu" : ""}">
+      ${e.du ? `<div class="blase du"><div class="leise">Du · ${postDatum(e.zeit)}</div>${esc(e.du)}</div>` : ""}
+      ${e.claude ? `<div class="blase claude"><div class="leise">Claude${e.neu ? " · <b>neu</b>" : ""}</div>${e.claude}</div>`
+        : `<div class="blase claude wartet"><span class="leise">⏳ Claude antwortet mit einer der nächsten Versionen.</span></div>`}
+    </div>`).join("") : `<p class="leise">Noch keine Nachrichten. Schreib oben einfach los – Claude antwortet hier.</p>`}`);
+  const feld = document.getElementById("postText");
+  feld.oninput = () => (postEntwurf = feld.value);
+  $app.querySelectorAll("[data-vorschlag]").forEach((b) => (b.onclick = () => {
+    feld.value = b.dataset.vorschlag; postEntwurf = feld.value; feld.focus();
+    const p = feld.value.indexOf("…"); if (p >= 0) feld.setSelectionRange(p, p + 1); else feld.setSelectionRange(feld.value.length, feld.value.length);
+  }));
+  document.getElementById("postSenden").onclick = () => {
+    if (!feld.value.trim()) return toast("Bitte erst eine Nachricht eintippen.");
+    if (nachrichtSenden(feld.value)) { postEntwurf = ""; ohneSprung(postfachSeite); }
+  };
+  // Angezeigtes gilt als gelesen
+  const neuste = [...alleRueckmeldungen().map((r) => r.datum), ...postEingang().map((p) => p.datum)].filter(Boolean).sort().pop();
+  let geaendert = false;
+  if (neuste && neuste > (S.rueckGesehen || "")) { S.rueckGesehen = neuste; geaendert = true; }
+  beantworteteFragen().forEach((w) => { if (!w.gelesen) { w.gelesen = true; geaendert = true; } });
+  if (geaendert) speichern();
   postSymbol();
 }
-let nachrichtenTab = "antworten";
+let postEntwurf = "";
 
 // Andere richtige Möglichkeiten (gleiche deutsche Bedeutung oder von Claude bestätigt), z. B. bei „Che cosa significa?“ → „Che cosa vuol dire?“
 function auchRichtigHtml(k) {
@@ -3450,7 +3514,7 @@ async function wuenscheSenden() {
         if (vorhanden.has(wunschSchluessel(w))) return;
         liste.push(w.typ === "antwort" ? { typ: "antwort", id: w.id, frage: w.frage, antwort: w.antwort, zeit: w.zeit }
           : w.typ === "gespraech" ? { typ: "gespraech", id: w.id, frage: w.frage, antwort: w.antwort, stufe: w.stufe, zeit: w.zeit }
-          : w.typ === "nachricht" ? { typ: "nachricht", id: w.id, nachricht: w.nachricht, zeit: w.zeit }
+          : w.typ === "nachricht" ? { typ: "nachricht", id: w.id, nachricht: w.nachricht, zeit: w.zeitpunkt || w.zeit }
           : { id: w.id, it: w.it, de: w.de, ...(w.nachricht ? { nachricht: w.nachricht } : {}), zeit: w.zeit });
       });
       const text = JSON.stringify(liste, null, 1);
@@ -3633,9 +3697,7 @@ function einstellungen() {
     ${(() => {
       const alle = S.wuensche || [], offen = alle.filter((w) => !w.gesendet);
       return `<div class="einstellung">
-        <label for="freiNachricht" style="margin-top:0">Nachricht an Claude</label>
-        <textarea id="freiNachricht" rows="3" placeholder="z. B. Ich möchte mehr Übungen zu den Zahlen. · Was ist der Unterschied zwischen sapere und conoscere?"></textarea>
-        <button class="btn voll" id="freiSenden" style="margin-bottom:10px">Senden</button>
+        <button class="btn voll" data-gehe="postfach" style="margin-bottom:10px">✉️ Zum Postfach – Nachrichten schreiben und Antworten lesen</button>
         <p class="leise">Zu einzelnen Karten fragst du am besten direkt bei der Karte: „❓ Erklärung wünschen / Frage stellen“ bzw. „✉️ Frage an Claude“.</p>
         <p style="margin-top:0">${alle.length ? `Auf der Liste: <b>${alle.length}</b>${offen.length ? ` – davon <b>${offen.length} noch nicht gesendet</b>` : " – alle an GitHub gesendet"}.` : "Noch nichts auf der Liste."}</p>
         ${alle.length ? `<details><summary class="leise">Liste ansehen</summary><p class="leise">${alle.map((w) => esc(wunschText(w)) + (w.gesendet ? " ✓" : "")).join("<br>")}</p></details>` : ""}
@@ -3677,15 +3739,6 @@ function einstellungen() {
     S.schluesselInfo = { ...(S.schluesselInfo || {}) };
     if (d) S.schluesselInfo.ablauf = Date.parse(d + "T12:00:00"); else delete S.schluesselInfo.ablauf;
     speichern(); toast(d ? "Ablaufdatum gemerkt – 14 Tage vorher kommt eine Erinnerung." : "Ablaufdatum entfernt.");
-  };
-  document.getElementById("freiSenden").onclick = () => {
-    const feld = document.getElementById("freiNachricht"), text = feld.value.trim();
-    if (!text) return toast("Bitte erst eine Nachricht eintippen.");
-    const w = { typ: "nachricht", id: "allgemein", nachricht: text, zeit: new Date().toISOString().slice(0, 10), gesendet: false };
-    if (!(S.wuensche || []).some((x) => wunschSchluessel(x) === wunschSchluessel(w))) S.wuensche = (S.wuensche || []).concat(w);
-    speichern();
-    toast(githubSchluessel() ? "Gesendet – Claude liest das bei der nächsten Bearbeitung." : "Gemerkt. (Ohne GitHub-Schlüssel nur auf diesem Gerät.)", 4000);
-    wuenscheSenden().then(() => ohneSprung(einstellungen));
   };
   const ws = document.getElementById("wSenden");
   if (ws) ws.onclick = async () => { ws.disabled = true; ws.textContent = "Sende …"; await wuenscheSenden(); ohneSprung(einstellungen); };
@@ -3734,7 +3787,7 @@ function route() {
     uebung: () => (arg === "zahlen" ? uebungStarten("Zahlen", [{ zahlen: true }], "grammatik", "uebung/zahlen") : LUECKEN[arg] ? uebungStarten(LUECKEN[arg].titel, [{ luecke: arg }], "grammatik", "uebung/" + arg) : geheZu("grammatik")), satzbau: () => { satz = null; satzbauZeigen(); }, quiz: quizZeigen,
     hoeren: hoerenMenue, sprechen: sprechenMenue, "sprechen-ueben": sprechenZeigen,
     gespraech: gespraechMenue, "gespraech-ueben": gespraechZeigen,
-    rueckmeldungen: rueckmeldungenSeite, fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
+    rueckmeldungen: postfachSeite, postfach: postfachSeite, fehler: fehlerMenue, typfehler: () => typFehlerSeite(arg), nuesse: nuesseSeite, schwierig: schwierigSeite, "satzbau-fehler": () => { satz = null; satzbauStart(schwacheSaetze()); },
     phrasen: () => (arg ? phrasenGruppe(arg) : phrasenMenue()), nachschlagen, einstellungen, stand: () => standSeite(arg), lfehler: () => lektionFehlerSeite(arg), wort: () => wortSeite(arg), lernkurve: lernkurveSeite
   };
   (seiten[teil] || startseite)();

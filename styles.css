@@ -292,3 +292,14 @@ details.hilfe summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .rm-teile { margin-top: 10px; }
 .rm-teil { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px dashed var(--rand); }
 .rm-teil .rm-karte, .rm-teil .rm-dabei { margin-top: 0; flex: none; }
+/* Postfach */
+.postschreiben { margin-bottom: 14px; }
+.postschreiben textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 17px; }
+.postvorschlaege { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { border: 1px solid var(--rand); background: var(--karte); color: var(--text); border-radius: 16px; padding: 6px 12px; font-size: 15px; cursor: pointer; }
+.postpaar { margin: 12px 0 16px; }
+.blase { border-radius: 16px; padding: 10px 12px; margin: 4px 0; max-width: 92%; box-sizing: border-box; }
+.blase.du { margin-left: auto; background: var(--gruen-hell); }
+.blase.claude { margin-right: auto; background: var(--karte); border: 1px solid var(--rand); }
+.blase.wartet { opacity: .8; }
+.postpaar.neu .blase.claude { border-color: var(--blau); box-shadow: 0 0 0 2px var(--blau); }

@@ -27,7 +27,7 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      Chat nachfragen.
    - **Antwort ins Postfach:** Auf JEDE Nachricht mit Text (`typ: "nachricht"` und Karten-/Fehler-Fragen mit
      `nachricht`) eine Antwort in `data/postfach.js` (`window.POSTFACH`) schreiben:
-     `{ datum: "JJJJ-MM-TT HH:MM", bezug: "<genau der Text aus nachricht>", text, karten, gruppe, lektion }`.
+     `{ datum: "JJJJ-MM-TT HH:MM", id: "<Kennung der Karte, bei freien Nachrichten weglassen>", bezug: "<genau der Text aus nachricht>", text, karten, gruppe, lektion }`.
      `bezug` muss exakt der Nachrichtentext sein (daran hängt die App die Antwort an die Nachricht). Bei „Mache eine
      Karte: …“: die Karte(n) in `karten` vorschlagen (`{ it, de }`, natürliches Italienisch, ggf. du- und Sie-Form)
      mit passender `gruppe` (p_restaurant, p_reisen, p_einkaufen, p_weg, p_alltag, p_begruessung …) und `lektion`

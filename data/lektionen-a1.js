@@ -8,6 +8,10 @@ l1: {
     "p_begruessung:Ciao, come stai?", "p_begruessung:Buongiorno, come sta?", "p_begruessung:Sto bene, grazie.", "p_begruessung:Non c'è male.", "p_begruessung:E tu?", "p_begruessung:Come ti chiami?", "p_begruessung:Mi chiamo Marco.", "p_begruessung:Piacere!", "p_begruessung:Di dove sei?", "p_begruessung:Sono tedesco.", "p_begruessung:A presto!", "p_begruessung:A domani!", "p_verstaendigung:Parlo un po' di italiano.", "p_verstaendigung:Non capisco.",
     "grundwoerter:va bene", "grundwoerter:scusa", "personen:il signore", "personen:la signora", "p_begruessung:Buona giornata!", "p_verstaendigung:Come si dice in italiano?", "p_verstaendigung:Che cosa significa?", "p_verstaendigung:Non lo so.", "p_verstaendigung:Sto imparando l'italiano."],
   neu: `
+Può parlare un po' più lentamente? | Können Sie etwas langsamer sprechen?
+Puoi parlare un po' più piano? | Kannst du etwas langsamer sprechen?
+Che cosa stai facendo? | Was machst du gerade?
+Sto leggendo un libro. | Ich lese gerade ein Buch.
 Sono Marco, e tu? | Ich bin Marco, und du?
 Lei è italiana? | Sind Sie Italienerin?
 No, non sono italiano. | Nein, ich bin kein Italiener.

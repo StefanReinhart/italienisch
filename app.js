@@ -2073,7 +2073,7 @@ const LEKTION_LISTE = LEKTIONEN.map((l, i) => ({ ...l, nr: i + 1 }));
 const LEKTION_NACH_ID = Object.fromEntries(LEKTION_LISTE.map((l) => [l.id, l]));
 const LEKTION_SCHRITTE = [
   { id: "erkl", sym: "📖", name: "Kurz erklärt", text: "Worum es geht, die Grammatik in einfachen Worten" },
-  { id: "woerter", sym: "🗂️", name: "Neue Wörter", text: "Wörter und Sätze der Lektion als Karteikarten" },
+  { id: "woerter", sym: "🗂️", name: "Karten: neu + wiederholen", text: "Neue Karten der Lektion kennenlernen und fällige wiederholen" },
   { id: "grammatik", sym: "📘", name: "Grammatik", text: "Übungen zum Grammatik-Schwerpunkt" },
   { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: "Ein kurzes Gespräch zum Thema" },
   { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Sätze der Lektion sagen, dann Fragen beantworten" }
@@ -2184,7 +2184,8 @@ function wbFuerLektion(lid) {
 const lektionFragen = (L) => L.fragen.map((f) => ALLE_FRAGEN.find((q) => (q.id || q.f) === f) || ALLE_FRAGEN.find((q) => q.f === f)).filter(Boolean);
 function lektionWoerterStand(L) {
   const karten = lektionKarten(L);
-  return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length };
+  return { gesamt: karten.length, kennen: karten.filter((k) => !istNeu(k.id, "it-de")).length,
+    neu: karten.filter((k) => istNeu(k.id, "it-de")).length, faellig: karten.filter((k) => RICHTUNGEN.some((r) => istFaellig(k.id, r))).length };
 }
 // Wie viel einer Lektion sitzt wirklich? Drei Teile, gewichtet:
 //  - Karten (60 %): kommen erst in einem halben Jahr oder später wieder
@@ -2228,7 +2229,7 @@ function lektionenMenue() {
   zeige(`
     <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du sie kannst, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
     <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog und Sprechen – dazu „Gemischt üben“ zum Wiederholen. Alle sind offen: Du kannst jederzeit springen.</p>
-    <p class="leise">„Heute üben“ arbeitet bis zu ${MAX_PARALLEL} Lektionen gleichzeitig ab: Die nächste beginnt, sobald bei der vorigen alle Schritte außer „Neue Wörter“ erledigt sind – deren restliche Wörter kommen nebenher dran.</p>
+    <p class="leise">„Heute üben“ arbeitet bis zu ${MAX_PARALLEL} Lektionen gleichzeitig ab: Die nächste beginnt, sobald bei der vorigen alle Schritte außer „Karten: neu + wiederholen“ erledigt sind – deren restliche Wörter kommen nebenher dran.</p>
     <p class="leise">„% sitzen fest“ zeigt, was du wirklich kannst: Karten, die erst in einem halben Jahr wiederkommen, und Grammatik-Aufgaben und Fragen, die du sechsmal hintereinander richtig hattest (Karten zählen am meisten). Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
     <div class="fortschritt"><span>Alle 12: ${gs.prozent} % sitzen fest · ${durch} / ${LEKTION_LISTE.length} durchgearbeitet</span>${festBalken(gs)}</div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
@@ -2257,7 +2258,7 @@ function lektionZeigen(id) {
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
       const erledigt = schrittErledigt(L, s.id);
-      const extra = s.id === "woerter" ? ` · <b>${w.kennen} von ${w.gesamt} kennengelernt</b>${w.kennen < w.gesamt && !st.woerterVonHand ? " – fertig, wenn alle dran waren" : ""}` : "";
+      const extra = s.id === "woerter" ? `<br><b>${w.neu} neu</b> · <b>${w.faellig} zum Wiederholen</b> · ${w.kennen} von ${w.gesamt} kennengelernt${w.kennen < w.gesamt && !st.woerterVonHand ? " – fertig, wenn alle dran waren" : ""}` : "";
       const text = s.text + extra;
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
         <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
@@ -2436,7 +2437,7 @@ function heuteSchritte() {
   const lZeile = (id, x) => {
     if (!x) return { id, sym: "📚", name: "Lektion", text: alleDurch ? "alle Lektionen durchgearbeitet" : "nichts mehr offen", leer: true };
     const w = x.s.id === "woerter" ? lektionWoerterStand(x.L) : null;
-    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? `${w.kennen} von ${w.gesamt} Karten kennengelernt – die nächsten neuen` : x.s.text };
+    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? `${w.neu ? w.neu + " neue kennenlernen" : "alle kennengelernt"}${w.faellig ? ", " + w.faellig + " wiederholen" : ""} (${w.kennen} von ${w.gesamt})` : x.s.text };
   };
   return [
     { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
@@ -3257,9 +3258,10 @@ const jetztText = () => { const d = new Date(), z = (n) => String(n).padStart(2,
 // Alle Einträge des Postfachs, neueste zuerst – jeder mit fester Kennung (für Archiv / Löschen)
 function postEintraege() {
   const aus = [], eingang = postEingang(), g = S.rueckGesehen || "";
-  const beantwortet = new Set(eingang.map((p) => (p.bezug || "").trim()).filter(Boolean));
+  // Antwort gehört zu einer Nachricht: gleicher Text (und bei Fragen zu einer Karte dieselbe Kennung)
+  const beantwortet = new Set(eingang.filter((p) => p.bezug).map((p) => (p.id || "") + "|" + p.bezug.trim()));
   // Claudes Antworten auf Nachrichten
-  eingang.forEach((p) => aus.push({ key: "p|" + p.datum + "|" + (p.bezug || ""), zeit: p.datum, neu: (p.datum || "") > g, du: p.bezug, claude: postAntwortHtml(p) }));
+  eingang.forEach((p) => aus.push({ key: "p|" + p.datum + "|" + (p.bezug || ""), zeit: p.datum, neu: (p.datum || "") > g, du: p.bezug ? p.bezug + (p.id && wunschZiel(p.id) ? ` – zu „${wunschZiel(p.id).it}“` : "") : "", claude: postAntwortHtml(p) }));
   // Rückmeldungen zu Frage & Antwort
   alleRueckmeldungen().forEach((r) => {
     const f = (ALLE_FRAGEN.find((q) => q.key === r.key) || {}).f || "";
@@ -3270,7 +3272,7 @@ function postEintraege() {
   (S.wuensche || []).forEach((w) => {
     if (w.typ === "antwort") return;
     if (w.typ === "gespraech") { if (!alleRueckmeldungen().some((r) => r.key === w.id && musterNorm(r.antwort) === musterNorm(w.antwort))) offeneAntworten++; return; }
-    if (w.nachricht && beantwortet.has(w.nachricht.trim())) return; // Antwort steht schon oben
+    if (w.nachricht && (beantwortet.has((w.typ === "nachricht" ? "" : w.id) + "|" + w.nachricht.trim()) || beantwortet.has("|" + w.nachricht.trim()))) return; // Antwort steht schon oben
     const z = w.typ === "nachricht" ? null : wunschZiel(w.id);
     const du = w.typ === "nachricht" ? w.nachricht : `${w.nachricht ? w.nachricht : "Erklärung gewünscht"} – zu „${z ? z.it : w.it || w.id}“`;
     const h = !w.typ && !w.nachricht && hinweisZu(w.id);

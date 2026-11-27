@@ -13,6 +13,8 @@ window.ABGELEHNTE_ANTWORTEN = {
 window.KARTEN_ALTERNATIVEN = {
   "lk_l1:Cos'è?": ["Cos'è questo?", "Che cos'è questo?", "Che cos'è?"],
   "lk_l1:Loro sono amici.": ["Sono amici."],
+  "lk_l1:Come va?": ["Come stai?"],
+  "lk_l1:un po'": ["un poco"],
   "lk_l1:Che cosa vuol dire?": ["Che cosa vuole dire?", "Cosa vuol dire?", "Cosa vuole dire?", "Che vuol dire?", "Cosa significa?", "Che significa?"],
   "p_verstaendigung:Che cosa significa?": ["Cosa significa?", "Che significa?", "Cosa vuol dire?", "Cosa vuole dire?", "Che cosa vuole dire?", "Che vuol dire?"]
 };
@@ -213,10 +215,13 @@ window.HINWEISE = {
   // Lektions-Sätze
   "lk_l1:Cos'è?": "Kurz für „Che cosa è?“ = Was ist das? Auch richtig: Cos'è questo? (Was ist das hier?) – questo zeigt auf etwas in der Nähe.",
   "lk_l1:Anch'io sono tedesco.": "anche + io = anch'io (ich auch). Das „auch“ steht vor dem Wort, auf das es sich bezieht. Eine Frau sagt: Anch'io sono tedesca.",
-  "lk_l1:Come va?": "Wörtlich: Wie geht's? – locker, für du und Sie. Antworten: Bene! · Tutto bene. · Così così. Förmlicher: Come sta?",
+  "lk_l1:Come va?": "Wörtlich: Wie geht's? – locker, passt für du und Sie, weil keine Person drinsteckt (va = es geht). Come stai? = Wie geht es DIR? (du) – auch richtig. Come sta? = Wie geht es Ihnen? (Sie). Antworten: Bene! · Tutto bene. · Così così.",
+  "lk_l1:un po'": "un po' ist die Kurzform von un poco (ein bisschen) – beides ist richtig. Im Gespräch sagt man fast immer un po': un po' di pane, parlo un po' d'italiano. un poco hört man eher allein oder mit Betonung: Solo un poco!",
+  "lk_l1:Buon fine settimana!": "il fine settimana ist männlich (fine = Ende ist hier männlich), deshalb buon. buono wird vor männlichen Wörtern zu buon: buon giorno, buon viaggio, buon appetito. Bei weiblichen Wörtern heißt es buona: buona sera, buona giornata, buona notte.",
+  "lk_l1:Sto mangiando.": "stare + -ando/-endo = gerade etwas tun (wie engl. „I am eating“). sto, stai, sta, stiamo, state, stanno + Verbform: -are → -ando (mangiando, parlando), -ere/-ire → -endo (leggendo, dormendo). Che cosa stai facendo? = Was machst du gerade?",
   "lk_l1:È la prima volta in Italia.": "È = es ist (das „es“ fällt im Italienischen weg). la prima volta = das erste Mal; volta = Mal, nicht Zeit (Zeit = tempo).",
   "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole (vuole dire geht auch). Bedeutet genau dasselbe wie Che cosa significa? – beide Antworten zählen als richtig.",
-  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più = mehr: più lentamente heißt wörtlich „mehr langsam“ = langsamer. So bildet man im Italienischen fast jeden Vergleich: più grande (größer), più caro (teurer), più piccolo (kleiner). Mit non … più heißt es „nicht mehr“: Non ho più tempo. Mit du: Puoi parlare più lentamente?",
+  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più = mehr: più lentamente heißt wörtlich „mehr langsam“ = langsamer. So bildet man im Italienischen fast jeden Vergleich: più grande (größer), più caro (teurer), più piccolo (kleiner). Mit non … più heißt es „nicht mehr“: Non ho più tempo. Mit du: Puoi parlare più lentamente? Etwas langsamer = un po' più lentamente (oder un po' più piano).",
   "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",
   "lk_l1:Prego, si accomodi.": "Bitte setzen Sie sich / kommen Sie herein (accomodarsi). Sie-Aufforderung: -are-Verben enden hier auf -i – si accomodi, nicht si accomoda (= er/sie nimmt Platz). Zu „du“: Accomodati!",

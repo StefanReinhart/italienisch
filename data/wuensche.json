@@ -24,5 +24,12 @@
   "de": "Wie heißen Sie?",
   "nachricht": "Geht auch nur come si chiama? Ab jetzt deine Antwort als Erklärungen immer gleich in die  Karte eintragen",
   "zeit": "2026-11-28"
+ },
+ {
+  "id": "lk_l1:Può parlare più lentamente?",
+  "it": "Può parlare più lentamente?",
+  "de": "Können Sie langsamer sprechen?",
+  "nachricht": "Warum nicht... piano statt lentamente?",
+  "zeit": "2026-11-28"
  }
 ]

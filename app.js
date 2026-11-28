@@ -996,6 +996,7 @@ function karteZeigen() {
       ${sitzung.aufgedeckt
         ? `<div class="trenner"></div>
            ${ein && ein.eingabe ? `<div class="leise">Deine Antwort: <b>${esc(ein.eingabe)}</b></div>` : ""}
+           ${ein && String(ein.eingabe || "").startsWith("🎤") && SR ? `<button class="btn zweit rm-karte" id="kNochmal">🔁 Nochmal sprechen</button>` : ""}
            ${ein ? `<div class="meldung ${ein.stufe === "falsch" ? "schlecht" : ein.stufe === "richtig" || ein.stufe === "akzent" ? "gut" : "info"}" style="margin:4px 0">${esc(ein.text)}</div>` : ""}
            <div class="loesung">${esc(hinten)}</div>${itDe ? "" : lautBtn(k.it)}${hinweisHtml(k)}`
         : tippen
@@ -1027,6 +1028,9 @@ function karteZeigen() {
   if (sitzung.aufgedeckt && !itDe && S.einstellungen.automatischVorlesen) sprich(k.it);
   const auf = document.getElementById("aufdecken");
   if (auf) auf.onclick = () => { sitzung.aufgedeckt = true; karteZeigen(); };
+  // Gesprochene Antwort: nochmal sprechen – Karte wieder zudecken und gleich zuhören
+  const kn = document.getElementById("kNochmal");
+  if (kn) kn.onclick = () => { sitzung.aufgedeckt = false; sitzung.eingabe = null; karteZeigen(); const m = document.getElementById("ksprechen"); if (m) m.click(); };
   const feld = document.getElementById("antwort");
   if (feld) {
     const pruefen = () => {
@@ -1282,6 +1286,23 @@ function quizZeigen() {
     const qs = document.getElementById("qSicher");
     if (qs) qs.onclick = () => { a.sicher(); a._erg.sicher = true; speichern(); toast("🏆 Gemerkt – kommt erst in ein paar Monaten wieder."); quiz.pos++; quizZeigen(); };
     const qw = document.getElementById("qWeiter"); if (qw) { qw.disabled = false; qw.textContent = "Weiter ›"; }
+    // Mit dem Mikrofon geantwortet: nochmal sprechen zum Üben (zählt nicht noch einmal)
+    if (a._gesprochen || (a._erg && a._erg.gesprochen)) {
+      if (a._erg) a._erg.gesprochen = true;
+      const r = document.getElementById("rueck"), b = document.createElement("button");
+      b.className = "btn zweit voll"; b.id = "qNochmal"; b.textContent = "🔁 Nochmal sprechen"; b.style.marginTop = "8px";
+      const st = document.createElement("div"); st.className = "leise"; st.style.textAlign = "center";
+      r.appendChild(b); r.appendChild(st);
+      b.onclick = () => zuhoeren({
+        start: () => { b.classList.add("hoert"); st.textContent = "Ich höre zu …"; },
+        ergebnis: (alt) => {
+          const z = zielFormen(a.richtig).map((x) => ohneAkzente(saeubern(x)));
+          const gut = alt.some((t) => { const e = ohneAkzente(saeubern(t)); return z.some((y) => e === y || (" " + e + " ").includes(" " + y + " ")); });
+          st.innerHTML = `${gut ? "✅ Richtig" : "❌ Noch nicht"} – verstanden: „${esc(alt[0])}“`; if (a.sprechen) sprich(a.sprechen);
+        },
+        fehler: (t) => { st.textContent = t; }, ende: () => b.classList.remove("hoert")
+      });
+    }
   };
   const feldWert = () => { const f = document.getElementById("qtipp"); return f ? f.value : null; };
   // Schon beantwortete Aufgabe (über „Zurück“): Ergebnis wieder anzeigen, nichts neu werten
@@ -1329,6 +1350,7 @@ function quizZeigen() {
           // oft erkennt das Handy ganze Sätze – dann das passende Wort darin suchen
           const genau = alt.find((t) => ohneAkzente(saeubern(t)) === z);
           const imSatz = alt.find((t) => (" " + ohneAkzente(saeubern(t)) + " ").includes(" " + z + " "));
+          a._gesprochen = true;
           feld.value = genau || (imSatz ? a.richtig : alt[0]);
           status.textContent = "Verstanden: „" + alt[0] + "“"; pruefen();
         },
@@ -2073,7 +2095,7 @@ const LEKTION_LISTE = LEKTIONEN.map((l, i) => ({ ...l, nr: i + 1 }));
 const LEKTION_NACH_ID = Object.fromEntries(LEKTION_LISTE.map((l) => [l.id, l]));
 const LEKTION_SCHRITTE = [
   { id: "erkl", sym: "📖", name: "Kurz erklärt", text: "Worum es geht, die Grammatik in einfachen Worten" },
-  { id: "woerter", sym: "🗂️", name: "Karten: neu + wiederholen", text: "Neue Karten der Lektion kennenlernen und fällige wiederholen" },
+  { id: "woerter", sym: "🗂️", name: "Karten", text: "Neue Karten der Lektion kennenlernen und fällige wiederholen" },
   { id: "grammatik", sym: "📘", name: "Grammatik", text: "Übungen zum Grammatik-Schwerpunkt" },
   { id: "dialog", sym: "🎧", name: "Hör-Dialog", text: "Ein kurzes Gespräch zum Thema" },
   { id: "sprechen", sym: "🗣️", name: "Sprechen", text: "Sätze der Lektion sagen, dann Fragen beantworten" }
@@ -2229,7 +2251,7 @@ function lektionenMenue() {
   zeige(`
     <div class="meldung info">🎓 <b>Niveau A1</b> – Diese 12 Lektionen decken den Stoff von A1 ab, der ersten Stufe des europäischen Sprachrahmens. Wenn du sie kannst, kannst du dich vorstellen, einkaufen, bestellen, nach dem Weg fragen, über Familie, Alltag und Freizeit sprechen und einfache Gespräche verstehen.</div>
     <p>Jede Lektion hat Erklärung, Wörter, Grammatik, Hör-Dialog und Sprechen – dazu „Gemischt üben“ zum Wiederholen. Alle sind offen: Du kannst jederzeit springen.</p>
-    <p class="leise">„Heute üben“ arbeitet bis zu ${MAX_PARALLEL} Lektionen gleichzeitig ab: Die nächste beginnt, sobald bei der vorigen alle Schritte außer „Karten: neu + wiederholen“ erledigt sind – deren restliche Wörter kommen nebenher dran.</p>
+    <p class="leise">„Heute üben“ arbeitet bis zu ${MAX_PARALLEL} Lektionen gleichzeitig ab: Die nächste beginnt, sobald bei der vorigen alle Schritte außer „Karten“ erledigt sind – deren restliche Wörter kommen nebenher dran.</p>
     <p class="leise">„% sitzen fest“ zeigt, was du wirklich kannst: Karten, die erst in einem halben Jahr wiederkommen, und Grammatik-Aufgaben und Fragen, die du sechsmal hintereinander richtig hattest (Karten zählen am meisten). Im Balken: <b style="color:var(--gruen)">dunkelgrün</b> = sitzt fest, <b style="color:var(--gruen);opacity:.5">hellgrün</b> = im Lernen (schon mal gewusst).</p>
     <div class="fortschritt"><span>Alle 12: ${gs.prozent} % sitzen fest · ${durch} / ${LEKTION_LISTE.length} durchgearbeitet</span>${festBalken(gs)}</div>
     <div class="liste">${LEKTION_LISTE.map((L) => {
@@ -2258,8 +2280,15 @@ function lektionZeigen(id) {
     ${offen.length ? `<button class="btn voll" id="lWeiter" style="min-height:64px;font-size:20px;margin-bottom:12px">▶ ${st.schritte.length ? "Weiter" : "Los geht's"}: ${offen[0].sym} ${offen[0].name}</button>` : ""}
     <div class="liste">${LEKTION_SCHRITTE.map((s, i) => {
       const erledigt = schrittErledigt(L, s.id);
-      const extra = s.id === "woerter" ? `<br><b>${w.neu} neu</b> · <b>${w.faellig} zum Wiederholen</b> · ${w.kennen} von ${w.gesamt} kennengelernt${w.kennen < w.gesamt && !st.woerterVonHand ? " – fertig, wenn alle dran waren" : ""}` : "";
-      const text = s.text + extra;
+      // Karten der Lektion: zwei Kacheln – Wiederholen und Neue kennenlernen
+      if (s.id === "woerter") return `<div class="zeile${erledigt ? " aktiv" : ""} lk-karten"><span class="sym">${s.sym}</span>
+        <span class="mitte">${i + 1}. ${s.name}<small>${w.kennen} von ${w.gesamt} kennengelernt${w.kennen < w.gesamt && !st.woerterVonHand ? " – fertig, wenn alle dran waren" : ""}</small>
+          <span class="kachelpaar">
+            <button class="kachel-klein" data-lschritt="woerter-wdh" ${w.faellig ? "" : "disabled"}>🔁 Wiederholen<small>${w.faellig ? w.faellig + " fällig" : "nichts fällig"}</small></button>
+            <button class="kachel-klein haupt" data-lschritt="woerter-neu" ${w.neu ? "" : "disabled"}>✨ Neue kennenlernen<small>${w.neu ? Math.min(NEUE_PRO_RUNDE, w.neu) + " Karten · " + w.neu + " offen" : "alle kennengelernt"}</small></button>
+          </span></span>
+        <span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></div>`;
+      const text = s.text;
       return `<button class="zeile${erledigt ? " aktiv" : ""}" data-lschritt="${s.id}"><span class="sym">${s.sym}</span>
         <span class="mitte">${i + 1}. ${s.name}<small>${text}</small></span><span class="haken haken-gross" data-lhaken="${s.id}" role="checkbox" aria-checked="${erledigt}" title="Abhaken">${erledigt ? "✓" : ""}</span></button>`;
     }).join("")}</div>
@@ -2270,7 +2299,7 @@ function lektionZeigen(id) {
       ${L.nr < LEKTION_LISTE.length ? `<button class="btn zweit" data-gehe="lektion/${LEKTION_LISTE[L.nr].id}">Lektion ${L.nr + 1} ›</button>` : ""}
     </div>`);
   const weiter = document.getElementById("lWeiter");
-  if (weiter) weiter.onclick = () => lektionStarten(L, offen[0].id);
+  if (weiter) weiter.onclick = () => lektionStarten(L, offen[0].id === "woerter" ? "woerter-neu" : offen[0].id);
   $app.querySelectorAll("[data-lschritt]").forEach((b) => (b.onclick = () => lektionStarten(L, b.dataset.lschritt)));
   // Kästchen antippen = von Hand abhaken oder Haken wegnehmen (die Zeile selbst startet den Schritt)
   $app.querySelectorAll("[data-lhaken]").forEach((h) => (h.onclick = (ev) => {
@@ -2305,6 +2334,9 @@ function lektionErklaerung(id) {
   };
 }
 function lektionStarten(L, schritt) {
+  // „Karten“ der Lektion gibt es in zwei Varianten: nur neue kennenlernen („woerter-neu“) oder nur wiederholen („woerter-wdh“)
+  let kartenModus = null;
+  if (schritt === "woerter-neu" || schritt === "woerter-wdh") { kartenModus = schritt.slice(8); schritt = "woerter"; }
   lektionAktiv = { lid: L.id, schritt };
   letzteLektion = L.id;
   const zurueck = heuteAktiv ? "heute" : "lektion/" + L.id;
@@ -2313,8 +2345,13 @@ function lektionStarten(L, schritt) {
     const plan = rundePlanen(lektionKarten(L), S.einstellungen.richtung);
     // Neue Karten nur bis zur Tagesgrenze („Neue Karten pro Tag“) – sonst wächst der Berg an Wiederholungen zu schnell
     const frei0 = neueHeuteUebrig();
-    const neue = plan.neue.slice(0, Math.min(12, frei0)), fa = plan.faellige.slice(0, 20 - neue.length), liste = [];
-    if (plan.neue.length && !frei0) toast(`Für heute sind die neuen Karten aufgebraucht (${S.einstellungen.neueProTag} pro Tag – änderbar in den Einstellungen). Jetzt nur Wiederholung; morgen geht es weiter.`, 6000);
+    // nur neue (10) · nur Wiederholung (bis 20) · ohne Angabe gemischt wie früher
+    const neue = kartenModus === "wdh" ? [] : plan.neue.slice(0, Math.min(kartenModus === "neu" ? NEUE_PRO_RUNDE : 12, frei0));
+    const fa = kartenModus === "neu" ? [] : plan.faellige.slice(0, 20 - neue.length), liste = [];
+    if (kartenModus === "wdh" && !fa.length) { lektionAktiv = null; return toast("In dieser Lektion ist gerade nichts zum Wiederholen fällig. 🎉", 3500); }
+    if (kartenModus === "neu" && !plan.neue.length) { lektionAktiv = null; return toast("Alle Karten dieser Lektion sind schon kennengelernt. 🎉", 3500); }
+    if (kartenModus !== "wdh" && plan.neue.length && !frei0) toast(`Für heute sind die neuen Karten aufgebraucht (${S.einstellungen.neueProTag} pro Tag – änderbar in den Einstellungen). Jetzt nur Wiederholung; morgen geht es weiter.`, 6000);
+    if (kartenModus === "neu" && !neue.length) { lektionAktiv = null; return; } // Tagesgrenze erreicht (Hinweis kam oben)
     let d = 0, n = 0;
     while (d < fa.length || n < neue.length) { if (n < neue.length && (d >= fa.length || liste.length % 3 === 2)) liste.push(neue[n++]); else liste.push(fa[d++]); }
     let frei = false;
@@ -2391,6 +2428,7 @@ const begonneneLektionen = () => LEKTION_LISTE.filter((L) => { const st = lStand
 const HEUTE_GEMISCHT = 10;
 const HEUTE_FRAGEN = 5;
 const HEUTE_TYPFEHLER = 8;
+const NEUE_PRO_RUNDE = 10; // „Neue Karten kennenlernen“ in einer Lektion
 const HEUTE_NUESSE = 10;
 function heuteGemischtAufgaben() {
   const lek = begonneneLektionen(); if (!lek.length) return [];
@@ -2437,7 +2475,7 @@ function heuteSchritte() {
   const lZeile = (id, x) => {
     if (!x) return { id, sym: "📚", name: "Lektion", text: alleDurch ? "alle Lektionen durchgearbeitet" : "nichts mehr offen", leer: true };
     const w = x.s.id === "woerter" ? lektionWoerterStand(x.L) : null;
-    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? `${w.neu ? w.neu + " neue kennenlernen" : "alle kennengelernt"}${w.faellig ? ", " + w.faellig + " wiederholen" : ""} (${w.kennen} von ${w.gesamt})` : x.s.text };
+    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.id === "woerter" ? "Neue Karten kennenlernen" : x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? (w.neu ? `${Math.min(NEUE_PRO_RUNDE, w.neu)} neue Karten (${w.kennen} von ${w.gesamt} kennengelernt)` : "alle kennengelernt") : x.s.text };
   };
   return [
     { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
@@ -2524,7 +2562,7 @@ function heuteStarten(id) {
     const x = heuteLektionsSchritte()[id === "lektionA" ? 0 : 1];
     if (!x) { heuteAktiv = null; return heuteMenue(); }
     heuteStand()[id + "Merk"] = { lid: x.L.id, sid: x.s.id }; // merken, welche Lektion/welcher Schritt heute dran war
-    return lektionStarten(x.L, x.s.id);
+    return lektionStarten(x.L, x.s.id === "woerter" ? "woerter-neu" : x.s.id); // Wiederholungen laufen über „Karteikarten“
   }
   if (id === "karten") {
     const { liste, neue } = heuteKartenRunde();

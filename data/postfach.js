@@ -23,5 +23,16 @@ window.POSTFACH = [
     karten: [{ it: "Che cosa stai facendo?", de: "Was machst du gerade?" }, { it: "Sto leggendo un libro.", de: "Ich lese gerade ein Buch." }], gruppe: "p_alltag", lektion: "l1" },
   { datum: "2026-11-27 18:00", id: "lk_l1:Può parlare più lentamente?", bezug: "Wie sagt man ... etwas langsamer sprechen? Karte erzeugen",
     text: "„Etwas langsamer“ = un po' più lentamente (oder kürzer: un po' più piano). Die Karten habe ich angelegt – mit ➕ kommen sie gleich beim Üben dran.",
-    karten: [{ it: "Può parlare un po' più lentamente?", de: "Können Sie etwas langsamer sprechen?" }, { it: "Puoi parlare un po' più piano?", de: "Kannst du etwas langsamer sprechen?" }], gruppe: "p_verstaendigung", lektion: "l1" }
+    karten: [{ it: "Può parlare un po' più lentamente?", de: "Können Sie etwas langsamer sprechen?" }, { it: "Puoi parlare un po' più piano?", de: "Kannst du etwas langsamer sprechen?" }], gruppe: "p_verstaendigung", lektion: "l1" },
+  { datum: "2026-11-28 10:00", bezug: "Erklärung hinzufügen falls noch nicht geschehen:\nun po' ist einfach die Kurzform von un poco – beides ist richtig und zählt jetzt auch. Im Gespräch sagt man fast immer un po' (un po' di pane, parlo un po' d'italiano). un poco hört man eher allein oder betont: „Solo un poco!“\nParlo un po' di italiano.",
+    text: "Erledigt: Die Erklärung steht jetzt als 💡 bei der Karte „Parlo un po' di italiano.“ (und schon bei „un po'“). Ab jetzt schreibe ich meine Antworten auf Fragen zu einer Karte immer auch gleich als Erklärung in diese Karte." },
+  { datum: "2026-11-28 10:00", id: "lk_l1:Puoi parlare un po' più piano?", bezug: "Karte zu langsamer, beide Möglichkeiten lentamente und piano",
+    text: "Jetzt zählt bei diesen Karten immer beides: lentamente oder piano. piano heißt langsam UND leise und ist im Gespräch sogar häufiger. Die Erklärung steht bei den Karten, hier sind alle vier Varianten:",
+    karten: [{ it: "Può parlare più piano?", de: "Können Sie langsamer sprechen?" }, { it: "Puoi parlare un po' più lentamente?", de: "Kannst du etwas langsamer sprechen?" }], gruppe: "p_verstaendigung", lektion: "l1" },
+  { datum: "2026-11-28 10:00", bezug: "Karten neu und wiederholen: ich dachte eher zwei Kacheln, eine für Wiederholung eine für neue Karten kennenlernen. Dann 10 neue Karten",
+    text: "Ist umgesetzt: In jeder Lektion gibt es beim Schritt „Karten“ jetzt zwei Kacheln – 🔁 Wiederholen (alles Fällige der Lektion) und ✨ Neue kennenlernen (10 neue Karten). In „Heute üben“ steht bei den Lektionen nur noch „Neue Karten kennenlernen“, weil die Wiederholungen dort schon im Schritt „Karteikarten“ drin sind." },
+  { datum: "2026-11-28 10:00", id: "lk_l1:Come si chiama Lei?", bezug: "Geht auch nur come si chiama? Ab jetzt deine Antwort als Erklärungen immer gleich in die  Karte eintragen",
+    text: "Ja, Come si chiama? geht genauso und ist sogar üblicher – zählt jetzt als richtig. Lei sagt man nur zur Betonung oder damit klar ist, dass „Sie“ gemeint ist (Come si chiama? kann auch „Wie heißt er/sie?“ heißen). Und: Ab jetzt steht meine Antwort immer auch als 💡 direkt bei der Karte." },
+  { datum: "2026-11-28 10:00", id: "lk_l1:Può parlare più lentamente?", bezug: "Warum nicht... piano statt lentamente?",
+    text: "piano geht auch – Può parlare più piano? zählt jetzt als richtig. piano heißt langsam (und leise) und ist im Gespräch sogar häufiger; lentamente ist etwas genauer/förmlicher. Beides steht jetzt in der Erklärung der Karte." }
 ];

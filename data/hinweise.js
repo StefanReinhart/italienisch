@@ -15,6 +15,10 @@ window.KARTEN_ALTERNATIVEN = {
   "lk_l1:Loro sono amici.": ["Sono amici."],
   "lk_l1:Come va?": ["Come stai?"],
   "lk_l1:un po'": ["un poco"],
+  "lk_l1:Come si chiama Lei?": ["Come si chiama?"],
+  "lk_l1:Può parlare più lentamente?": ["Può parlare più piano?"],
+  "lk_l1:Può parlare un po' più lentamente?": ["Può parlare un po' più piano?"],
+  "lk_l1:Puoi parlare un po' più piano?": ["Puoi parlare un po' più lentamente?"],
   "lk_l1:Che cosa vuol dire?": ["Che cosa vuole dire?", "Cosa vuol dire?", "Cosa vuole dire?", "Che vuol dire?", "Cosa significa?", "Che significa?"],
   "p_verstaendigung:Che cosa significa?": ["Cosa significa?", "Che significa?", "Cosa vuol dire?", "Cosa vuole dire?", "Che cosa vuole dire?", "Che vuol dire?"]
 };
@@ -188,7 +192,7 @@ window.HINWEISE = {
   "p_einkaufen:Quanto costano?": "Bei mehreren Dingen costano, bei einem costa.",
   "p_einkaufen:Nient'altro, grazie.": "niente + altro = nient'altro (nichts anderes). Antwort auf „Altro?“ (Sonst noch etwas?) beim Einkaufen oder in der Bar.",
   "p_restaurant:Che cosa ci consiglia?": "ci = uns, consiglia = empfehlen Sie (von consigliare). Für dich allein: Che cosa mi consiglia? (mi = mir).",
-  "p_verstaendigung:Parlo un po' di italiano.": "un po' = un poco (ein wenig) – der Apostroph zeigt, dass etwas weggefallen ist. un po' di + Hauptwort: un po' di pane, un po' di tempo.",
+  "p_verstaendigung:Parlo un po' di italiano.": "un po' ist die Kurzform von un poco (ein bisschen) – beides ist richtig. Im Gespräch sagt man fast immer un po' (un po' di pane, un po' di tempo). un poco hört man eher allein oder betont: Solo un poco!",
   "p_restaurant:Dov'è il bagno?": "Dov'è = dove + è (wo + ist). Vor è fällt das e von dove weg, dafür steht der Apostroph. Mehrzahl: Dove sono i bagni?",
   "p_verstaendigung:Può ripetere, per favore?": "Può = Sie können (von potere, höflich), danach die Grundform: ripetere = wiederholen. Wörtlich: Können Sie wiederholen, bitte? Mit du: Puoi ripetere?",
   // Aufforderungen du / Sie
@@ -237,7 +241,10 @@ window.HINWEISE = {
   "lk_l1:Mi piace leggere e viaggiare.": "mi piace + Grundform = ich mache gern …: Mi piace cucinare (ich koche gern). Bei mehreren Sachen (Hauptwörter): Mi piacciono i film.",
   "lk_l1:È la prima volta in Italia.": "È = es ist (das „es“ fällt im Italienischen weg). la prima volta = das erste Mal; volta = Mal, nicht Zeit (Zeit = tempo).",
   "lk_l1:Che cosa vuol dire?": "Wörtlich: „Was will (es) sagen?“ – volere dire = bedeuten (sagen wollen); vuol ist die Kurzform von vuole (vuole dire geht auch). Bedeutet genau dasselbe wie Che cosa significa? – beide Antworten zählen als richtig.",
-  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più = mehr: più lentamente heißt wörtlich „mehr langsam“ = langsamer. So bildet man im Italienischen fast jeden Vergleich: più grande (größer), più caro (teurer), più piccolo (kleiner). Mit non … più heißt es „nicht mehr“: Non ho più tempo. Mit du: Puoi parlare più lentamente? Etwas langsamer = un po' più lentamente (oder un po' più piano).",
+  "lk_l1:Può parlare più lentamente?": "Può = können Sie (von potere) + Grundform parlare. più = mehr: più lentamente heißt wörtlich „mehr langsam“ = langsamer. So bildet man im Italienischen fast jeden Vergleich: più grande (größer), più caro (teurer), più piccolo (kleiner). Mit non … più heißt es „nicht mehr“: Non ho più tempo. Mit du: Puoi parlare più lentamente? Etwas langsamer = un po' più lentamente. Statt lentamente geht auch piano (Può parlare più piano?) – piano heißt langsam UND leise und ist im Gespräch sogar häufiger.",
+  "lk_l1:Come si chiama Lei?": "Lei (Sie) darf man weglassen: Come si chiama? ist genauso richtig und üblicher. Lei sagt man nur zur Betonung oder damit klar ist, dass „Sie“ gemeint ist – denn Come si chiama? kann auch „Wie heißt er/sie?“ bedeuten.",
+  "lk_l1:Puoi parlare un po' più piano?": "piano = langsam (auch: leise) – im Gespräch häufiger als lentamente. Beides ist richtig: Puoi parlare un po' più lentamente? Mit Sie: Può parlare un po' più piano?",
+  "lk_l1:Può parlare un po' più lentamente?": "un po' più = etwas mehr → un po' più lentamente = etwas langsamer. Statt lentamente geht auch piano: Può parlare un po' più piano?",
   "lk_l1:Che fai stasera?": "Auch richtig: Cosa fai stasera? / Che cosa fai stasera? – „che“ allein ist am umgangssprachlichsten.",
   "lk_l1:salve": "Neutral-höflich: passt zu Bekannten und Fremden, tagsüber und abends.",
   "lk_l1:Prego, si accomodi.": "Bitte setzen Sie sich / kommen Sie herein (accomodarsi). Sie-Aufforderung: -are-Verben enden hier auf -i – si accomodi, nicht si accomoda (= er/sie nimmt Platz). Zu „du“: Accomodati!",

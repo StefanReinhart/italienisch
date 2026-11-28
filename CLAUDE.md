@@ -33,6 +33,9 @@ Der Nutzer ist kein Programmierer: einfach erklären, auf Deutsch, ohne Fachbegr
      mit passender `gruppe` (p_restaurant, p_reisen, p_einkaufen, p_weg, p_alltag, p_begruessung …) und `lektion`
      – der Nutzer übernimmt sie per ➕ und sie kommen sofort dran. Alle Antworten stehen lassen (Verlauf).
      Bei reinen Erklärungs-Wünschen ohne Text reicht der Hinweis in hinweise.js (die App zeigt ihn im Postfach an).
+     **Wunsch des Nutzers:** Jede Antwort auf eine Frage zu einer Karte steht IMMER zusätzlich als Hinweis (💡) in
+     dieser Karte (hinweise.js) – nicht nur im Postfach. Gilt eine genannte Variante als richtig, auch in
+     KARTEN_ALTERNATIVEN eintragen.
 4. Einträge mit `"typ": "antwort"` sind Antworten aus „Frage & Antwort“, die der Nutzer selbst als richtig
    markiert hat (`id` = Kennung der Frage, z. B. `dialog:Che cosa prendi?`, `frage`, `antwort`). Prüfen:
    - **Richtig:** in `data/gespraech.js` bei dieser Frage ein passendes, möglichst allgemeines Antwortmuster

@@ -17,5 +17,12 @@
   "id": "allgemein",
   "nachricht": "Karten neu und wiederholen: ich dachte eher zwei Kacheln, eine für Wiederholung eine für neue Karten kennenlernen. Dann 10 neue Karten",
   "zeit": "2026-11-27 22:57"
+ },
+ {
+  "id": "lk_l1:Come si chiama Lei?",
+  "it": "Come si chiama Lei?",
+  "de": "Wie heißen Sie?",
+  "nachricht": "Geht auch nur come si chiama? Ab jetzt deine Antwort als Erklärungen immer gleich in die  Karte eintragen",
+  "zeit": "2026-11-28"
  }
 ]

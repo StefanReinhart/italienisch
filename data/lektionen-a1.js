@@ -11,6 +11,8 @@ l1: {
     "p_begruessung:Quanti anni hai?", "lk_l2:Quanti anni ha?", "lk_l4:Sei sposato?", "lk_l4:Hai figli?", "lk_l4:Hai fratelli o sorelle?",
     "lk_l4:Sono sposato e ho due figli.", "lk_l2:Ho due figli, un maschio e una femmina.", "lk_l8:Sono in pensione."],
   neu: `
+Parla più piano, il bambino dorme. | Sprich leiser, das Kind schläft.
+Puoi parlare a voce più bassa? | Kannst du leiser sprechen?
 Chi è? | Wer ist das?
 Chi è lui? | Wer ist er?
 Chi è lei? | Wer ist sie?

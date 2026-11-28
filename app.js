@@ -282,18 +282,24 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let erkennung = null;
 function zuhoeren({ start, ergebnis, fehler, ende, sprache }) {
   if (!SR) { fehler("Dieses Gerät oder dieser Browser unterstützt keine Spracherkennung. Bitte Chrome verwenden."); return; }
-  if (erkennung) { try { erkennung.abort(); } catch (e) {} }
+  if (erkennung) { const alt = erkennung; erkennung = null; try { alt.abort(); } catch (e) {} }
+  // Geduld: Das Handy hört nach ein paar Sekunden Stille von selbst auf. Hat man noch gar nicht angefangen zu
+  // sprechen, startet die App das Zuhören still neu – insgesamt bis zu WARTE_SEKUNDEN lang.
+  const beginn = Date.now();
+  let gestartet = false;
+  const versuch = () => {
   const r = new SR();
   erkennung = r;
   r.lang = sprache || "it-IT"; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
   let bekommen = false;
-  r.onstart = start;
+  r.onstart = () => { if (!gestartet) { gestartet = true; start && start(); } };
   r.onresult = (e) => {
     bekommen = true;
     const alt = []; for (let i = 0; i < e.results[0].length; i++) alt.push(e.results[0][i].transcript);
     ergebnis(alt);
   };
   r.onerror = (e) => {
+    if (e.error === "no-speech" && Date.now() - beginn < WARTE_SEKUNDEN * 1000 && erkennung === r) return; // noch nichts gesagt → gleich weiter zuhören
     bekommen = true;
     const texte = {
       "not-allowed": "Das Mikrofon ist nicht erlaubt. Bitte in Chrome beim Schloss-Symbol bzw. in den App-Einstellungen das Mikrofon erlauben.",
@@ -306,9 +312,16 @@ function zuhoeren({ start, ergebnis, fehler, ende, sprache }) {
     };
     fehler(texte[e.error] || "Fehler bei der Spracherkennung: " + e.error);
   };
-  r.onend = () => { erkennung = null; if (!bekommen) fehler("Ich habe nichts verstanden. Bitte noch einmal versuchen."); ende && ende(); };
+  r.onend = () => {
+    if (erkennung !== r) return; // inzwischen abgebrochen (z. B. neue Karte)
+    if (!bekommen && Date.now() - beginn < WARTE_SEKUNDEN * 1000) { try { return versuch(); } catch (e) {} }
+    erkennung = null; if (!bekommen) fehler("Ich habe nichts verstanden. Bitte noch einmal tippen und sprechen."); ende && ende();
+  };
   try { r.start(); } catch (e) { fehler("Spracherkennung konnte nicht starten."); }
+  };
+  versuch();
 }
+const WARTE_SEKUNDEN = 15; // so lange wartet das Mikrofon, bis man anfängt zu sprechen
 
 // ---------- Vergleich: Gesagtes ↔ Zielsatz ----------
 // Ziffern → italienisches Zahlwort (die Spracherkennung schreibt Zahlen oft als Ziffern, z. B. "54")
@@ -3869,7 +3882,7 @@ function einstellungen() {
 function route() {
   if (TTS) speechSynthesis.cancel();
   dialogAnsicht.laeuft = false;
-  if (erkennung) { try { erkennung.abort(); } catch (e) {} }
+  if (erkennung) { const alt = erkennung; erkennung = null; try { alt.abort(); } catch (e) {} }
   const h = location.hash.replace(/^#/, "") || "start";
   const [teil, arg] = h.split("/");
   const seiten = {

@@ -984,6 +984,7 @@ function karteZeigen() {
   if (!sitzung) return abgelaufen("karten");
   setzeKopf("Karteikarten", sitzung.zurueck || "karten");
   if (sitzung.pos >= sitzung.liste.length) {
+    if (sitzung.danach) { const d = sitzung.danach; sitzung = null; return d(); } // z. B. nach den Fehler-Karten die typischen Fehler
     zeige(`<div class="karte"><div class="wort">🎉 Geschafft!</div><p>Du hast ${sitzung.gesamt} Karten geübt.</p></div>
       ${schrittFertig() ? heuteWeiterKnopf() : `<div class="reihe"><button class="btn" data-zurueck="${sitzung.zurueck || "karten"}">Zurück</button><button class="btn zweit" data-heim="1">Startseite</button></div>`}`);
     sitzung = null; return;
@@ -994,7 +995,10 @@ function karteZeigen() {
   const vorne = itDe ? k.it : k.de, hinten = itDe ? k.de : k.it;
   const key = schluessel(k.id, r);
   const neu = sitzung.neuKeys.has(key) && istNeu(k.id, r);
-  const tippen = !itDe && S.einstellungen.eintippen && !sitzung.frei;
+  // Antwortart (bei „Wiederholen“ wählbar): schreiben = nur tippen · sprechen = nur Mikrofon · beides
+  const art = sitzung.antwortArt;
+  const tippen = !itDe && !sitzung.frei && !sitzung.entdecken && (art ? art !== "sprechen" : S.einstellungen.eintippen);
+  const mikro = SR && !sitzung.entdecken && art !== "schreiben";
   const ein = sitzung.eingabe;
   const vorschlag = ein ? VORSCHLAG[ein.stufe] : -1;
   const knopf = (n, cls, name) => `<button class="${cls}${n === vorschlag ? " vorschlag" : ""}" data-n="${n}">${name}<small>${tageText(naechsterAbstand(zustand(k.id, r), n))}</small></button>`;
@@ -1014,18 +1018,21 @@ function karteZeigen() {
            <div class="loesung">${esc(hinten)}</div>${itDe ? "" : lautBtn(k.it)}${hinweisHtml(k)}`
         : tippen
           ? `<input type="text" id="antwort" lang="it" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Italienisch eintippen …" style="text-align:center;margin:6px 0 0">`
-          : `<p class="leise">Überlege die Antwort, dann tippe auf „Aufdecken“${SR ? " – oder sprich sie mit 🎤" : ""}.</p>`}
-      ${!sitzung.aufgedeckt && SR ? `<div id="kstatus" class="leise" style="min-height:1.2em"></div>` : ""}
+          : `<p class="leise">Überlege die Antwort, dann tippe auf „Aufdecken“${mikro ? " – oder sprich sie mit 🎤" : ""}.</p>`}
+      ${!sitzung.aufgedeckt && mikro ? `<div id="kstatus" class="leise" style="min-height:1.2em"></div>` : ""}
     </div>
-    ${sitzung.aufgedeckt
+    ${sitzung.aufgedeckt && sitzung.entdecken
+      ? `<div class="reihe"><button class="btn zweit" data-ent="kannte">👍 Kannte ich schon</button><button class="btn" data-ent="neu">✨ Neu für mich</button></div>
+        <p class="leise" style="text-align:center">Beim ersten Mal zählt nichts als Fehler – „Neu für mich“ kommt bald zum Wiederholen.</p>`
+      : sitzung.aufgedeckt
       ? `<div class="bewertung">
           ${knopf(0, "b-nochmal", "Nochmal")}${knopf(1, "b-schwer", "Schwer")}${knopf(2, "b-gut", "Gut")}${knopf(3, "b-leicht", "Leicht")}
         </div>
         ${!ein || ein.stufe !== "falsch" ? `<button class="btn zweit voll b-sicher" data-n="4" title="Für Karten, die du schon lange sicher kannst">🏆 Kann ich sicher <small>kommt erst in ${Math.round(naechsterAbstand(zustand(k.id, r), 4) / 30)} Monaten wieder</small></button>` : ""}
         ${ein ? `<p class="leise" style="text-align:center">Der umrandete Knopf ist der Vorschlag der App – du kannst auch anders bewerten.</p>` : ""}`
       : tippen
-        ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button>${SR ? `<button class="btn zweit" id="ksprechen" title="Antwort sprechen" style="flex:0 0 64px">🎤</button>` : ""}<button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
-        : `<div class="reihe" style="margin-top:14px"><button class="btn" id="aufdecken">Aufdecken</button>${SR ? `<button class="btn zweit" id="ksprechen">🎤 Antwort sprechen</button>` : ""}</div>`}
+        ? `<div class="reihe"><button class="btn" id="pruefen">Prüfen</button>${mikro ? `<button class="btn zweit" id="ksprechen" title="Antwort sprechen" style="flex:0 0 64px">🎤</button>` : ""}<button class="btn zweit" id="weissnicht">Weiß ich nicht</button></div>`
+        : `<div class="reihe" style="margin-top:14px"><button class="btn" id="aufdecken">Aufdecken</button>${mikro ? `<button class="btn${art === "sprechen" && !itDe ? "" : " zweit"}" id="ksprechen">🎤 Antwort sprechen</button>` : ""}</div>`}
     <div class="reihe sprechleiste">
       <button class="btn zweit" id="kZurueck" ${(sitzung.verlauf || []).length ? "" : "disabled"}>‹ Zurück</button>
       <button class="btn zweit" id="kWeiter" ${sitzung.pos < sitzung.liste.length - 1 ? "" : "disabled"}>Überspringen ›</button>
@@ -1074,6 +1081,18 @@ function karteZeigen() {
       ende: () => ksp.classList.remove("hoert")
     });
   };
+  // „Neues entdecken“: Kannte ich schon → wie „Gut“ · Neu für mich → kommt bald zum Wiederholen, ohne als Fehler zu zählen
+  $app.querySelectorAll("[data-ent]").forEach((b) => (b.onclick = () => {
+    if (istNeu(k.id, r)) { neueHeuteUebrig(); S.neueHeute.anzahl++; }
+    if (b.dataset.ent === "kannte") bewerte(k.id, r, 2);
+    else {
+      if (istNeu(k.id, r)) statZaehlen("neu");
+      S.karten[key] = { ease: 2.5, intervall: 0, wdh: 0, faellig: Date.now() + 10 * 60 * 1000, richtig: 0, falsch: 0, vergessen: 0, zuletzt: Date.now() };
+      geuebt();
+    }
+    (sitzung.verlauf = sitzung.verlauf || []).push({ k, r, n: b.dataset.ent === "kannte" ? 2 : 0, eingabe: null });
+    sitzung.fertig++; sitzung.pos++; sitzung.aufgedeckt = false; sitzung.eingabe = null; speichern(); karteZeigen();
+  }));
   $app.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => {
     const n = +b.dataset.n;
     if (!sitzung.frei || n === 4) {
@@ -2444,7 +2463,7 @@ const HEUTE_TYPFEHLER = 8;
 const NEUE_PRO_RUNDE = 10; // „Neue Karten kennenlernen“ in einer Lektion
 const HEUTE_NUESSE = 10;
 function heuteGemischtAufgaben() {
-  const lek = begonneneLektionen(); if (!lek.length) return [];
+  const lek = [...new Set(begonneneLektionen().concat(aktiveLektionen()))]; if (!lek.length) return [];
   // Grammatik: reihum aus jeder begonnenen Lektion (jede Lektion = eine Gruppe), Schwaches bevorzugt
   const gesehen = new Set();
   const topf = lek.flatMap((L, i) => grammatikTopf(L.grammatik, L.themen).map((x) => ({ ...x, gruppe: i }))).filter((x) => !gesehen.has(x.key) && gesehen.add(x.key));
@@ -2474,34 +2493,60 @@ function heuteLektionsSchritte() {
   }
   return [a, b];
 }
+// ---------- „Heute üben“: 1 Wiederholen · 2 Fehler · 3 Neues entdecken · 4 Grammatik & Hören · 5 Frage & Antwort · Lektion weiter ----------
+const HEUTE_WDH = 25, HEUTE_FEHLER_KARTEN = 15, HEUTE_ENTDECKEN = 10;
+// 1. Wiederholen: nur Karten, die man schon kennt und die heute fällig sind
+function heuteWiederholenListe() {
+  const richt = richtungenFuer(S.einstellungen.richtung);
+  return faelligeKarten().filter((x) => richt.includes(x.r)).slice(0, HEUTE_WDH);
+}
+// 2. Fehler: oft falsch (nicht schon fällig) + harte Nüsse – danach Aufgaben zu den typischen Fehlern
+function heuteFehlerKarten() {
+  const richt = richtungenFuer(S.einstellungen.richtung), schon = new Set(), liste = [];
+  const dazu = (x) => { const s = schluessel(x.k.id, x.r); if (!schon.has(s)) { schon.add(s); liste.push(x); } };
+  mischen(nussListe().flatMap((k) => richt.map((r) => ({ k, r })))).slice(0, 8).forEach(dazu);
+  schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).forEach((x) => { if (liste.length < HEUTE_FEHLER_KARTEN) dazu(x); });
+  return liste;
+}
+const heuteTypfehlerAufgaben = () => mischen(fehlerMusterListe().slice(0, 5).flatMap((m) => musterAufgaben(m, 4))).slice(0, HEUTE_TYPFEHLER);
+// 3. Neues entdecken: neue Karten aus den aktiven Lektionen (älteste zuerst), zuerst in Richtung „verstehen“
+function heuteEntdeckenListe() {
+  const frei = Math.min(HEUTE_ENTDECKEN, neueHeuteUebrig()), aktiv = aktiveLektionen();
+  let neue = [];
+  const quelle = aktiv.length ? aktiv.map(lektionKarten) : [kartenDerThemen(S.einstellungen.themen)];
+  for (const karten of quelle) {
+    if (neue.length >= frei) break;
+    karten.forEach((k) => { if (neue.length < frei && istNeu(k.id, "it-de") && !neue.some((x) => x.k.id === k.id)) neue.push({ k, r: "it-de" }); });
+  }
+  return neue;
+}
+// Lektion weiter: nächster offener Schritt (Erklärung, Grammatik, Hör-Dialog, Sprechen) der vordersten aktiven Lektion
+function heuteLektionWeiter() {
+  const st = heuteStand();
+  if (st.lektionMerk && LEKTION_NACH_ID[st.lektionMerk.lid]) return { L: LEKTION_NACH_ID[st.lektionMerk.lid], s: LEKTION_SCHRITTE.find((s) => s.id === st.lektionMerk.sid) };
+  for (const L of aktiveLektionen().slice().reverse()) {
+    const s = offeneSchritte(L).find((x) => x.id !== "woerter");
+    if (s) return { L, s };
+  }
+  return null;
+}
 function heuteSchritte() {
-  const runde = heuteKartenRunde(), nKarten = runde.liste.length;
-  const nNeu = runde.neue.length, nWdh = nKarten - nNeu;
-  const lek = begonneneLektionen();
-  const nFehler = Math.min(15, schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).length);
-  const nSaetze = heuteSaetze().length;
-  const nTyp = fehlerMusterListe().length;
-  const nNuss = Math.min(HEUTE_NUESSE, nussListe().length * richtungenFuer(S.einstellungen.richtung).length);
-  // Zwei Lektionsschritte (siehe heuteLektionsSchritte): Fortschritt in der vordersten Lektion + Nachholen in einer älteren
-  const st = heuteStand(), alleDurch = !aktiveLektionen().length;
-  const [sA, sB] = heuteLektionsSchritte();
-  const lZeile = (id, x) => {
-    if (!x) return { id, sym: "📚", name: "Lektion", text: alleDurch ? "alle Lektionen durchgearbeitet" : "nichts mehr offen", leer: true };
-    const w = x.s.id === "woerter" ? lektionWoerterStand(x.L) : null;
-    return { id, sym: x.s.sym, name: `Lektion ${x.L.nr}: ${x.s.id === "woerter" ? "Neue Karten kennenlernen" : x.s.name}`, text: st.erledigt.includes(id) ? "heute erledigt" : w ? (w.neu ? `${Math.min(NEUE_PRO_RUNDE, w.neu)} neue Karten (${w.kennen} von ${w.gesamt} kennengelernt)` : "alle kennengelernt") : x.s.text };
-  };
+  const st = heuteStand();
+  const nWdh = heuteWiederholenListe().length, nFehler = heuteFehlerKarten().length, nTyp = fehlerMusterListe().length ? Math.min(HEUTE_TYPFEHLER, heuteTypfehlerAufgaben().length) : 0;
+  const nNeu = heuteEntdeckenListe().length, lw = heuteLektionWeiter();
+  const lek = [...new Set(begonneneLektionen().concat(aktiveLektionen()))];
+  const art = { schreiben: "schreiben", sprechen: "sprechen", beides: "schreiben oder sprechen" }[S.einstellungen.wdhArt || "beides"];
   return [
-    { id: "karten", sym: "🗂️", name: "Karteikarten", leer: !nKarten,
-      text: nKarten ? [nWdh ? `${nWdh} Wiederholungen aus allen Lektionen und Themen${runde.faellig > nWdh ? ` (von ${runde.faellig} fälligen)` : ""}` : "", nNeu ? `${nNeu} neue${runde.lektion ? ` aus Lektion ${runde.lektion.nr}` : ""}` : ""].filter(Boolean).join(" + ") : "heute nichts fällig" },
-    { id: "fehler", sym: "🎯", name: "Fehler wiederholen", text: nFehler ? `${nFehler} Karten, die oft falsch waren` : "keine Fehler offen", leer: !nFehler },
-    { id: "typfehler", sym: "🔀", name: "Typische Fehler", leer: !nTyp, text: nTyp ? `${HEUTE_TYPFEHLER} Aufgaben zu deinen häufigsten Verwechslungen, z. B. ${fehlerMusterListe()[0].falsch} statt ${fehlerMusterListe()[0].richtig}` : "keine gesammelt – sehr gut!" },
-    { id: "nuesse", sym: NUSS_ICON, name: "Harte Nüsse", leer: !nNuss, text: nNuss ? `${nNuss} Karten, die du mit ${NUSS_ICON} markiert hast` : "keine markiert" },
-    { id: "saetze", sym: "🎤", name: "Sätze sprechen", leer: !nSaetze, text: nSaetze ? `${nSaetze} Sätze auf Italienisch sagen – ohne Hilfe, aus dem Gedächtnis` : "noch keine Sätze – erst ein paar Karten lernen" },
-    { id: "gemischt", sym: "🔀", name: "Gemischt – alle Lektionen", leer: !lek.length,
-      text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben quer durch ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"} – damit auch Älteres wach bleibt` : "ab der ersten angefangenen Lektion" },
-    lZeile("lektionA", sA),
-    lZeile("lektionB", sB),
-    { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: `${HEUTE_FRAGEN} Fragen frei beantworten` }
+    { id: "wiederholen", sym: "🔁", name: "Wiederholen", leer: !nWdh, text: nWdh ? `${nWdh} bekannte Karten, die heute fällig sind – ${art}` : "heute nichts fällig" },
+    { id: "fehler", sym: "🎯", name: "Fehler wiederholen", leer: !nFehler && !nTyp,
+      text: nFehler || nTyp ? [nFehler ? `${nFehler} Karten (oft falsch und ${NUSS_ICON} harte Nüsse)` : "", nTyp ? `${nTyp} Aufgaben zu typischen Fehlern` : ""].filter(Boolean).join(" + ") : "keine Fehler offen – sehr gut!" },
+    { id: "entdecken", sym: "✨", name: "Neues entdecken", leer: !nNeu,
+      text: nNeu ? `${nNeu} neue Karten zum Aufdecken – nichts zählt als Fehler` : neueHeuteUebrig() ? "alle Karten der aktiven Lektionen kennengelernt" : `heute schon genug Neues (${S.einstellungen.neueProTag} pro Tag)` },
+    { id: "gemischt", sym: "🧩", name: "Grammatik & Hören", leer: !lek.length,
+      text: lek.length ? `${HEUTE_GEMISCHT} Aufgaben – Lückensätze, Hören, Diktat aus ${lek.length === 1 ? "Lektion " + lek[0].nr : lek.length + " Lektionen"}` : "ab der ersten Lektion" },
+    { id: "gespraech", sym: "🗣️", name: "Frage & Antwort", text: `${HEUTE_FRAGEN} Fragen frei beantworten` },
+    { id: "lektion", sym: lw ? lw.s.sym : "📚", name: lw ? `Lektion ${lw.L.nr}: ${lw.s.name}` : "Lektion weiter", leer: !lw,
+      text: st.erledigt.includes("lektion") ? "heute erledigt" : lw ? lw.s.text : "nichts offen – neue Karten kommen über „Neues entdecken“" }
   ];
 }
 let letzterKontext = null, letzteLektion = null;
@@ -2544,7 +2589,9 @@ function heuteMenue() {
   const offen = schritte.filter((s) => !s.leer && !st.erledigt.includes(s.id));
   const fertig = schritte.length - offen.length;
   zeige(`
-    <p>Eine Runde von etwa <b>20–30 Minuten</b>, gut gemischt: Wiederholungen aus allen Lektionen, Neues aus der aktuellen Lektion. Am besten jeden Tag – Regelmäßigkeit bringt mehr als lange Einheiten.</p>
+    <p>Eine Runde von etwa <b>20–30 Minuten</b>: erst Bekanntes wiederholen und Fehler ausbügeln, dann Neues entdecken, Grammatik &amp; Hören und frei sprechen. Am besten jeden Tag.</p>
+    <div class="leise" style="margin:-4px 0 4px">Beim Wiederholen antworte ich mit:</div>
+    ${umschalter("wdhArt", S.einstellungen.wdhArt || "beides", [["schreiben", "✍️ Schreiben"], ["sprechen", "🎤 Sprechen"], ["beides", "Beides"]])}
     <div class="fortschritt"><span>${fertig} / ${schritte.length}</span><div class="balken"><i style="width:${(100 * fertig) / schritte.length}%"></i></div></div>
     <div class="liste">${schritte.map((s, i) => {
       const erledigt = st.erledigt.includes(s.id) || s.leer;
@@ -2555,6 +2602,7 @@ function heuteMenue() {
       : `<div class="meldung gut" style="margin-top:14px">🎉 <b>Bravissimo!</b> Für heute ist alles geschafft. Du kannst natürlich trotzdem weiter üben.</div>`}`);
   const los = document.getElementById("heuteLos");
   if (los) los.onclick = () => heuteStarten(offen[0].id);
+  $app.querySelectorAll("#wdhArt button").forEach((b) => (b.onclick = () => { S.einstellungen.wdhArt = b.dataset.w; speichern(); ohneSprung(heuteMenue); }));
   // Zeile antippen = diesen Schritt direkt starten; Kästchen antippen = von Hand abhaken / Haken wegnehmen
   $app.querySelectorAll("[data-hschritt]").forEach((b) => (b.onclick = () => {
     const s = schritte.find((x) => x.id === b.dataset.hschritt);
@@ -2571,6 +2619,33 @@ function heuteMenue() {
 }
 function heuteStarten(id) {
   heuteAktiv = id;
+  const karten = (liste, extra) => { sitzung = { liste, pos: 0, neuKeys: new Set(), aufgedeckt: false, eingabe: null, gesamt: liste.length, fertig: 0, zurueck: "heute", ...extra }; return geheZu("karte"); };
+  if (id === "wiederholen") {
+    const liste = heuteWiederholenListe();
+    if (!liste.length) { heuteAktiv = null; return heuteMenue(); }
+    return karten(liste, { antwortArt: S.einstellungen.wdhArt || "beides" });
+  }
+  if (id === "fehler") {
+    const liste = heuteFehlerKarten(), typ = () => {
+      const aufgaben = heuteTypfehlerAufgaben();
+      if (!aufgaben.length) return false;
+      quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Typische Fehler", nochmal: "heute" }); return true;
+    };
+    if (!liste.length) { if (typ()) return; heuteAktiv = null; return heuteMenue(); }
+    // erst die Karten, danach (falls vorhanden) die Aufgaben zu den typischen Fehlern
+    return karten(liste, { danach: fehlerMusterListe().length ? () => { if (!typ()) { schrittFertig(); zurueckZuHeute(); } } : null });
+  }
+  if (id === "entdecken") {
+    const liste = heuteEntdeckenListe();
+    if (!liste.length) { heuteAktiv = null; return heuteMenue(); }
+    return karten(liste, { entdecken: true, neuKeys: new Set(liste.map((x) => schluessel(x.k.id, x.r))) });
+  }
+  if (id === "lektion") {
+    const x = heuteLektionWeiter();
+    if (!x) { heuteAktiv = null; return heuteMenue(); }
+    heuteStand().lektionMerk = { lid: x.L.id, sid: x.s.id };
+    return lektionStarten(x.L, x.s.id);
+  }
   if (id === "lektionA" || id === "lektionB") {
     const x = heuteLektionsSchritte()[id === "lektionA" ? 0 : 1];
     if (!x) { heuteAktiv = null; return heuteMenue(); }
@@ -2603,7 +2678,7 @@ function heuteStarten(id) {
   if (id === "gemischt") {
     const aufgaben = heuteGemischtAufgaben();
     if (!aufgaben.length) { heuteAktiv = null; return heuteMenue(); }
-    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Gemischt – alle Lektionen", nochmal: "heute" });
+    return quizStarten({ aufgaben, pos: 0, punkte: 0, zurueck: "heute", titel: "Grammatik & Hören", nochmal: "heute" });
   }
   if (id === "fehler") {
     const liste = schwacheKarten().filter((x) => !istFaellig(x.k.id, x.r)).slice(0, 15);
